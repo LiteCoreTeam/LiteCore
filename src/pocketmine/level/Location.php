@@ -25,8 +25,8 @@ use pocketmine\math\Vector3;
 
 class Location extends Position {
 
-	public $yaw = 0;
-	public $pitch = 0;
+	public $yaw;
+	public $pitch;
 
 	/**
 	 * @param int   $x

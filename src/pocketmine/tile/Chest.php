@@ -37,7 +37,7 @@ class Chest extends Spawnable implements InventoryHolder, Container, Nameable {
 
 	/** @var ChestInventory */
 	protected $inventory;
-	/** @var DoubleChestInventory */
+	/** @var DoubleChestInventory|null */
 	protected $doubleInventory = null;
 
 	/**
@@ -67,15 +67,30 @@ class Chest extends Spawnable implements InventoryHolder, Container, Nameable {
 			foreach($this->getInventory()->getViewers() as $player){
 				$player->removeWindow($this->getRealInventory());
 			}
+
+			if($this->doubleInventory !== null){
+				if($this->isPaired() and $this->level->isChunkLoaded($this->namedtag->pairx->getValue() >> 4, $this->namedtag->pairz->getValue() >> 4)){
+					$this->doubleInventory->invalidate();
+					if(($pair = $this->getPair()) !== null){
+						$pair->doubleInventory = null;
+					}
+				}
+				$this->doubleInventory = null;
+			}
+
+			$this->inventory = null;
+
 			parent::close();
 		}
 	}
 
 	public function saveNBT(){
+		parent::saveNBT();
 		$this->namedtag->Items = new ListTag("Items", []);
 		$this->namedtag->Items->setTagType(NBT::TAG_Compound);
+		$inventory = $this->getRealInventory();
 		for($index = 0; $index < $this->getSize(); ++$index){
-			$this->setItem($index, $this->inventory->getItem($index));
+			$this->setItem($index, $inventory->getItem($index));
 		}
 	}
 
@@ -227,7 +242,11 @@ class Chest extends Spawnable implements InventoryHolder, Container, Nameable {
 	 * @return bool
 	 */
 	public function isPaired(){
-		return isset($this->namedtag->pairx) and isset($this->namedtag->pairz);
+		if(!isset($this->namedtag->pairx) or !isset($this->namedtag->pairz)){
+			return false;
+		}
+
+		return true;
 	}
 
 	/**

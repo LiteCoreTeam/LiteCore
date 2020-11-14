@@ -142,7 +142,8 @@ class FallingSand extends Entity {
 			if($this->onGround){
 				$this->kill();
 				$block = $this->level->getBlock($pos);
-				if($block->getId() > 0 and !$block->isSolid() and !($block instanceof Liquid)){
+				if($block->getId() > 0 and $block->isTransparent() and !$block->canBeReplaced()){
+					//FIXME: falling blocks are supposed to be destroyed by glass blocks, and anvils are supposed to destroy torches
 					$this->getLevel()->dropItem($this, ItemItem::get($this->getBlock(), $this->getDamage(), 1));
 				}else{
 					if($block instanceof SnowLayer){
@@ -197,6 +198,7 @@ class FallingSand extends Entity {
 	}
 
 	public function saveNBT(){
+		parent::saveNBT();
 		$this->namedtag->TileID = new IntTag("TileID", $this->blockId);
 		$this->namedtag->Data = new ByteTag("Data", $this->damage);
 	}

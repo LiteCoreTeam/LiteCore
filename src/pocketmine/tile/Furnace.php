@@ -56,6 +56,10 @@ class Furnace extends Spawnable implements InventoryHolder, Container, Nameable 
 		}
 		if(!isset($nbt->MaxTime) or !($nbt->MaxTime instanceof ShortTag)){
 			$nbt->MaxTime = new ShortTag("BurnTime", $nbt["BurnTime"]);
+			unset($nbt->BurnTicks);
+		}
+
+		if(!isset($nbt->BurnTicks)){
 			$nbt->BurnTicks = new ShortTag("BurnTicks", 0);
 		}
 
@@ -104,7 +108,7 @@ class Furnace extends Spawnable implements InventoryHolder, Container, Nameable 
 			foreach($this->getInventory()->getViewers() as $player){
 				$player->removeWindow($this->getInventory());
 			}
-
+			
 			$this->inventory = null;
 			
 			parent::close();
@@ -112,10 +116,12 @@ class Furnace extends Spawnable implements InventoryHolder, Container, Nameable 
 	}
 
 	public function saveNBT(){
+		parent::saveNBT();
 		$this->namedtag->Items = new ListTag("Items", []);
 		$this->namedtag->Items->setTagType(NBT::TAG_Compound);
+		$inventory = $this->getRealInventory();
 		for($index = 0; $index < $this->getSize(); ++$index){
-			$this->setItem($index, $this->inventory->getItem($index));
+			$this->setItem($index, $inventory->getItem($index));
 		}
 	}
 
@@ -194,6 +200,13 @@ class Furnace extends Spawnable implements InventoryHolder, Container, Nameable 
 	}
 
 	/**
+	 * @return FurnaceInventory
+	 */
+	public function getRealInventory(){
+		return $this->getInventory();
+	}
+
+	/**
 	 * @param Item $fuel
 	 */
 	protected function checkFuel(Item $fuel){
@@ -215,10 +228,7 @@ class Furnace extends Spawnable implements InventoryHolder, Container, Nameable 
 				$fuel = Item::get(Item::BUCKET, 0, 1);
 				$this->inventory->setFuel($fuel);
 			}else{
-				$fuel->setCount($fuel->getCount() - 1);
-				if($fuel->getCount() === 0){
-					$fuel = Item::get(Item::AIR, 0, 0);
-				}
+				$fuel->pop();
 				$this->inventory->setFuel($fuel);
 			}
 		}
@@ -259,10 +269,7 @@ class Furnace extends Spawnable implements InventoryHolder, Container, Nameable 
 
 					if(!$ev->isCancelled()){
 						$this->inventory->setResult($ev->getResult());
-						$raw->setCount($raw->getCount() - 1);
-						if($raw->getCount() === 0){
-							$raw = Item::get(Item::AIR, 0, 0);
-						}
+						$raw->pop();
 						$this->inventory->setSmelting($raw);
 					}
 

@@ -119,4 +119,16 @@ interface ChunkManager {
 	 * @return int|string
 	 */
 	public function getSeed();
+
+	/**
+	 * Returns whether the specified coordinates are within the valid world boundaries, taking world format limitations
+	 * into account.
+	 *
+	 * @param int $x
+	 * @param int $y
+	 * @param int $z
+	 *
+	 * @return bool
+	 */
+	public function isInWorld(int $x, int $y, int $z) : bool;
 }

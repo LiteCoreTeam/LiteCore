@@ -290,4 +290,12 @@ class SimpleChunkManager implements ChunkManager {
 	public function getSeed(){
 		return $this->seed;
 	}
+
+	public function isInWorld(int $x, int $y, int $z) : bool{
+		return (
+			$x <= INT32_MAX and $x >= INT32_MIN and
+			$y < $this->worldHeight and $y >= 0 and
+			$z <= INT32_MAX and $z >= INT32_MIN
+		);
+	}
 }

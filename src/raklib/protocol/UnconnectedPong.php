@@ -15,7 +15,7 @@
 
 namespace raklib\protocol;
 
-#include <rules/RakLibPacket.h>
+#include <rules/BinaryIO.h>
 
 class UnconnectedPong extends OfflineMessage{
 	public static $ID = MessageIdentifiers::ID_UNCONNECTED_PONG;

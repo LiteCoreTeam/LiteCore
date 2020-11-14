@@ -21,16 +21,23 @@
 
 namespace pocketmine\level\generator\normal\biome;
 
+use pocketmine\block\Block;
 use pocketmine\level\generator\populator\Sugarcane;
 use pocketmine\level\generator\populator\TallGrass;
 
-class OceanBiome extends WateryBiome {
+class OceanBiome extends NormalBiome{
 
 	/**
 	 * OceanBiome constructor.
 	 */
 	public function __construct(){
-		parent::__construct();
+		$this->setGroundCover([
+			Block::get(Block::GRAVEL),
+			Block::get(Block::GRAVEL),
+			Block::get(Block::GRAVEL),
+			Block::get(Block::GRAVEL),
+			Block::get(Block::GRAVEL)
+		]);
 
 		$sugarcane = new Sugarcane();
 		$sugarcane->setBaseAmount(6);
@@ -40,7 +47,7 @@ class OceanBiome extends WateryBiome {
 		$this->addPopulator($sugarcane);
 		$this->addPopulator($tallGrass);
 
-		$this->setElevation(46, 68);
+		$this->setElevation(46, 58);
 
 		$this->temperature = 0.5;
 		$this->rainfall = 0.5;

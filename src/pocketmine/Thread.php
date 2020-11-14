@@ -37,7 +37,7 @@ abstract class Thread extends \Thread {
 
 	/** @var \ClassLoader */
 	protected $classLoader;
-	
+
 	protected $isKilled = false;
 
 	/**
@@ -85,6 +85,7 @@ abstract class Thread extends \Thread {
 		if($this->getClassLoader() === null){
 			$this->setClassLoader();
 		}
+		
 		return parent::start($options);
 	}
 

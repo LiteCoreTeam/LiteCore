@@ -24,7 +24,7 @@ declare(strict_types=1);
 namespace pocketmine\command;
 
 use pocketmine\Thread;
-
+use pocketmine\utils\Utils;
 
 class CommandReader extends Thread {
 
@@ -44,12 +44,12 @@ class CommandReader extends Thread {
 	public function __construct(){
 		$this->buffer = new \Threaded;
 
-		$opts = getopt("", ["disable-readline"]);
-		if((extension_loaded("readline") and !isset($opts["disable-readline"]) and !$this->isPipe(STDIN))){
+		$opts = getopt("", ["disable-readline", "enable-readline"]);
+		if(extension_loaded("readline") and (Utils::getOS() === "win" ? isset($opts["enable-readline"]) : !isset($opts["disable-readline"])) and !$this->isPipe(STDIN)){
 			$this->type = self::TYPE_READLINE;
 		}
 
-		$this->start();
+		$this->setClassLoader();
 	}
 
 	public function shutdown(){
@@ -109,8 +109,7 @@ class CommandReader extends Thread {
 	private function readLine() : bool{
 		$line = "";
 		if($this->type === self::TYPE_READLINE){
-			$line = trim(readline("> "));
-			if($line !== ""){
+			if(($raw = readline("> ")) !== false and ($line = trim($raw)) !== ""){
 				readline_add_history($line);
 			}else{
 				return true;
@@ -123,7 +122,9 @@ class CommandReader extends Thread {
 			}
 
 			switch($this->type){
+				/** @noinspection PhpMissingBreakStatementInspection */
 				case self::TYPE_STREAM:
+				    //stream_select doesn't work on piped streams for some reason
 					$r = [$stdin];
 					if(($count = stream_select($r, $w, $e, 0, 200000)) === 0){ //nothing changed in 200000 microseconds
 						return true;
@@ -131,13 +132,6 @@ class CommandReader extends Thread {
 						$this->initStdin();
 					}
 
-					if(($raw = fgets($stdin)) !== false){
-						$line = trim($raw);
-					}else{
-						return false; //user pressed ctrl+c?
-					}
-
-					break;
 				case self::TYPE_PIPED:
 					if(($raw = fgets($stdin)) === false){ //broken pipe or EOF
 						$this->initStdin();
@@ -145,9 +139,9 @@ class CommandReader extends Thread {
 							$this->wait(200000);
 						}); //prevent CPU waste if it's end of pipe
 						return true; //loop back round
-					}else{
-						$line = trim($raw);
 					}
+
+					$line = trim($raw);
 					break;
 			}
 		}
@@ -173,6 +167,8 @@ class CommandReader extends Thread {
 	}
 
 	public function run(){
+		$this->registerClassLoader();
+		
 		if($this->type !== self::TYPE_READLINE){
 			$this->initStdin();
 		}

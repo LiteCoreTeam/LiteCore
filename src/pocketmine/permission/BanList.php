@@ -57,6 +57,17 @@ class BanList {
 	}
 
 	/**
+	 * @param string $name
+	 *
+	 * @return BanEntry|null
+	 */
+	public function getEntry(string $name) : ?BanEntry{
+		$this->removeExpired();
+
+		return $this->list[strtolower($name)] ?? null;
+	}
+
+	/**
 	 * @return BanEntry[]
 	 */
 	public function getEntries(){
@@ -134,9 +145,15 @@ class BanList {
 		if(is_resource($fp)){
 			while(($line = fgets($fp)) !== false){
 				if($line{0} !== "#"){
-					$entry = BanEntry::fromString($line);
-					if($entry instanceof BanEntry){
-						$this->list[$entry->getName()] = $entry;
+					try{
+						$entry = BanEntry::fromString($line);
+						if($entry instanceof BanEntry){
+							$this->list[$entry->getName()] = $entry;
+						}
+					}catch(\Throwable $e){
+						$logger = MainLogger::getLogger();
+						$logger->critical("Failed to parse ban entry from string \"$line\": " . $e->getMessage());
+						$logger->logException($e);
 					}
 				}
 			}

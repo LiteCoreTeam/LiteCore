@@ -34,7 +34,7 @@ class CompoundTag extends NamedTag implements \ArrayAccess {
 	public function __construct($name = "", $value = []){
 		$this->__name = $name;
 		foreach($value as $tag){
-			$this->{$tag->getName()} = $tag;
+			$this->{$tag->__name} = $tag;
 		}
 	}
 
@@ -42,14 +42,21 @@ class CompoundTag extends NamedTag implements \ArrayAccess {
 	 * @return int
 	 */
 	public function getCount(){
-		$count = 0;
+		return count($this->getValue());
+	}
+
+	/**
+	 * @return NamedTag[]
+	 */
+	public function &getValue(){
+		$result = [];
 		foreach($this as $tag){
-			if($tag instanceof Tag){
-				++$count;
+			if($tag instanceof NamedTag){
+				$result[$tag->getName()] = $tag;
 			}
 		}
 
-		return $count;
+		return $result;
 	}
 
 	/**
@@ -114,10 +121,27 @@ class CompoundTag extends NamedTag implements \ArrayAccess {
 		$this->value = [];
 		do{
 			$tag = $nbt->readTag($network);
-			if($tag instanceof NamedTag and $tag->getName() !== ""){
-				$this->{$tag->getName()} = $tag;
+			if($tag instanceof NamedTag and $tag->__name !== ""){
+				$this->{$tag->__name} = $tag;
 			}
 		}while(!($tag instanceof EndTag) and !$nbt->feof());
+	}
+
+	/**
+	 * Sets the specified NamedTag as a child tag of the CompoundTag at the offset specified by the tag's name. If a tag
+	 * already exists at the offset and the types do not match, an exception will be thrown unless $force is true.
+	 *
+	 * @param NamedTag $tag
+	 * @param bool     $force
+	 */
+	public function setTag(NamedTag $tag, bool $force = false) : void{
+		if(!$force){
+			$existing = $this->value[$tag->__name] ?? null;
+			if($existing !== null and !($tag instanceof $existing)){
+				throw new \RuntimeException("Cannot set tag at \"$tag->__name\": tried to overwrite " . get_class($existing) . " with " . get_class($tag));
+			}
+		}
+		$this->value[$tag->__name] = $tag;
 	}
 
 	/**
@@ -148,4 +172,20 @@ class CompoundTag extends NamedTag implements \ArrayAccess {
 		}
 		return $str . "}";
 	}
+
+	public function jsonSerialize(){
+	    $result = [
+            "tag" => get_class($this),
+	        "name" => $this->getName(),
+            "value" => []
+        ];
+
+        foreach($this as $tag){
+            if($this instanceof Tag){
+                $result["value"][] = $tag;
+            }
+	    }
+
+        return $result;
+    }
 }

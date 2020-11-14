@@ -21,11 +21,11 @@
 
 namespace pocketmine\level\generator;
 
+use pocketmine\block\Block;
 use pocketmine\level\format\Chunk;
 use pocketmine\level\Level;
 use pocketmine\scheduler\AsyncTask;
 use pocketmine\Server;
-
 
 class LightPopulationTask extends AsyncTask {
 
@@ -44,6 +44,9 @@ class LightPopulationTask extends AsyncTask {
 	}
 
 	public function onRun(){
+		if(!Block::isInit()){
+			Block::init();
+		}
 		/** @var Chunk $chunk */
 		$chunk = Chunk::fastDeserialize($this->chunk);
 		if($chunk === null){

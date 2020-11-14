@@ -251,7 +251,7 @@ class PlayerInventory extends BaseInventory {
 			}
 		}else{
 			$this->getHolder()->getLevel()->getServer()->broadcastPacket($target, $pk);
-			if($this->getHeldItemSlot() !== -1 and in_array($this->getHolder(), $target)){
+			if($this->getHeldItemSlot() !== -1 and in_array($this->getHolder(), $target, true)){
 				$this->sendSlot($this->getHeldItemSlot(), $this->getHolder());
 			}
 		}
@@ -271,12 +271,12 @@ class PlayerInventory extends BaseInventory {
 
 			parent::onSlotChange($index, $before, $send);
 		}
+
 		if($index === $this->itemInHandIndex){
 			$this->sendHeldItem($this->getHolder()->getViewers());
 			if($send){
 				$this->sendHeldItem($this->getHolder());
 			}
-
 		}elseif($index >= $this->getSize()){ //Armour equipment
 			$this->sendArmorSlot($index, $this->getViewers());
 			$this->sendArmorSlot($index, $this->getHolder()->getViewers());

@@ -23,7 +23,6 @@ declare(strict_types=1);
 
 namespace pocketmine\level\format\io;
 
-use pocketmine\level\format\Chunk;
 use pocketmine\level\generator\Generator;
 use pocketmine\level\Level;
 use pocketmine\level\LevelException;
@@ -41,15 +40,7 @@ abstract class BaseLevelProvider implements LevelProvider {
 	protected $path;
 	/** @var CompoundTag */
 	protected $levelData;
-	/** @var bool */
-	protected $asyncChunkRequest = false;
 
-	/**
-	 * BaseLevelProvider constructor.
-	 *
-	 * @param Level  $level
-	 * @param string $path
-	 */
 	public function __construct(Level $level, string $path){
 		$this->level = $level;
 		$this->path = $path;
@@ -72,7 +63,6 @@ abstract class BaseLevelProvider implements LevelProvider {
 		if(!isset($this->levelData->generatorOptions)){
 			$this->levelData->generatorOptions = new StringTag("generatorOptions", "");
 		}
-		$this->asyncChunkRequest = (bool) $this->level->getServer()->getProperty("chunk-sending.async-chunk-request", false);
 	}
 
 	/**
@@ -138,13 +128,10 @@ abstract class BaseLevelProvider implements LevelProvider {
 		return new Vector3((float) $this->levelData["SpawnX"], (float) $this->levelData["SpawnY"], (float) $this->levelData["SpawnZ"]);
 	}
 
-	/**
-	 * @param Vector3 $pos
-	 */
 	public function setSpawn(Vector3 $pos){
-		$this->levelData->SpawnX = new IntTag("SpawnX", (int) $pos->x);
-		$this->levelData->SpawnY = new IntTag("SpawnY", (int) $pos->y);
-		$this->levelData->SpawnZ = new IntTag("SpawnZ", (int) $pos->z);
+		$this->levelData->SpawnX = new IntTag("SpawnX", $pos->getFloorX());
+		$this->levelData->SpawnY = new IntTag("SpawnY", $pos->getFloorY());
+		$this->levelData->SpawnZ = new IntTag("SpawnZ", $pos->getFloorZ());
 	}
 
 	public function doGarbageCollection(){
@@ -165,27 +152,5 @@ abstract class BaseLevelProvider implements LevelProvider {
 		]));
 		$buffer = $nbt->writeCompressed();
 		file_put_contents($this->getPath() . "level.dat", $buffer);
-	}
-
-	/**
-	 * @param int $x
-	 * @param int $z
-	 *
-	 * @return null|ChunkRequestTask
-	 */
-	public function requestChunkTask(int $x, int $z){
-		$chunk = $this->getChunk($x, $z, false);
-		if(!($chunk instanceof Chunk)){
-			throw new ChunkException("Invalid Chunk sent");
-		}
-
-		if($this->asyncChunkRequest){
-			return new ChunkRequestTask($this->level, $chunk);
-		}
-
-		//non-async, call the callback directly with serialized data
-		$this->getLevel()->chunkRequestCallback($x, $z, $chunk->networkSerialize());
-
-		return null;
 	}
 }

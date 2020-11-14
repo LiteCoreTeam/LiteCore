@@ -22,29 +22,26 @@
 namespace pocketmine\network\mcpe\protocol;
 
 #include <rules/DataPacket.h>
+
 use pocketmine\utils\Binary;
 use pocketmine\utils\BinaryStream;
 
 class BatchPacket extends DataPacket {
+
 	const NETWORK_ID = 0xfe;
 
-	public $payload;
-	public $compressed = false;
+	/** @var string */
+	public $payload = "";
+	/** @var int */
+	protected $compressionLevel = 7;
 
-	/**
-	 *
-	 */
 	public function decode(){
-		$this->payload = $this->get(true);
+		$this->payload = $this->getRemaining();
 	}
 
-	/**
-	 *
-	 */
 	public function encode(){
 		$this->reset();
-		assert($this->compressed);
-		$this->put($this->payload);
+		$this->put(zlib_encode($this->payload, ZLIB_ENCODING_DEFLATE, $this->compressionLevel));
 	}
 
 	/**
@@ -57,13 +54,26 @@ class BatchPacket extends DataPacket {
 			}
 			$packet = $packet->buffer;
 		}
+
 		$this->payload .= Binary::writeUnsignedVarInt(strlen($packet)) . $packet;
 	}
-	
-	public function compress(int $level = 7){
-		assert(!$this->compressed);
-		$this->payload = zlib_encode($this->payload, ZLIB_ENCODING_DEFLATE, $level);
-		$this->compressed = true;
+
+	/**
+	 * @return \Generator
+	 */
+	public function getPackets(){
+		$stream = new BinaryStream($this->payload);
+		while(!$stream->feof()){
+			yield $stream->getString();
+		}
+	}
+
+	public function getCompressionLevel() : int{
+		return $this->compressionLevel;
+	}
+
+	public function setCompressionLevel(int $level){
+		$this->compressionLevel = $level;
 	}
 
 	/**

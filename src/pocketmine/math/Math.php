@@ -29,23 +29,23 @@ namespace pocketmine\math;
 abstract class Math {
 
 	/**
-	 * @param $n
+	 * @param float $n
 	 *
 	 * @return int
 	 */
-	public static function floorFloat($n){
+	public static function floorFloat($n) : int{
 		$i = (int) $n;
 		return $n >= $i ? $i : $i - 1;
 	}
 
 	/**
-	 * @param $n
+	 * @param float $n
 	 *
 	 * @return int
 	 */
-	public static function ceilFloat($n){
-		$i = (int) ($n + 1);
-		return $n >= $i ? $i : $i - 1;
+	public static function ceilFloat($n) : int{
+		$i = (int) $n;
+		return $n <= $i ? $i : $i + 1;
 	}
 
 	/**
@@ -60,18 +60,28 @@ abstract class Math {
 	}
 
 	/**
-	 * @param $a
-	 * @param $b
-	 * @param $c
+	 * Solves a quadratic equation with the given coefficients and returns an array of up to two solutions.
 	 *
-	 * @return array
+	 * @param float $a
+	 * @param float $b
+	 * @param float $c
+	 *
+	 * @return float[]
 	 */
-	public static function solveQuadratic($a, $b, $c) : array{
-		$x[0] = (-$b + sqrt($b ** 2 - 4 * $a * $c)) / (2 * $a);
-		$x[1] = (-$b - sqrt($b ** 2 - 4 * $a * $c)) / (2 * $a);
-		if($x[0] == $x[1]){
-			return [$x[0]];
+	public static function solveQuadratic(float $a, float $b, float $c) : array{
+		$discriminant = $b ** 2 - 4 * $a * $c;
+		if($discriminant > 0){ //2 real roots
+			$sqrtDiscriminant = sqrt($discriminant);
+			return [
+				(-$b + $sqrtDiscriminant) / (2 * $a),
+				(-$b - $sqrtDiscriminant) / (2 * $a)
+			];
+		}elseif($discriminant == 0){ //1 real root
+			return [
+				-$b / (2 * $a)
+			];
+		}else{ //No real roots
+			return [];
 		}
-		return $x;
 	}
 }

@@ -36,18 +36,15 @@ class ChunkRequestTask extends AsyncTask {
 	protected $chunkX;
 	protected $chunkZ;
 
-	/**
-	 * ChunkRequestTask constructor.
-	 *
-	 * @param Level $level
-	 * @param Chunk $chunk
-	 */
-	public function __construct(Level $level, Chunk $chunk){
+	protected $compressionLevel;
+
+	public function __construct(Level $level, int $chunkX, int $chunkZ, Chunk $chunk){
 		$this->levelId = $level->getId();
+		$this->compressionLevel = $level->getServer()->networkCompressionLevel;
 
 		$this->chunk = $chunk->networkSerialize();
-		$this->chunkX = $chunk->getX();
-		$this->chunkZ = $chunk->getZ();
+		$this->chunkX = $chunkX;
+		$this->chunkZ = $chunkZ;
 	}
 
 	public function onRun(){
@@ -58,19 +55,25 @@ class ChunkRequestTask extends AsyncTask {
 
 		$batch = new BatchPacket();
 		$batch->addPacket($pk);
-		$batch->compress(7);
+		$batch->setCompressionLevel($this->compressionLevel);
 		$batch->encode();
 
-		$this->setResult($batch->buffer, false);
+		$this->setResult($batch->buffer);
 	}
 
-	/**
-	 * @param Server $server
-	 */
 	public function onCompletion(Server $server){
 		$level = $server->getLevel($this->levelId);
-		if($level instanceof Level and $this->hasResult()){
-			$level->chunkRequestCallback($this->chunkX, $this->chunkZ, $this->getResult());
+		if($level instanceof Level){
+			if($this->hasResult()){
+				$batch = new BatchPacket($this->getResult());
+				assert(strlen($batch->buffer) > 0);
+				$batch->isEncoded = true;
+				$level->chunkRequestCallback($this->chunkX, $this->chunkZ, $batch);
+			}else{
+				$server->getLogger()->error("Chunk request for level #" . $this->levelId . ", x=" . $this->chunkX . ", z=" . $this->chunkZ . " doesn't have any result data");
+			}
+		}else{
+			$server->getLogger()->debug("Dropped chunk task due to level not loaded");
 		}
 	}
 

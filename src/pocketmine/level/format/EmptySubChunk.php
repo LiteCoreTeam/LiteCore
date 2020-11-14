@@ -25,6 +25,16 @@ namespace pocketmine\level\format;
 
 
 class EmptySubChunk extends SubChunk {
+	/** @var EmptySubChunk */
+	private static $instance;
+
+	public static function getInstance() : self{
+		if(self::$instance === null){
+			self::$instance = new self();
+		}
+
+		return self::$instance;
+	}
 
 	/**
 	 * EmptySubChunk constructor.
@@ -224,22 +234,17 @@ class EmptySubChunk extends SubChunk {
 		return str_repeat("\xff", 2048);
 	}
 
-	public function setBlockLightArray(string $data){
-
-	}
-
-	public function getBlockSkyLightArray() : string{
-		return str_repeat("\xff", 2048);
-	}
-
-	public function setBlockSkyLightArray(string $data){
-		
+	/**
+	 * @return string
+	 */
+	public function networkSerialize() : string{
+		return "\x00" . str_repeat("\x00", 10240);
 	}
 
 	/**
 	 * @return string
 	 */
-	public function networkSerialize() : string{
-		return "\x00" . str_repeat("\x00", 6144); //10240
+	public function fastSerialize() : string{
+		throw new \BadMethodCallException("Should not try to serialize empty subchunks");
 	}
 }

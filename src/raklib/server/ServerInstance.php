@@ -45,7 +45,7 @@ interface ServerInstance{
 	 * @param int    $port
 	 * @param string $payload
 	 */
-	public function handleRaw($address, $port, $payload);
+	public function handleRaw(string $address, int $port, string $payload);
 
 	/**
 	 * @param string $identifier
@@ -57,7 +57,7 @@ interface ServerInstance{
 	 * @param string $option
 	 * @param string $value
 	 */
-	public function handleOption($option, $value);
+	public function handleOption(string $option, string $value);
 
 	/**
 	 * @param string $identifier

@@ -15,8 +15,7 @@
 
 namespace raklib\protocol;
 
-#include <rules/RakLibPacket.h>
-
+#include <rules/BinaryIO.h>
 
 class UnconnectedPingOpenConnections extends UnconnectedPing{
 	public static $ID = MessageIdentifiers::ID_UNCONNECTED_PING_OPEN_CONNECTIONS;

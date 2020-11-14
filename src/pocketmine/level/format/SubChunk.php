@@ -28,13 +28,18 @@ if(!defined(__NAMESPACE__ . '\ZERO_NIBBLE_ARRAY')){
 }
 
 class SubChunk {
-
 	protected $ids;
 	protected $data;
 	protected $blockLight;
 	protected $skyLight;
 
-	private static function assignData(&$target, string $data, int $length, string $value = "\x00"){
+	/**
+	 * @param        $target
+	 * @param        $data
+	 * @param        $length
+	 * @param string $value
+	 */
+	private static function assignData(&$target, $data, $length, $value = "\x00"){
 		if(strlen($data) !== $length){
 			assert($data === "", "Invalid non-zero length given, expected $length, got " . strlen($data));
 			$target = str_repeat($value, $length);
@@ -89,23 +94,6 @@ class SubChunk {
 	public function setBlockId(int $x, int $y, int $z, int $id) : bool{
 		$this->ids{($x << 8) | ($z << 4) | $y} = chr($id);
 		return true;
-	}
-
-	public function collectGarbage(){
-		/*
-		 * This strange looking code is designed to exploit PHP's copy-on-write behaviour. Assigning will copy a
-		 * reference to the const instead of duplicating the whole string. The string will only be duplicated when
-		 * modified, which is perfect for this purpose.
-		 */
-		if($this->data === ZERO_NIBBLE_ARRAY){
-			$this->data = ZERO_NIBBLE_ARRAY;
-		}
-		if($this->skyLight === ZERO_NIBBLE_ARRAY){
-			$this->skyLight = ZERO_NIBBLE_ARRAY;
-		}
-		if($this->blockLight === ZERO_NIBBLE_ARRAY){
-			$this->blockLight = ZERO_NIBBLE_ARRAY;
-		}
 	}
 
 	/**
@@ -180,13 +168,14 @@ class SubChunk {
 
 		if($data !== null){
 			$i >>= 1;
-			$byte = ord($this->data{$i});
+			$oldPair = ord($this->data{$i});
 			if(($y & 1) === 0){
-				$this->data{$i} = chr(($byte & 0xf0) | ($data & 0x0f));
+                $newPair = ($oldPair & 0xf0) | ($data & 0x0f);
 			}else{
-				$this->data{$i} = chr((($data & 0x0f) << 4) | ($byte & 0x0f));
+                $newPair = (($data & 0x0f) << 4) | ($oldPair & 0x0f);
 			}
-			if($this->data{$i} !== $byte){
+            if($newPair !== $oldPair){
+                $this->data{$i} = chr($newPair);
 				$changed = true;
 			}
 		}
@@ -352,11 +341,6 @@ class SubChunk {
 		return $this->blockLight;
 	}
 
-	public function setBlockLightArray(string $data){
-		assert(strlen($data) === 2048, "Wrong length of light array, expecting 2048 bytes, got " . strlen($data));
-		$this->blockLight = $data;
-	}
-
 	/**
 	 * @return string
 	 */
@@ -365,13 +349,49 @@ class SubChunk {
 		return "\x00" . $this->ids . $this->data . $this->skyLight . $this->blockLight;
 	}
 
-	public function getBlockSkyLightArray() : string{
-		assert(strlen($this->skyLight) === 2048, "Wrong length of skylight array, expecting 2048 bytes, got " . strlen($this->skyLight));
-		return $this->skyLight;
+	/**
+	 * @return string
+	 */
+	public function fastSerialize() : string{
+		return
+			$this->ids .
+			$this->data .
+			$this->skyLight .
+			$this->blockLight;
 	}
-	
-	public function setBlockSkyLightArray(string $data){
-		assert(strlen($data) === 2048, "Wrong length of skylight array, expecting 2048 bytes, got " . strlen($data));
-		$this->skyLight = $data;
+
+	/**
+	 * @param string $data
+	 *
+	 * @return SubChunk
+	 */
+	public static function fastDeserialize(string $data) : SubChunk{
+		return new SubChunk(
+			substr($data, 0, 4096), //ids
+			substr($data, 4096, 2048), //data
+			substr($data, 6144, 2048), //sky light
+			substr($data, 8192, 2048)  //block light
+		);
+	}
+
+	public function __debugInfo(){
+		return [];
+	}
+
+	public function collectGarbage() : void{
+		/*
+		 * This strange looking code is designed to exploit PHP's copy-on-write behaviour. Assigning will copy a
+		 * reference to the const instead of duplicating the whole string. The string will only be duplicated when
+		 * modified, which is perfect for this purpose.
+		 */
+		if($this->data === ZERO_NIBBLE_ARRAY){
+			$this->data = ZERO_NIBBLE_ARRAY;
+		}
+		if($this->skyLight === ZERO_NIBBLE_ARRAY){
+			$this->skyLight = ZERO_NIBBLE_ARRAY;
+		}
+		if($this->blockLight === ZERO_NIBBLE_ARRAY){
+			$this->blockLight = ZERO_NIBBLE_ARRAY;
+		}
 	}
 }

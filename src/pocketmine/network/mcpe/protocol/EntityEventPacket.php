@@ -28,6 +28,7 @@ class EntityEventPacket extends DataPacket {
 
 	const NETWORK_ID = ProtocolInfo::ENTITY_EVENT_PACKET;
 
+	const JUMP = 1;
 	const HURT_ANIMATION = 2;
 	const DEATH_ANIMATION = 3;
 
@@ -48,7 +49,7 @@ class EntityEventPacket extends DataPacket {
 
 	public $eid;
 	public $event;
-	public $unknown;
+	public $data = 0;
 
 	/**
 	 *
@@ -56,7 +57,7 @@ class EntityEventPacket extends DataPacket {
 	public function decode(){
 		$this->eid = $this->getEntityId();
 		$this->event = $this->getByte();
-		$this->unknown = $this->getVarInt();
+		$this->data = $this->getVarInt();
 	}
 
 	/**
@@ -66,7 +67,7 @@ class EntityEventPacket extends DataPacket {
 		$this->reset();
 		$this->putEntityId($this->eid);
 		$this->putByte($this->event);
-		$this->putVarInt($this->unknown);
+		$this->putVarInt($this->data);
 	}
 
 	/**

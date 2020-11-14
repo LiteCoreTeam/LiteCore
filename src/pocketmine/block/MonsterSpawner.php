@@ -30,7 +30,7 @@ use pocketmine\Player;
 use pocketmine\tile\MobSpawner;
 use pocketmine\tile\Tile;
 
-class MonsterSpawner extends Solid {
+class MonsterSpawner extends Transparent{
 
 	protected $id = self::MONSTER_SPAWNER;
 

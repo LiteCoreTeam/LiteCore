@@ -30,7 +30,6 @@ use pocketmine\item\Item;
 class Air extends Transparent {
 
 	protected $id = self::AIR;
-	protected $meta = 0;
 
 	/**
 	 * Air constructor.
@@ -95,6 +94,10 @@ class Air extends Transparent {
 	 */
 	public function getBoundingBox(){
 		return null;
+	}
+
+	public function getCollisionBoxes() : array{
+		return [];
 	}
 
 	/**

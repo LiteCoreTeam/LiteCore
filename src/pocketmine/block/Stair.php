@@ -28,106 +28,56 @@ use pocketmine\Player;
 
 abstract class Stair extends Transparent {
 
-	/*
-	public function collidesWithBB(AxisAlignedBB $bb, &$list = []){
-		$damage = $this->getDamage();
-		$j = $damage & 0x03;
+	protected function recalculateCollisionBoxes() : array{
+		//TODO: handle corners
 
-		$f = 0;
-		$f1 = 0.5;
-		$f2 = 0.5;
-		$f3 = 1;
+		$minYSlab = ($this->meta & 0x04) === 0 ? 0 : 0.5;
+		$maxYSlab = $minYSlab + 0.5;
 
-		if(($damage & 0x04) > 0){
-			$f = 0.5;
-			$f1 = 1;
-			$f2 = 0;
-			$f3 = 0.5;
+		$bbs = [
+			new AxisAlignedBB(
+				$this->x,
+				$this->y + $minYSlab,
+				$this->z,
+				$this->x + 1,
+				$this->y + $maxYSlab,
+				$this->z + 1
+			)
+		];
+
+		$minY = ($this->meta & 0x04) === 0 ? 0.5 : 0;
+		$maxY = $minY + 0.5;
+
+		$rotationMeta = $this->meta & 0x03;
+
+		$minX = $minZ = 0;
+		$maxX = $maxZ = 1;
+
+		switch($rotationMeta){
+			case 0:
+				$minX = 0.5;
+				break;
+			case 1:
+				$maxX = 0.5;
+				break;
+			case 2:
+				$minZ = 0.5;
+				break;
+			case 3:
+				$maxZ = 0.5;
+				break;
 		}
 
-		if($bb->intersectsWith($bb2 = AxisAlignedBB::getBoundingBoxFromPool(
-			$this->x,
-			$this->y + $f,
-			$this->z,
-			$this->x + 1,
-			$this->y + $f1,
-			$this->z + 1
-		))){
-			$list[] = $bb2;
-		}
+	    $bbs[] = new AxisAlignedBB(
+			$this->x + $minX,
+			$this->y + $minY,
+			$this->z + $minZ,
+			$this->x + $maxX,
+			$this->y + $maxY,
+			$this->z + $maxZ
+		);
 
-		if($j === 0){
-			if($bb->intersectsWith($bb2 = AxisAlignedBB::getBoundingBoxFromPool(
-				$this->x + 0.5,
-				$this->y + $f2,
-				$this->z,
-				$this->x + 1,
-				$this->y + $f3,
-				$this->z + 1
-			))){
-				$list[] = $bb2;
-			}
-		}elseif($j === 1){
-			if($bb->intersectsWith($bb2 = AxisAlignedBB::getBoundingBoxFromPool(
-				$this->x,
-				$this->y + $f2,
-				$this->z,
-				$this->x + 0.5,
-				$this->y + $f3,
-				$this->z + 1
-			))){
-				$list[] = $bb2;
-			}
-		}elseif($j === 2){
-			if($bb->intersectsWith($bb2 = AxisAlignedBB::getBoundingBoxFromPool(
-				$this->x,
-				$this->y + $f2,
-				$this->z + 0.5,
-				$this->x + 1,
-				$this->y + $f3,
-				$this->z + 1
-			))){
-				$list[] = $bb2;
-			}
-		}elseif($j === 3){
-			if($bb->intersectsWith($bb2 = AxisAlignedBB::getBoundingBoxFromPool(
-				$this->x,
-				$this->y + $f2,
-				$this->z,
-				$this->x + 1,
-				$this->y + $f3,
-				$this->z + 0.5
-			))){
-				$list[] = $bb2;
-			}
-		}
-	}
-	*/
-
-	/**
-	 * @return AxisAlignedBB
-	 */
-	protected function recalculateBoundingBox(){
-
-		if(($this->getDamage() & 0x04) > 0){
-			return new AxisAlignedBB(
-				$this->x,
-				$this->y + 0.5,
-				$this->z,
-				$this->x + 1,
-				$this->y + 1,
-				$this->z + 1
-			);
-		}else{
-			return new AxisAlignedBB(
-				$this->x,
-				$this->y,
-				$this->z,
-				$this->x + 1,
-				$this->y + 0.5,
-				$this->z + 1
-			);
-		}
+		return $bbs;
 	}
 
 	/**
@@ -149,7 +99,7 @@ abstract class Stair extends Transparent {
 			2 => 1,
 			3 => 3,
 		];
-		$this->meta = $faces[$player->getDirection()] & 0x03;
+		$this->meta = $player !== null ? $faces[$player->getDirection()] & 0x03 : 0;
 		if(($fy > 0.5 and $face !== 1) or $face === 0){
 			$this->meta |= 0x04; //Upside-down stairs
 		}

@@ -125,6 +125,10 @@ class XPOrb extends Entity {
 			}
 		}
 
+		if ($this->level == null) {
+			return false;
+		}
+
 		$this->move($this->motionX, $this->motionY, $this->motionZ);
 
 		$this->updateMovement();

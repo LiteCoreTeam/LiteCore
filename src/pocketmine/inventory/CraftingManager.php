@@ -23,10 +23,10 @@ namespace pocketmine\inventory;
 use pocketmine\event\Timings;
 use pocketmine\item\Item;
 use pocketmine\item\Potion;
+use pocketmine\network\mcpe\protocol\BatchPacket;
 use pocketmine\network\mcpe\protocol\CraftingDataPacket;
 use pocketmine\Server;
 use pocketmine\utils\Config;
-use pocketmine\utils\MainLogger;
 use pocketmine\utils\UUID;
 
 class CraftingManager {
@@ -44,19 +44,22 @@ class CraftingManager {
 
 	private static $RECIPE_COUNT = 0;
 
-	/** @var CraftingDataPacket */
+	/** @var BatchPacket */
 	private $craftingDataCache;
 
 	/**
 	 * CraftingManager constructor.
 	 */
 	public function __construct(){
+		$this->init();
+	}
+
+	public function init() : void{
 		$this->registerBrewingStand();
 
 		// load recipes from src/pocketmine/resources/recipes.json
 		$recipes = new Config(Server::getInstance()->getFilePath() . "src/pocketmine/resources/recipes.json", Config::JSON, []);
 
-		MainLogger::getLogger()->info("Загрузка рецептов...");
 		foreach($recipes->getAll() as $recipe){
 			switch($recipe["type"]){
 				case 0:
@@ -119,16 +122,21 @@ class CraftingManager {
 		$pk->encode();
 		$pk->isEncoded = true;
 
-		$this->craftingDataCache = $pk;
+		$batch = new BatchPacket();
+		$batch->addPacket($pk);
+		$batch->setCompressionLevel(Server::getInstance()->networkCompressionLevel);
+		$batch->encode();
+
+		$this->craftingDataCache = $batch;
 		Timings::$craftingDataCacheRebuildTimer->stopTiming();
 	}
 
 	/**
-	 * Returns a CraftingDataPacket for sending to players. Rebuilds the cache if it is outdated.
+	 * Returns a pre-compressed CraftingDataPacket for sending to players. Rebuilds the cache if it is not found.
 	 *
-	 * @return CraftingDataPacket
+	 * @return BatchPacket
 	 */
-	public function getCraftingDataPacket() : CraftingDataPacket{
+	public function getCraftingDataPacket() : BatchPacket{
 		if($this->craftingDataCache === null){
 			$this->buildCraftingDataCache();
 		}
@@ -337,13 +345,8 @@ class CraftingManager {
 	 *
 	 * @return FurnaceRecipe
 	 */
-	public function matchFurnaceRecipe(Item $input){
-		if(isset($this->furnaceRecipes[$input->getId() . ":" . $input->getDamage()])){
-			return $this->furnaceRecipes[$input->getId() . ":" . $input->getDamage()];
-		}elseif(isset($this->furnaceRecipes[$input->getId() . ":?"])){
-			return $this->furnaceRecipes[$input->getId() . ":?"];
-		}
-		return null;
+	public function matchFurnaceRecipe(Item $input) : ?FurnaceRecipe{
+		return $this->furnaceRecipes[$input->getId() . ":" . $input->getDamage()] ?? $this->furnaceRecipes[$input->getId() . ":?"] ?? null;
 	}
 
 
@@ -473,7 +476,7 @@ class CraftingManager {
 	 * @param Recipe $recipe
 	 */
 	public function registerRecipe(Recipe $recipe){
-		$recipe->setId(UUID::fromData(++self::$RECIPE_COUNT, $recipe->getResult()->getId(), $recipe->getResult()->getDamage(), $recipe->getResult()->getCount(), $recipe->getResult()->getCompoundTag()));
+		$recipe->setId(UUID::fromData((string) ++self::$RECIPE_COUNT, (string) $recipe->getResult()->getId(), (string) $recipe->getResult()->getDamage(), (string) $recipe->getResult()->getCount(), $recipe->getResult()->getCompoundTag()));
 		if($recipe instanceof ShapedRecipe){
 			$this->registerShapedRecipe($recipe);
 		}elseif($recipe instanceof ShapelessRecipe){

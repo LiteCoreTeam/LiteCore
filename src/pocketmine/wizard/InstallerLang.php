@@ -65,13 +65,13 @@ class InstallerLang {
 				$this->lang = isset(self::$languages[$l]) ? $l : $lang;
 				$this->langfile = \pocketmine\PATH . "src/pocketmine/lang/Installer/" . $l . ".ini";
 			}else{
-				$this->lang = "ru";
-				$this->langfile = \pocketmine\PATH . "src/pocketmine/lang/Installer/rus.ini";
+				$this->lang = "en";
+				$this->langfile = \pocketmine\PATH . "src/pocketmine/lang/Installer/eng.ini";
 			}
 		}
 
-		$this->loadLang(\pocketmine\PATH . "src/pocketmine/lang/Installer/rus.ini", "rus");
-		if($this->lang !== "ru"){
+		$this->loadLang(\pocketmine\PATH . "src/pocketmine/lang/Installer/eng.ini", "eng");
+		if($this->lang !== "en"){
 			$this->loadLang($this->langfile, $this->lang);
 		}
 
@@ -88,7 +88,7 @@ class InstallerLang {
 	 * @param        $langfile
 	 * @param string $lang
 	 */
-	public function loadLang($langfile, $lang = "ru"){
+	public function loadLang($langfile, $lang = "en"){
 		$this->texts[$lang] = [];
 		$texts = explode("\n", str_replace(["\r", "\\/\\/"], ["", "//"], file_get_contents($langfile)));
 		foreach($texts as $line){
@@ -110,8 +110,8 @@ class InstallerLang {
 	 */
 	public function get($name, $search = [], $replace = []){
 		if(!isset($this->texts[$this->lang][$name])){
-			if($this->lang !== "ru" and isset($this->texts["ru"][$name])){
-				return $this->texts["ru"][$name];
+			if($this->lang !== "en" and isset($this->texts["en"][$name])){
+				return $this->texts["en"][$name];
 			}else{
 				return $name;
 			}

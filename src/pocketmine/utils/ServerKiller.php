@@ -40,8 +40,7 @@ class ServerKiller extends Thread {
 	}
 
 	public function run(){
-		$this->registerClassLoader();
-		$start = time();
+		$start = time() + 1;
 		$this->synchronized(function(){
 			if(!$this->stopped){
 			    $this->wait($this->time * 1000000);

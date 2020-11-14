@@ -30,6 +30,7 @@ use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\nbt\tag\DoubleTag;
 use pocketmine\nbt\tag\FloatTag;
 use pocketmine\nbt\tag\ListTag;
+use pocketmine\nbt\tag\ShortTag;
 use pocketmine\Player;
 use pocketmine\utils\Random;
 
@@ -105,7 +106,7 @@ class TNT extends Solid implements ElectricalAppliance {
 				new FloatTag("", 0),
 				new FloatTag("", 0)
 			]),
-			"Fuse" => new ByteTag("Fuse", 80)
+			"Fuse" => new ShortTag("Fuse", 80)
 		]), $dropItem);
 
 		$tnt->spawnToAll();

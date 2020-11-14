@@ -24,55 +24,39 @@ namespace pocketmine\math;
 use pocketmine\utils\Random;
 
 class Vector2 {
+	/** @var float */
 	public $x;
+	/** @var float */
 	public $y;
 
-	/**
-	 * Vector2 constructor.
-	 *
-	 * @param int $x
-	 * @param int $y
-	 */
-	public function __construct($x = 0, $y = 0){
+	public function __construct(float $x = 0, float $y = 0){
 		$this->x = $x;
 		$this->y = $y;
 	}
 
-	/**
-	 * @return int
-	 */
-	public function getX(){
+	public function getX() : float{
 		return $this->x;
 	}
 
-	/**
-	 * @return int
-	 */
-	public function getY(){
+	public function getY() : float{
 		return $this->y;
 	}
 
-	/**
-	 * @return int
-	 */
-	public function getFloorX(){
-		return (int) $this->x;
+	public function getFloorX() : int{
+		return (int) floor($this->x);
+	}
+
+	public function getFloorY() : int{
+		return (int) floor($this->y);
 	}
 
 	/**
-	 * @return int
-	 */
-	public function getFloorY(){
-		return (int) $this->y;
-	}
-
-	/**
-	 * @param     $x
-	 * @param int $y
+	 * @param Vector2|float $x
+	 * @param float         $y
 	 *
 	 * @return Vector2
 	 */
-	public function add($x, $y = 0){
+	public function add($x, float $y = 0){
 		if($x instanceof Vector2){
 			return $this->add($x->x, $x->y);
 		}else{
@@ -81,12 +65,12 @@ class Vector2 {
 	}
 
 	/**
-	 * @param     $x
-	 * @param int $y
+	 * @param Vector2|float $x
+	 * @param float         $y
 	 *
 	 * @return Vector2
 	 */
-	public function subtract($x, $y = 0){
+	public function subtract($x, float $y = 0){
 		if($x instanceof Vector2){
 			return $this->add(-$x->x, -$x->y);
 		}else{
@@ -98,14 +82,14 @@ class Vector2 {
 	 * @return Vector2
 	 */
 	public function ceil(){
-		return new Vector2((int) ($this->x + 1), (int) ($this->y + 1));
+		return new Vector2((int) ceil($this->x), (int) ceil($this->y));
 	}
 
 	/**
 	 * @return Vector2
 	 */
 	public function floor(){
-		return new Vector2((int) $this->x, (int) $this->y);
+		return new Vector2((int) floor($this->x), (int) floor($this->y));
 	}
 
 	/**
@@ -123,30 +107,30 @@ class Vector2 {
 	}
 
 	/**
-	 * @param $number
+	 * @param float $number
 	 *
 	 * @return Vector2
 	 */
-	public function multiply($number){
+	public function multiply(float $number){
 		return new Vector2($this->x * $number, $this->y * $number);
 	}
 
 	/**
-	 * @param $number
+	 * @param float $number
 	 *
 	 * @return Vector2
 	 */
-	public function divide($number){
+	public function divide(float $number){
 		return new Vector2($this->x / $number, $this->y / $number);
 	}
 
 	/**
 	 * @param     $x
-	 * @param int $y
+	 * @param float $y
 	 *
 	 * @return float
 	 */
-	public function distance($x, $y = 0){
+	public function distance($x, float $y = 0) : float{
 		if($x instanceof Vector2){
 			return sqrt($this->distanceSquared($x->x, $x->y));
 		}else{
@@ -156,29 +140,29 @@ class Vector2 {
 
 	/**
 	 * @param     $x
-	 * @param int $y
+	 * @param float $y
 	 *
 	 * @return number
 	 */
-	public function distanceSquared($x, $y = 0){
+	public function distanceSquared($x, float $y = 0) : float{
 		if($x instanceof Vector2){
 			return $this->distanceSquared($x->x, $x->y);
 		}else{
-			return pow($this->x - $x, 2) + pow($this->y - $y, 2);
+			return (($this->x - $x) ** 2) + (($this->y - $y) ** 2);
 		}
 	}
 
 	/**
 	 * @return float
 	 */
-	public function length(){
+	public function length() : float{
 		return sqrt($this->lengthSquared());
 	}
 
 	/**
 	 * @return int
 	 */
-	public function lengthSquared(){
+	public function lengthSquared() : float{
 		return $this->x * $this->x + $this->y * $this->y;
 	}
 
@@ -199,7 +183,7 @@ class Vector2 {
 	 *
 	 * @return int
 	 */
-	public function dot(Vector2 $v){
+	public function dot(Vector2 $v) : float{
 		return $this->x * $v->x + $this->y * $v->y;
 	}
 

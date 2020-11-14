@@ -46,23 +46,6 @@ class ChestInventory extends ContainerInventory {
 	}
 
 	/**
-	 * @param bool $withAir
-	 *
-	 * @return array|\pocketmine\item\Item[]
-	 */
-	public function getContents($withAir = false){
-		if($withAir){
-			$contents = [];
-			for($i = 0; $i < $this->getSize(); ++$i){
-				$contents[$i] = $this->getItem($i);
-			}
-
-			return $contents;
-		}
-		return parent::getContents();
-	}
-
-	/**
 	 * @param Player $who
 	 */
 	public function onOpen(Player $who){

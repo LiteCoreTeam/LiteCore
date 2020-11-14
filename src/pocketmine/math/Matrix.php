@@ -80,7 +80,7 @@ class Matrix implements \ArrayAccess {
 		for($r = 0; $r < $this->rows; ++$r){
 			$this->matrix[$r] = [];
 			for($c = 0; $c < $this->columns; ++$c){
-				$this->matrix[$r][$c] = isset($m[$r][$c]) ? $m[$r][$c] : 0;
+				$this->matrix[$r][$c] = $m[$r][$c] ?? 0;
 			}
 		}
 	}
@@ -89,14 +89,14 @@ class Matrix implements \ArrayAccess {
 	 * @return int|mixed
 	 */
 	public function getRows(){
-		return ($this->rows);
+		return $this->rows;
 	}
 
 	/**
 	 * @return int|mixed
 	 */
 	public function getColumns(){
-		return ($this->columns);
+		return $this->columns;
 	}
 
 	/**
@@ -248,18 +248,14 @@ class Matrix implements \ArrayAccess {
 	}
 
 
-	//Computation of the determinant of 2x2 and 3x3 matrices
-
-	/**
-	 * @return bool|int
-	 */
+	//Computation of the determinant of 1x1, 2x2 and 3x3 matrices
 	public function determinant(){
 		if($this->isSquare() !== true){
 			return false;
 		}
 		switch($this->rows){
 			case 1:
-				return 0;
+				return $this->matrix[0][0];
 			case 2:
 				return $this->matrix[0][0] * $this->matrix[1][1] - $this->matrix[0][1] * $this->matrix[1][0];
 			case 3:

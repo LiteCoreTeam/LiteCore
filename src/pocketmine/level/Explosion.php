@@ -105,7 +105,7 @@ class Explosion {
 							$vBlock->x = $pointerX >= $x ? $x : $x - 1;
 							$vBlock->y = $pointerY >= $y ? $y : $y - 1;
 							$vBlock->z = $pointerZ >= $z ? $z : $z - 1;
-
+							
 							$pointerX += $vector->x;
 							$pointerY += $vector->y;
 							$pointerZ += $vector->z;
@@ -113,7 +113,7 @@ class Explosion {
 							if($vBlock->y < 0 or $vBlock->y >= Level::Y_MAX){
 								break;
 							}
-							
+
 							$block = $this->level->getBlock($vBlock);
 
 							if($block->getId() !== 0){
@@ -122,6 +122,54 @@ class Explosion {
 									if(!isset($this->affectedBlocks[$index = Level::blockHash($block->x, $block->y, $block->z)])){
 										$this->affectedBlocks[$index] = $block;
 									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+
+		return true;
+	}
+
+	public function explodeC() : bool{
+		if($this->size < 0.1){
+			return false;
+		}
+
+		$vector = new Vector3(0, 0, 0);
+		$vBlock = new Vector3(0, 0, 0);
+
+		$mRays = intval($this->rays - 1);
+		for($i = 0; $i < $this->rays; ++$i){
+			for($j = 0; $j < $this->rays; ++$j){
+				for($k = 0; $k < $this->rays; ++$k){
+					if($i === 0 or $i === $mRays or $j === 0 or $j === $mRays or $k === 0 or $k === $mRays){
+						$vector->setComponents($i / $mRays * 2 - 1, $j / $mRays * 2 - 1, $k / $mRays * 2 - 1);
+						$vector->setComponents(($vector->x / ($len = $vector->length())) * $this->stepLen, ($vector->y / $len) * $this->stepLen, ($vector->z / $len) * $this->stepLen);
+						$pointerX = $this->source->x;
+						$pointerY = $this->source->y;
+						$pointerZ = $this->source->z;
+
+						for($blastForce = $this->size * (mt_rand(700, 1300) / 1000); $blastForce > 0; $blastForce -= $this->stepLen * 0.75){
+							$x = (int) $pointerX;
+							$y = (int) $pointerY;
+							$z = (int) $pointerZ;
+							$vBlock->x = $pointerX >= $x ? $x : $x - 1;
+							$vBlock->y = $pointerY >= $y ? $y : $y - 1;
+							$vBlock->z = $pointerZ >= $z ? $z : $z - 1;
+							$pointerX += $vector->x;
+							$pointerY += $vector->y;
+							$pointerZ += $vector->z;
+							if($vBlock->y < 0 or $vBlock->y >= Level::Y_MAX){
+								break;
+							}
+							$block = $this->level->getBlock($vBlock);
+
+							if(($block->getId() !== 0)and($block->getId() != 7)){
+								if(!isset($this->affectedBlocks[$index = Level::blockHash($block->x, $block->y, $block->z)])){
+									$this->affectedBlocks[$index] = $block;
 								}
 							}
 						}
@@ -215,13 +263,14 @@ class Explosion {
 					"Fuse" => new ByteTag("Fuse", mt_rand(10, 30))
 				]));
 				$tnt->spawnToAll();
-			}elseif($this->dropItem and $yieldDrops = (mt_rand(0, 100) < $yield)){
+			}elseif($yieldDrops = (mt_rand(0, 100) < $yield)){
 				foreach($block->getDrops($air) as $drop){
 					$this->level->dropItem($block->add(0.5, 0.5, 0.5), Item::get(...$drop));
 				}
 			}
 
 			$this->level->setBlockIdAt($block->x, $block->y, $block->z, 0);
+			$this->level->setBlockDataAt($block->x, $block->y, $block->z, 0);
 
 			$t = $this->level->getTile($block);
 			if($t instanceof Tile){
@@ -236,7 +285,7 @@ class Explosion {
 						}
 					}
 				}
-				
+
 				$t->close();
 			}
 
@@ -247,6 +296,9 @@ class Explosion {
 				if(!isset($this->affectedBlocks[$index = Level::blockHash($sideBlock->x, $sideBlock->y, $sideBlock->z)]) and !isset($updateBlocks[$index])){
 					$this->level->getServer()->getPluginManager()->callEvent($ev = new BlockUpdateEvent($this->level->getBlock($sideBlock)));
 					if(!$ev->isCancelled()){
+						foreach($this->level->getNearbyEntities(new AxisAlignedBB($sideBlock->x - 1, $sideBlock->y - 1, $sideBlock->z - 1, $sideBlock->x + 2, $sideBlock->y + 2, $sideBlock->z + 2)) as $entity){
+							$entity->onNearbyBlockChange();
+						}
 						$ev->getBlock()->onUpdate(Level::BLOCK_UPDATE_NORMAL);
 					}
 					$updateBlocks[$index] = true;

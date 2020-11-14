@@ -111,7 +111,7 @@ class OfflinePlayer implements IPlayer, Metadatable {
 	 * @param bool $value
 	 */
 	public function setBanned($value){
-		if($value === true){
+		if($value){
 			$this->server->getNameBans()->addBan($this->getName(), null, null, null);
 		}else{
 			$this->server->getNameBans()->remove($this->getName());
@@ -129,7 +129,7 @@ class OfflinePlayer implements IPlayer, Metadatable {
 	 * @param bool $value
 	 */
 	public function setWhitelisted($value){
-		if($value === true){
+		if($value){
 			$this->server->addWhitelist(strtolower($this->getName()));
 		}else{
 			$this->server->removeWhitelist(strtolower($this->getName()));

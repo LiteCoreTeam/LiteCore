@@ -87,7 +87,7 @@ abstract class Liquid extends Transparent {
 	 */
 	protected function getFlowDecay(Vector3 $pos){
 		if(!($pos instanceof Block)){
-			$pos = $this->getLevel()->getBlock($pos);
+			$pos = $this->level->getBlock($pos);
 		}
 
 		if($pos->getId() !== $this->getId()){
@@ -104,7 +104,7 @@ abstract class Liquid extends Transparent {
 	 */
 	protected function getEffectiveFlowDecay(Vector3 $pos){
 		if(!($pos instanceof Block)){
-			$pos = $this->getLevel()->getBlock($pos);
+			$pos = $this->level->getBlock($pos);
 		}
 
 		if($pos->getId() !== $this->getId()){
@@ -147,7 +147,7 @@ abstract class Liquid extends Transparent {
 			}elseif($j === 3){
 				++$z;
 			}
-			$sideBlock = $this->getLevel()->getBlock($this->temporalVector->setComponents($x, $y, $z));
+			$sideBlock = $this->level->getBlock($this->temporalVector->setComponents($x, $y, $z));
 			$blockDecay = $this->getEffectiveFlowDecay($sideBlock);
 
 			if($blockDecay < 0){
@@ -155,7 +155,7 @@ abstract class Liquid extends Transparent {
 					continue;
 				}
 
-				$blockDecay = $this->getEffectiveFlowDecay($this->getLevel()->getBlock($this->temporalVector->setComponents($x, $y - 1, $z)));
+				$blockDecay = $this->getEffectiveFlowDecay($this->level->getBlock($this->temporalVector->setComponents($x, $y - 1, $z)));
 
 				if($blockDecay >= 0){
 					$realDecay = $blockDecay - ($decay - 8);
@@ -176,21 +176,21 @@ abstract class Liquid extends Transparent {
 		if($this->getDamage() >= 8){
 			$falling = false;
 
-			if(!$this->getLevel()->getBlock($this->temporalVector->setComponents($this->x, $this->y, $this->z - 1))->canBeFlowedInto()){
+			if(!$this->level->getBlock($this->temporalVector->setComponents($this->x, $this->y, $this->z - 1))->canBeFlowedInto()){
 				$falling = true;
-			}elseif(!$this->getLevel()->getBlock($this->temporalVector->setComponents($this->x, $this->y, $this->z + 1))->canBeFlowedInto()){
+			}elseif(!$this->level->getBlock($this->temporalVector->setComponents($this->x, $this->y, $this->z + 1))->canBeFlowedInto()){
 				$falling = true;
-			}elseif(!$this->getLevel()->getBlock($this->temporalVector->setComponents($this->x - 1, $this->y, $this->z))->canBeFlowedInto()){
+			}elseif(!$this->level->getBlock($this->temporalVector->setComponents($this->x - 1, $this->y, $this->z))->canBeFlowedInto()){
 				$falling = true;
-			}elseif(!$this->getLevel()->getBlock($this->temporalVector->setComponents($this->x + 1, $this->y, $this->z))->canBeFlowedInto()){
+			}elseif(!$this->level->getBlock($this->temporalVector->setComponents($this->x + 1, $this->y, $this->z))->canBeFlowedInto()){
 				$falling = true;
-			}elseif(!$this->getLevel()->getBlock($this->temporalVector->setComponents($this->x, $this->y + 1, $this->z - 1))->canBeFlowedInto()){
+			}elseif(!$this->level->getBlock($this->temporalVector->setComponents($this->x, $this->y + 1, $this->z - 1))->canBeFlowedInto()){
 				$falling = true;
-			}elseif(!$this->getLevel()->getBlock($this->temporalVector->setComponents($this->x, $this->y + 1, $this->z + 1))->canBeFlowedInto()){
+			}elseif(!$this->level->getBlock($this->temporalVector->setComponents($this->x, $this->y + 1, $this->z + 1))->canBeFlowedInto()){
 				$falling = true;
-			}elseif(!$this->getLevel()->getBlock($this->temporalVector->setComponents($this->x - 1, $this->y + 1, $this->z))->canBeFlowedInto()){
+			}elseif(!$this->level->getBlock($this->temporalVector->setComponents($this->x - 1, $this->y + 1, $this->z))->canBeFlowedInto()){
 				$falling = true;
-			}elseif(!$this->getLevel()->getBlock($this->temporalVector->setComponents($this->x + 1, $this->y + 1, $this->z))->canBeFlowedInto()){
+			}elseif(!$this->level->getBlock($this->temporalVector->setComponents($this->x + 1, $this->y + 1, $this->z))->canBeFlowedInto()){
 				$falling = true;
 			}
 
@@ -232,7 +232,7 @@ abstract class Liquid extends Transparent {
 	public function onUpdate($type){
 		if($type === Level::BLOCK_UPDATE_NORMAL){
 			$this->checkForHarden();
-			$this->getLevel()->scheduleUpdate($this, $this->tickRate());
+			$this->level->scheduleDelayedBlockUpdate($this, $this->tickRate());
 		}elseif($type === Level::BLOCK_UPDATE_SCHEDULED){
 			if($this->temporalVector === null){
 				$this->temporalVector = new Vector3(0, 0, 0);
@@ -282,13 +282,13 @@ abstract class Liquid extends Transparent {
 				if($k !== $decay){
 					$decay = $k;
 					if($decay < 0){
-						$this->getLevel()->setBlock($this, new Air(), true, true);
+						$this->level->setBlock($this, new Air(), true, true);
 					}else{
-						$this->getLevel()->setBlock($this, Block::get($this->id, $decay), true, true);
-						$this->getLevel()->scheduleUpdate($this, $this->tickRate());
+						$this->level->setBlock($this, Block::get($this->id, $decay), true, true);
+						$this->level->scheduleDelayedBlockUpdate($this, $this->tickRate());
 					}
 				}elseif($flag){
-					//$this->getLevel()->scheduleUpdate($this, $this->tickRate());
+					//$this->level->scheduleUpdate($this, $this->tickRate());
 					//$this->updateFlow();
 				}
 			}else{
@@ -298,12 +298,10 @@ abstract class Liquid extends Transparent {
 			$bottomBlock = $this->level->getBlock($this->temporalVector->setComponents($this->x, $this->y - 1, $this->z));
 
 			if($this instanceof Lava and $bottomBlock instanceof Water){
-				$this->getLevel()->setBlock($bottomBlock, Block::get(Block::STONE), true, true);
-
+				$this->level->setBlock($bottomBlock, Block::get(Block::STONE), true, true);
 			}elseif($bottomBlock->canBeFlowedInto() or ($bottomBlock instanceof Liquid and ($bottomBlock->getDamage() & 0x07) !== 0)){
-				$this->getLevel()->setBlock($bottomBlock, Block::get($this->id, $decay | 0x08), true, false);
-				$this->getLevel()->scheduleUpdate($bottomBlock, $this->tickRate());
-
+				$this->level->setBlock($bottomBlock, Block::get($this->id, $decay | 0x08), true, false);
+				$this->level->scheduleDelayedBlockUpdate($bottomBlock, $this->tickRate());
 			}elseif($decay >= 0 and ($decay === 0 or !$bottomBlock->canBeFlowedInto())){
 				$flags = $this->getOptimalFlowDirections();
 
@@ -349,11 +347,11 @@ abstract class Liquid extends Transparent {
 			if($block instanceof Lava){
 				$this->triggerLavaMixEffects($block);
 			}elseif($block->getId() > 0){
-				$this->getLevel()->useBreakOn($block);
+				$this->level->useBreakOn($block);
 			}
 
-			$this->getLevel()->setBlock($block, Block::get($this->getId(), $newFlowDecay), true, true);
-			$this->getLevel()->scheduleUpdate($block, $this->tickRate());
+			$this->level->setBlock($block, Block::get($this->getId(), $newFlowDecay), true, true);
+			$this->level->scheduleDelayedBlockUpdate($block, $this->tickRate());
 		}
 	}
 
@@ -387,13 +385,13 @@ abstract class Liquid extends Transparent {
 				}elseif($j === 3){
 					++$z;
 				}
-				$blockSide = $this->getLevel()->getBlock($this->temporalVector->setComponents($x, $y, $z));
+				$blockSide = $this->level->getBlock($this->temporalVector->setComponents($x, $y, $z));
 
 				if(!$blockSide->canBeFlowedInto() and !($blockSide instanceof Liquid)){
 					continue;
 				}elseif($blockSide instanceof Liquid and $blockSide->getDamage() === 0){
 					continue;
-				}elseif($this->getLevel()->getBlock($this->temporalVector->setComponents($x, $y - 1, $z))->canBeFlowedInto()){
+				}elseif($this->level->getBlock($this->temporalVector->setComponents($x, $y - 1, $z))->canBeFlowedInto()){
 					return $accumulatedCost;
 				}
 
@@ -443,13 +441,13 @@ abstract class Liquid extends Transparent {
 			}elseif($j === 3){
 				++$z;
 			}
-			$block = $this->getLevel()->getBlock($this->temporalVector->setComponents($x, $y, $z));
+			$block = $this->level->getBlock($this->temporalVector->setComponents($x, $y, $z));
 
 			if(!$block->canBeFlowedInto() and !($block instanceof Liquid)){
 				continue;
 			}elseif($block instanceof Liquid and $block->getDamage() === 0){
 				continue;
-			}elseif($this->getLevel()->getBlock($this->temporalVector->setComponents($x, $y - 1, $z))->canBeFlowedInto()){
+			}elseif($this->level->getBlock($this->temporalVector->setComponents($x, $y - 1, $z))->canBeFlowedInto()){
 				$this->flowCost[$j] = 0;
 			}else{
 				$this->flowCost[$j] = $this->calculateFlowCost($block, 1, $j);
@@ -500,9 +498,9 @@ abstract class Liquid extends Transparent {
 
 			if($colliding){
 				if($this->getDamage() === 0){
-					$this->getLevel()->setBlock($this, Block::get(Item::OBSIDIAN), true, true);
+					$this->level->setBlock($this, Block::get(Item::OBSIDIAN), true, true);
 				}elseif($this->getDamage() <= 4){
-					$this->getLevel()->setBlock($this, Block::get(Item::COBBLESTONE), true, true);
+					$this->level->setBlock($this, Block::get(Item::COBBLESTONE), true, true);
 				}
 				$this->triggerLavaMixEffects($this);
 			}
@@ -531,10 +529,10 @@ abstract class Liquid extends Transparent {
 	 * @param Vector3 $pos
 	 */
 	protected function triggerLavaMixEffects(Vector3 $pos){
-		$this->getLevel()->addSound(new FizzSound($pos->add(0.5, 0.5, 0.5), 2.5 + mt_rand(0, 1000) / 1000 * 0.8));
+		$this->level->addSound(new FizzSound($pos->add(0.5, 0.5, 0.5), 2.5 + mt_rand(0, 1000) / 1000 * 0.8));
 
 		for($i = 0; $i < 8; ++$i){
-			$this->getLevel()->addParticle(new SmokeParticle($pos->add(mt_rand(0, 80) / 100, 0.5, mt_rand(0, 80) / 100)));
+			$this->level->addParticle(new SmokeParticle($pos->add(mt_rand(0, 80) / 100, 0.5, mt_rand(0, 80) / 100)));
 		}
 	}
 }

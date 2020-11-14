@@ -40,7 +40,7 @@ class Position extends Vector3 {
 		$this->x = $x;
 		$this->y = $y;
 		$this->z = $z;
-		$this->level = $level;
+		$this->setLevel($level);
 	}
 
 	/**
@@ -109,11 +109,15 @@ class Position extends Vector3 {
 
 	/**
 	 * Checks if this object has a valid reference to a loaded Level
-	 *
-	 * @return bool
 	 */
-	public function isValid(){
-		return $this->getLevel() instanceof Level;
+	public function isValid() : bool{
+		if($this->level !== null and $this->level->isClosed()){
+			$this->level = null;
+
+			return false;
+		}
+
+		return $this->level !== null;
 	}
 
 	/**
@@ -127,9 +131,7 @@ class Position extends Vector3 {
 	 * @throws LevelException
 	 */
 	public function getSide($side, $step = 1){
-		if(!$this->isValid()){
-			throw new LevelException("Undefined Level reference");
-		}
+		assert($this->isValid());
 
 		return Position::fromObject(parent::getSide($side, $step), $this->level);
 	}

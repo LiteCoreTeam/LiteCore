@@ -24,6 +24,7 @@ namespace pocketmine\block;
 use pocketmine\item\Item;
 use pocketmine\item\Tool;
 use pocketmine\math\AxisAlignedBB;
+use pocketmine\math\Vector3;
 use pocketmine\Player;
 
 class Slab extends Transparent {
@@ -120,6 +121,22 @@ class Slab extends Transparent {
 		}
 	}
 
+	public function canBePlacedAt(Block $blockReplace, Vector3 $clickVector, int $face, bool $isClickedBlock) : bool{
+		if(parent::canBePlacedAt($blockReplace, $clickVector, $face, $isClickedBlock)){
+			return true;
+		}
+
+		if($blockReplace->getId() === $this->getId() and $blockReplace->getVariant() === $this->getVariant()){
+			if(($blockReplace->getDamage() & 0x08) !== 0){ //Trying to combine with top slab
+				return $clickVector->y <= 0.5 or (!$isClickedBlock and $face === Vector3::SIDE_UP);
+			}else{
+				return $clickVector->y >= 0.5 or (!$isClickedBlock and $face === Vector3::SIDE_DOWN);
+			}
+		}
+
+		return false;
+	}
+
 	/**
 	 * @param Item        $item
 	 * @param Block       $block
@@ -179,6 +196,10 @@ class Slab extends Transparent {
 		$this->getLevel()->setBlock($block, $this, true, true);
 
 		return true;
+	}
+
+	public function getVariantBitmask() : int{
+		return 0x07;
 	}
 
 	/**

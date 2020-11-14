@@ -30,7 +30,6 @@ class DropItemPacket extends DataPacket {
 	const NETWORK_ID = ProtocolInfo::DROP_ITEM_PACKET;
 
 	public $type;
-
 	/** @var Item */
 	public $item;
 

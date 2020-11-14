@@ -26,15 +26,9 @@ namespace pocketmine\utils;
  * Manages PocketMine-MP version strings, and compares them
  */
 class VersionString {
-	/** @var int */
-	private $generation;
-	/** @var int */
 	private $major;
-	/** @var int */
-	private $minor;
-	/** @var int */
 	private $build;
-	/** @var bool */
+	private $minor;
 	private $development = false;
 
 	/**

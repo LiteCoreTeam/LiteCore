@@ -32,7 +32,9 @@ use pocketmine\nbt\tag\StringTag;
 use pocketmine\tile\Bed as TileBed;
 use pocketmine\tile\Tile;
 use pocketmine\Player;
+use pocketmine\math\Vector3;
 use pocketmine\utils\TextFormat;
+use pocketmine\event\TranslationContainer;
 
 class Bed extends Transparent {
 
@@ -104,7 +106,7 @@ class Bed extends Transparent {
 		$isNight = ($time >= Level::TIME_NIGHT and $time < Level::TIME_SUNRISE);
 
 		if($player instanceof Player and !$isNight){
-			$player->sendMessage(TextFormat::GRAY . "You can only sleep at night"); //TODO; Translate it
+			$player->sendMessage(new TranslationContainer(TextFormat::GRAY . "%tile.bed.noSleep"));
 			return true;
 		}
 
@@ -125,7 +127,7 @@ class Bed extends Transparent {
 				$b = $blockWest;
 			}else{
 				if($player instanceof Player){
-					$player->sendMessage(TextFormat::GRAY . "This bed is incomplete"); //TODO; Translate it
+					$player->sendMessage(new TranslationContainer(TextFormat::GRAY . "%tile.bed.incomplete"));
 				}
 
 				return true;
@@ -133,7 +135,7 @@ class Bed extends Transparent {
 		}
 
 		if($player instanceof Player and $player->sleepOn($b) === false){
-			$player->sendMessage(TextFormat::GRAY . "This bed is occupied"); //TODO; Translate it
+			$player->sendMessage(new TranslationContainer(TextFormat::GRAY . "%tile.bed.occupied"));
 		}
 
 		return true;
@@ -152,7 +154,7 @@ class Bed extends Transparent {
 	 * @return bool
 	 */
 	public function place(Item $item, Block $block, Block $target, $face, $fx, $fy, $fz, Player $player = null){
-		$down = $this->getSide(0);
+		$down = $this->getSide(Vector3::SIDE_DOWN);
 		if($down->isTransparent() === false){
 			$faces = [
 				0 => 3,
@@ -162,7 +164,7 @@ class Bed extends Transparent {
 			];
 			$d = $player instanceof Player ? $player->getDirection() : 0;
 			$next = $this->getSide($faces[(($d + 3) % 4)]);
-			$downNext = $this->getSide(0);
+			$downNext = $next->getSide(Vector3::SIDE_DOWN);
 			if($next->canBeReplaced() === true and $downNext->isTransparent() === false){
 				$meta = (($d + 3) % 4) & 0x03;
 				$this->getLevel()->setBlock($block, Block::get($this->id, $meta), true, true);
@@ -242,7 +244,7 @@ class Bed extends Transparent {
 	/**
 	 * @return int
 	 */
-	public function getVariantBitmask(){
+	public function getVariantBitmask() : int{
 		return 0x08;
 	}
 

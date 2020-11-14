@@ -93,7 +93,7 @@ class ThreadManager extends \Volatile {
 				$logger->debug("Could not stop " . $thread->getThreadName() . " thread: " . $e->getMessage());
 			}
 		}
-		
+
 		return $erroredThreads;
 	}
 }

@@ -21,12 +21,17 @@
 
 namespace raklib\protocol;
 
-#include <rules/RakLibPacket.h>
+#include <rules/BinaryIO.h>
 
 class Datagram extends Packet{
 	const BITFLAG_VALID = 0x80;
 	const BITFLAG_ACK = 0x40;
 	const BITFLAG_NAK = 0x20; // hasBAndAS for ACKs
+
+	/*
+	 * These flags can be set on regular datagrams, but they are useless as per the public version of RakNet
+	 * (the receiving client will not use them or pay any attention to them).
+	 */
 	const BITFLAG_PACKET_PAIR = 0x10;
 	const BITFLAG_CONTINUOUS_SEND = 0x08;
 	const BITFLAG_NEEDS_B_AND_AS = 0x04;
@@ -34,10 +39,11 @@ class Datagram extends Packet{
 	/** @var int */
 	public $headerFlags = 0;
 
-	/** @var EncapsulatedPacket[] */
+	/** @var (EncapsulatedPacket|string)[] */
 	public $packets = [];
 
-	public $seqNumber;
+	/** @var int|null */
+	public $seqNumber = null;
 
 	protected function encodeHeader(){
 		$this->putByte(self::BITFLAG_VALID | $this->headerFlags);
@@ -46,7 +52,7 @@ class Datagram extends Packet{
 	protected function encodePayload(){
 		$this->putLTriad($this->seqNumber);
 		foreach($this->packets as $packet){
-			$this->put($packet instanceof EncapsulatedPacket ? $packet->toBinary() : (string) $packet);
+			$this->put($packet instanceof EncapsulatedPacket ? $packet->toBinary() : $packet);
 		}
 	}
 

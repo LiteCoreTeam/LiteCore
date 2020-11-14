@@ -24,16 +24,17 @@ namespace raklib\server;
 class UDPServerSocket{
 	protected $socket;
 
-	public function __construct(\ThreadedLogger $logger, $port = 19132, $interface = "0.0.0.0"){
+	public function __construct($port = 19132, $interface = "0.0.0.0"){
 		$this->socket = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
-		//socket_set_option($this->socket, SOL_SOCKET, SO_BROADCAST, 1); //Allow sending broadcast messages
+
 		if(@socket_bind($this->socket, $interface, $port) === true){
-			socket_set_option($this->socket, SOL_SOCKET, SO_REUSEADDR, 0);
 			$this->setSendBuffer(1024 * 1024 * 8)->setRecvBuffer(1024 * 1024 * 8);
 		}else{
-			$logger->critical("**** FAILED TO BIND TO " . $interface . ":" . $port . "!");
-			$logger->critical("Perhaps a server is already running on that port?");
-			exit(1);
+			$error = socket_last_error($this->socket);
+			if($error === SOCKET_EADDRINUSE){ //platform error messages aren't consistent
+				throw new \RuntimeException("Failed to bind socket: Something else is already running on $interface:$port");
+			}
+			throw new \RuntimeException("Failed to bind to " . $port . ": " . trim(socket_strerror(socket_last_error($this->socket))));
 		}
 		socket_set_nonblock($this->socket);
 	}
@@ -54,7 +55,11 @@ class UDPServerSocket{
 	 * @return int|bool
 	 */
 	public function readPacket(&$buffer, &$source, &$port){
-		return socket_recvfrom($this->socket, $buffer, 65535, 0, $source, $port);
+		return @socket_recvfrom($this->socket, $buffer, 65535, 0, $source, $port);
+	}
+
+	public function getLastError() : int{
+		return socket_last_error($this->socket);
 	}
 
 	/**

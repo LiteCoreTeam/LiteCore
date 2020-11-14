@@ -57,8 +57,6 @@ class Effect {
 	const SATURATION = 23;
     const LEVITATION = 24;
 
-	const MAX_DURATION = 2147483648;
-
 	/** @var Effect[] */
 	protected static $effects;
 
@@ -168,12 +166,17 @@ class Effect {
 	}
 
 	/**
-	 * @param $ticks
+	 * Sets the number of ticks remaining until the effect expires.
+	 *
+	 * @throws \InvalidArgumentException
 	 *
 	 * @return $this
 	 */
-	public function setDuration($ticks){
-		$this->duration = (($ticks > self::MAX_DURATION) ? self::MAX_DURATION : $ticks);
+	public function setDuration(int $ticks){
+		if($ticks < 0 or $ticks > INT32_MAX){
+			throw new \InvalidArgumentException("Effect duration must be in range 0 - " . INT32_MAX . ", got $ticks");
+		}
+		$this->duration = $ticks;
 		return $this;
 	}
 
@@ -211,7 +214,7 @@ class Effect {
 	 * @return $this
 	 */
 	public function setAmplifier(int $amplifier){
-		$this->amplifier = $amplifier & 0xff;
+		$this->amplifier = ($amplifier & 0xff);
 		return $this;
 	}
 
@@ -261,17 +264,12 @@ class Effect {
 				}
 				return true;
 			case Effect::HUNGER:
-				if($this->amplifier < 0){ // prevents hacking with amplifier -1
-					return false;
-				}
-				if(($interval = 20) > 0){
-					return ($this->duration % $interval) === 0;
-				}
 				return true;
 			case Effect::HEALING:
 			case Effect::HARMING:
 				return true;
 			case Effect::SATURATION:
+			    //If forced to last longer than 1 tick, these apply every tick.
 				if(($interval = (20 >> $this->amplifier)) > 0){
 					return ($this->duration % $interval) === 0;
 				}
@@ -305,7 +303,7 @@ class Effect {
 				break;
 			case Effect::HUNGER:
 				if($entity instanceof Human){
-					$entity->exhaust(0.5 * $this->amplifier, PlayerExhaustEvent::CAUSE_POTION);
+					$entity->exhaust(0.025 * $this->amplifier, PlayerExhaustEvent::CAUSE_POTION);
 				}
 				break;
 			case Effect::HEALING:
@@ -392,7 +390,7 @@ class Effect {
 					$speed = $attr->getValue();
 				}
 				$speed *= (1 - (0.15 * $this->amplifier + 1));
-				$attr->setValue($speed);
+				$attr->setValue($speed, true);
 			}
 		}
 

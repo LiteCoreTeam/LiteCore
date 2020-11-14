@@ -22,6 +22,7 @@
 namespace pocketmine\level\generator\populator;
 
 use pocketmine\block\Block;
+use pocketmine\block\Liquid;
 use pocketmine\level\ChunkManager;
 use pocketmine\level\generator\biome\Biome;
 use pocketmine\level\Level;
@@ -65,6 +66,9 @@ class GroundCover extends Populator {
 						$b = $cover[$startY - $y];
 						if($column{$y} === "\x00" and $b->isSolid()){
 							break;
+						}
+						if($b->canBeFlowedInto() and Block::get(ord($column{$y})) instanceof Liquid){
+							continue;
 						}
 						if($y <= $waterHeight and $b->getId() == Block::GRASS and $chunk->getBlockId($x, $y + 1, $z) == Block::STILL_WATER){
 							$b = Block::get(Block::DIRT);

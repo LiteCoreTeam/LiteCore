@@ -28,7 +28,7 @@ use pocketmine\nbt\tag\ListTag as TagEnum;
 
 class ListTag extends NamedTag implements \ArrayAccess, \Countable {
 
-	private $tagType;
+	private $tagType = NBT::TAG_End;
 
 	/**
 	 * ListTag constructor.
@@ -146,14 +146,14 @@ class ListTag extends NamedTag implements \ArrayAccess, \Countable {
 	/**
 	 * @param $type
 	 */
-	public function setTagType($type){
+	public function setTagType(int $type){
 		$this->tagType = $type;
 	}
 
 	/**
 	 * @return mixed
 	 */
-	public function getTagType(){
+	public function getTagType() : int{
 		return $this->tagType;
 	}
 
@@ -235,11 +235,11 @@ class ListTag extends NamedTag implements \ArrayAccess, \Countable {
 	 * @return bool
 	 */
 	public function write(NBT $nbt, bool $network = false){
-		if(!isset($this->tagType)){
-			$id = null;
+		if($this->tagType === NBT::TAG_End){ //previously empty list, try detecting type from tag children
+			$id = NBT::TAG_End;
 			foreach($this as $tag){
-				if($tag instanceof Tag){
-					if(!isset($id)){
+				if($tag instanceof Tag and !($tag instanceof EndTag)){
+					if($id === NBT::TAG_End){
 						$id = $tag->getType();
 					}elseif($id !== $tag->getType()){
 						return false;

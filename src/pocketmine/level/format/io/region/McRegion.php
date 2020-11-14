@@ -30,6 +30,7 @@ use pocketmine\level\format\io\ChunkUtils;
 use pocketmine\level\format\SubChunk;
 use pocketmine\level\generator\Generator;
 use pocketmine\level\Level;
+use pocketmine\level\LevelException;
 use pocketmine\nbt\NBT;
 use pocketmine\nbt\tag\{
 	ByteArrayTag, ByteTag, CompoundTag, IntArrayTag, IntTag, ListTag, LongTag, StringTag
@@ -90,10 +91,10 @@ class McRegion extends BaseLevelProvider {
 
 		$entities = [];
 
-		foreach($chunk->getSavableEntities() as $entity){
-			$entity->saveNBT();
-			$entities[] = $entity->namedtag;
-		}
+        foreach($chunk->getSavableEntities() as $entity){
+            $entity->saveNBT();
+            $entities[] = $entity->namedtag;
+        }
 
 		$nbt->Entities = new ListTag("Entities", $entities);
 		$nbt->Entities->setTagType(NBT::TAG_Compound);
@@ -228,12 +229,9 @@ class McRegion extends BaseLevelProvider {
 		$isValid = (file_exists($path . "/level.dat") and is_dir($path . "/region/"));
 
 		if($isValid){
-			$files = glob($path . "/region/*.mc*");
-			if(empty($files)){ //possible glob() issue on some systems
-				$files = array_filter(scandir($path . "/region/"), function($file){
-					return substr($file, strrpos($file, ".") + 1, 2) === "mc"; //region file
-				});
-			}
+			$files = array_filter(scandir($path . "/region/"), function($file){
+				return substr($file, strrpos($file, ".") + 1, 2) === "mc"; //region file
+			});
 
 			foreach($files as $f){
 				if(substr($f, strrpos($f, ".") + 1) !== static::REGION_FILE_EXTENSION){
@@ -267,9 +265,9 @@ class McRegion extends BaseLevelProvider {
 			"initialized" => new ByteTag("initialized", 1),
 			"GameType" => new IntTag("GameType", 0),
 			"generatorVersion" => new IntTag("generatorVersion", 1), //2 in MCPE
-			"SpawnX" => new IntTag("SpawnX", 128),
+			"SpawnX" => new IntTag("SpawnX", 256),
 			"SpawnY" => new IntTag("SpawnY", 70),
-			"SpawnZ" => new IntTag("SpawnZ", 128),
+			"SpawnZ" => new IntTag("SpawnZ", 256),
 			"version" => new IntTag("version", 19133),
 			"DayTime" => new IntTag("DayTime", 0),
 			"LastPlayed" => new LongTag("LastPlayed", microtime(true) * 1000),
@@ -353,15 +351,7 @@ class McRegion extends BaseLevelProvider {
 			if(!$chunk->isGenerated()){
 				throw new \InvalidStateException("Cannot save un-generated chunk");
 			}
-
-			$region = $this->getRegion($chunkX >> 5, $chunkZ >> 5);
-
-			if ($region == null)
-			{
-				throw new \InvalidStateException("Nullable region returned");
-			}
-
-			$region->writeChunk($chunk);
+			$this->getRegion($chunkX >> 5, $chunkZ >> 5)->writeChunk($chunk);
 
 			return true;
 		}
@@ -389,11 +379,12 @@ class McRegion extends BaseLevelProvider {
 		}
 		$regionX = $regionZ = null;
 		self::getRegionIndex($chunkX, $chunkZ, $regionX, $regionZ);
-		/** @noinspection PhpStrictTypeCheckingInspection */
+		assert(is_int($regionX) and is_int($regionZ));
+
 		$this->loadRegion($regionX, $regionZ);
 		$this->level->timings->syncChunkLoadDataTimer->startTiming();
-		/** @noinspection PhpStrictTypeCheckingInspection */
-		$chunk = $this->getRegion($regionX, $regionZ)->readChunk($chunkX - $regionX * 32, $chunkZ - $regionZ * 32);
+
+        $chunk = $this->getRegion($regionX, $regionZ)->readChunk($chunkX & 0x1f, $chunkZ & 0x1f);
 		if($chunk === null and $create){
 			$chunk = $this->getEmptyChunk($chunkX, $chunkZ);
 		}
@@ -449,7 +440,7 @@ class McRegion extends BaseLevelProvider {
 	 */
 	public function isChunkGenerated(int $chunkX, int $chunkZ) : bool{
 		if(($region = $this->getRegion($chunkX >> 5, $chunkZ >> 5)) !== null){
-			return $region->chunkExists($chunkX - $region->getX() * 32, $chunkZ - $region->getZ() * 32) and $this->getChunk($chunkX - $region->getX() * 32, $chunkZ - $region->getZ() * 32, true)->isGenerated();
+            return $region->chunkExists($chunkX & 0x1f, $chunkZ & 0x1f) and $this->getChunk($chunkX & 0x1f, $chunkZ & 0x1f, true)->isGenerated();
 		}
 
 		return false;
@@ -525,6 +516,22 @@ class McRegion extends BaseLevelProvider {
 	protected function loadRegion(int $x, int $z){
 		if(!isset($this->regions[$index = Level::chunkHash($x, $z)])){
 			$this->regions[$index] = new RegionLoader($this, $x, $z, static::REGION_FILE_EXTENSION);
+			try{
+				$this->regions[$index]->open();
+			}catch(CorruptedRegionException $e){
+				$logger = $this->level->getServer()->getLogger();
+				$logger->error("Corrupted region file detected: " . $e->getMessage());
+
+				$this->regions[$index]->close(false); //Do not write anything to the file
+
+				$path = $this->regions[$index]->getFilePath();
+				$backupPath = $path . ".bak." . time();
+				rename($path, $backupPath);
+				$logger->error("Corrupted region file has been backed up to " . $backupPath);
+
+				$this->regions[$index] = new RegionLoader($this, $x, $z, static::REGION_FILE_EXTENSION);
+				$this->regions[$index]->open(); //this will create a new empty region to replace the corrupted one
+			}
 		}
 	}
 

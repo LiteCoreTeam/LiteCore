@@ -26,7 +26,7 @@ use pocketmine\network\mcpe\protocol\ContainerClosePacket;
 use pocketmine\network\mcpe\protocol\ContainerOpenPacket;
 use pocketmine\Player;
 
-abstract class ContainerInventory extends BaseInventory {
+abstract class ContainerInventory extends BaseInventory{
 	/**
 	 * @param Player $who
 	 */
@@ -36,12 +36,16 @@ abstract class ContainerInventory extends BaseInventory {
 		$pk->windowid = $who->getWindowId($this);
 		$pk->type = $this->getType()->getNetworkType();
 		$holder = $this->getHolder();
-		if($holder instanceof Vector3){
-			$pk->x = $holder->getX();
-			$pk->y = $holder->getY();
-			$pk->z = $holder->getZ();
+
+		$pk->x = $pk->y = $pk->z = 0;
+		$pk->entityId = -1;
+
+		if($holder instanceof Entity){
+			$pk->entityId = $holder->getId();
 		}else{
-			$pk->x = $pk->y = $pk->z = 0;
+			$pk->x = $holder->getFloorX();
+			$pk->y = $holder->getFloorY();
+			$pk->z = $holder->getFloorZ();
 		}
 
 		$who->dataPacket($pk);

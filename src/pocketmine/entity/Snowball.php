@@ -25,6 +25,8 @@ use pocketmine\level\Level;
 use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\network\mcpe\protocol\AddEntityPacket;
 use pocketmine\Player;
+use pocketmine\event\entity\ProjectileHitEvent;
+use pocketmine\level\particle\SnowballPoofParticle;
 
 class Snowball extends Projectile {
 	const NETWORK_ID = 81;
@@ -45,6 +47,13 @@ class Snowball extends Projectile {
 	 */
 	public function __construct(Level $level, CompoundTag $nbt, Entity $shootingEntity = null){
 		parent::__construct($level, $nbt, $shootingEntity);
+	}
+
+	protected function onHit(ProjectileHitEvent $event) : void{
+		for($i = 0; $i < 6; ++$i){
+			$this->level->addParticle(new SnowballPoofParticle($this));
+		}
+		parent::onHit($event);
 	}
 
 	/**

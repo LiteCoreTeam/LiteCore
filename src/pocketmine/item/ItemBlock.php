@@ -29,7 +29,7 @@ use pocketmine\block\Block;
 /**
  * Class used for Items that can be Blocks
  */
-class ItemBlock extends Item {
+class ItemBlock extends Item{
 	/**
 	 * ItemBlock constructor.
 	 *
@@ -42,16 +42,9 @@ class ItemBlock extends Item {
 		parent::__construct($block->getId(), $block->getDamage(), $count, $block->getName());
 	}
 
-	/**
-	 * @param int $meta
-	 */
 	public function setDamage(int $meta){
-		$this->meta = $meta !== -1 ? $meta & 0xf : -1;
-		$this->block->setDamage($this->meta !== -1 ? $this->meta : 0);
-	}
-
-	public function __clone(){
-		$this->block = clone $this->block;
+		$this->block->setDamage($meta !== -1 ? $meta & 0xf : 0);
+		return parent::setDamage($meta);
 	}
 
 	/**

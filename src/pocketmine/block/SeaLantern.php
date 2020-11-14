@@ -24,7 +24,7 @@ namespace pocketmine\block;
 use pocketmine\item\Item;
 use pocketmine\item\enchantment\Enchantment;
 
-class SeaLantern extends Solid {
+class SeaLantern extends Transparent{
 
 	protected $id = self::SEA_LANTERN;
 

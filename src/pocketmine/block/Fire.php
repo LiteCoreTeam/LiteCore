@@ -154,8 +154,8 @@ class Fire extends Flowable {
 				}else{
 					$meta = $this->meta;
 
-					if($meta < 15){
-						$this->meta = $meta + mt_rand(0, 3);
+					if($meta < 15 and mt_rand(0, 2) === 0){
+						$this->meta++;
 						$this->getLevel()->setBlock($this, $this, true);
 					}
 

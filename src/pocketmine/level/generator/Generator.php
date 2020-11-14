@@ -99,7 +99,7 @@ abstract class Generator {
 			throw new \InvalidArgumentException("samplingRate cannot be 0");
 		}
 		if($xSize % $samplingRate !== 0){
-			throw new \InvalidArgumentCountException("xSize % samplingRate must return 0");
+			throw new \InvalidArgumentException("xSize % samplingRate must return 0");
 		}
 
 		$noiseArray = new \SplFixedArray($xSize + 1);
@@ -134,10 +134,10 @@ abstract class Generator {
 			throw new \InvalidArgumentException("samplingRate cannot be 0");
 		}
 		if($xSize % $samplingRate !== 0){
-			throw new \InvalidArgumentCountException("xSize % samplingRate must return 0");
+			throw new \InvalidArgumentException("xSize % samplingRate must return 0");
 		}
 		if($zSize % $samplingRate !== 0){
-			throw new \InvalidArgumentCountException("zSize % samplingRate must return 0");
+			throw new \InvalidArgumentException("zSize % samplingRate must return 0");
 		}
 
 		$noiseArray = new \SplFixedArray($xSize + 1);
@@ -195,13 +195,13 @@ abstract class Generator {
 			throw new \InvalidArgumentException("ySamplingRate cannot be 0");
 		}
 		if($xSize % $xSamplingRate !== 0){
-			throw new \InvalidArgumentCountException("xSize % xSamplingRate must return 0");
+			throw new \InvalidArgumentException("xSize % xSamplingRate must return 0");
 		}
 		if($zSize % $zSamplingRate !== 0){
-			throw new \InvalidArgumentCountException("zSize % zSamplingRate must return 0");
+			throw new \InvalidArgumentException("zSize % zSamplingRate must return 0");
 		}
 		if($ySize % $ySamplingRate !== 0){
-			throw new \InvalidArgumentCountException("ySize % ySamplingRate must return 0");
+			throw new \InvalidArgumentException("ySize % ySamplingRate must return 0");
 		}
 
 		$noiseArray = array_fill(0, $xSize + 1, array_fill(0, $zSize + 1, []));

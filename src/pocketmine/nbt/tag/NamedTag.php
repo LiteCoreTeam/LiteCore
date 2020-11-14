@@ -22,7 +22,9 @@
 namespace pocketmine\nbt\tag;
 
 
-abstract class NamedTag extends Tag {
+use JsonSerializable;
+
+abstract class NamedTag extends Tag implements JsonSerializable{
 
 	protected $__name;
 
@@ -49,5 +51,37 @@ abstract class NamedTag extends Tag {
 	 */
 	public function setName($name){
 		$this->__name = $name;
+	}
+
+	public function jsonSerialize(){
+        return [
+            "tag" => get_class($this),
+            "name" => $this->getName(),
+            "value" => $this->getValue()
+        ];
+    }
+
+    /**
+	 * Compares this NamedTag to the given NamedTag and determines whether or not they are equal, based on name, type
+	 * and value.
+	 *
+	 * @param NamedTag $that
+	 *
+	 * @return bool
+	 */
+	public function equals(NamedTag $that) : bool{
+		return $this->__name === $that->__name and $this->equalsValue($that);
+	}
+
+	/**
+	 * Compares this NamedTag to the given NamedTag and determines whether they are equal, based on type and value only.
+	 * Complex tag types should override this to provide proper value comparison.
+	 *
+	 * @param NamedTag $that
+	 *
+	 * @return bool
+	 */
+	protected function equalsValue(NamedTag $that) : bool{
+		return $that instanceof $this and $this->getValue() === $that->getValue();
 	}
 }

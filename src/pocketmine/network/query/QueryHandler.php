@@ -26,11 +26,12 @@
 
 namespace pocketmine\network\query;
 
+use pocketmine\network\AdvancedSourceInterface;
 use pocketmine\Server;
 use pocketmine\utils\Binary;
 
 class QueryHandler {
-	private $server, $lastToken, $token, $longData, $shortData, $timeout;
+	private $server, $lastToken, $token;
 
 	const HANDSHAKE = 9;
 	const STATISTICS = 0;
@@ -55,17 +56,26 @@ class QueryHandler {
 
 		$this->regenerateToken();
 		$this->lastToken = $this->token;
-		$this->regenerateInfo();
 		$this->server->getLogger()->info($this->server->getLanguage()->translateString("pocketmine.server.query.running", [$addr, $port]));
 	}
 
-	public function regenerateInfo(){
-		$ev = $this->server->getQueryInformation();
-		$this->longData = $ev->getLongQuery();
-		$this->shortData = $ev->getShortQuery();
-		$this->timeout = microtime(true) + $ev->getTimeout();
+	private function debug(string $message) : void{
+		//TODO: replace this with a proper prefixed logger
+		$this->server->getLogger()->debug("[Query] $message");
 	}
 
+	/**
+	 * @deprecated
+	 *
+	 * @return void
+	 */
+	public function regenerateInfo(){
+
+	}
+
+	/**
+	 * @return void
+	 */
 	public function regenerateToken(){
 		$this->lastToken = $this->token;
 		$this->token = random_bytes(16);
@@ -82,11 +92,9 @@ class QueryHandler {
 	}
 
 	/**
-	 * @param $address
-	 * @param $port
-	 * @param $packet
+	 * @return void
 	 */
-	public function handle($address, $port, $packet){
+    public function handle(AdvancedSourceInterface $interface, string $address, int $port, string $packet){
 		$offset = 2;
 		$packetType = ord($packet{$offset++});
 		$sessionID = Binary::readInt(substr($packet, $offset, 4));
@@ -99,26 +107,26 @@ class QueryHandler {
 				$reply .= Binary::writeInt($sessionID);
 				$reply .= self::getTokenString($this->token, $address) . "\x00";
 
-				$this->server->getNetwork()->sendPacket($address, $port, $reply);
+				$interface->sendRawPacket($address, $port, $reply);
 				break;
 			case self::STATISTICS: //Stat
 				$token = Binary::readInt(substr($payload, 0, 4));
-				if($token !== self::getTokenString($this->token, $address) and $token !== self::getTokenString($this->lastToken, $address)){
+				if($token !== ($t1 = self::getTokenString($this->token, $address)) and $token !== ($t2 = self::getTokenString($this->lastToken, $address))){
+					$this->debug("Bad token $token from $address $port, expected $t1 or $t2");
 					break;
 				}
 				$reply = chr(self::STATISTICS);
 				$reply .= Binary::writeInt($sessionID);
 
-				if($this->timeout < microtime(true)){
-					$this->regenerateInfo();
-				}
-
 				if(strlen($payload) === 8){
-					$reply .= $this->longData;
+					$reply .= $this->server->getQueryInformation()->getLongQuery();
 				}else{
-					$reply .= $this->shortData;
+					$reply .= $this->server->getQueryInformation()->getShortQuery();
 				}
-				$this->server->getNetwork()->sendPacket($address, $port, $reply);
+				$interface->sendRawPacket($address, $port, $reply);
+				break;
+			default:
+				$this->debug("Unhandled packet from $address $port: " . base64_encode($packet));
 				break;
 		}
 	}

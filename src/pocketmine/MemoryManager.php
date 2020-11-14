@@ -333,7 +333,7 @@ class MemoryManager {
 			$this->leakWatch[$id]->release();
 
 			$valid = true;
-			$references = getReferenceCount($object, false);
+			$references = Utils::getReferenceCount($object, false);
 		}
 
 		return [
@@ -390,8 +390,8 @@ class MemoryManager {
 					"properties" => []
 				];
 
-				if($reflection->getParentClass()){
-					$info["parent"] = $reflection->getParentClass()->getName();
+				if(($parent = $reflection->getParentClass()) !== false){
+					$info["parent"] = $parent->getName();
 				}
 
 				if(count($reflection->getInterfaceNames()) > 0){

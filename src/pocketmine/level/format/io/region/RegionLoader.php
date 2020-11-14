@@ -25,6 +25,7 @@ namespace pocketmine\level\format\io\region;
 
 use pocketmine\level\format\Chunk;
 use pocketmine\level\format\io\ChunkException;
+use pocketmine\level\LevelException;
 use pocketmine\utils\Binary;
 use pocketmine\utils\MainLogger;
 
@@ -32,7 +33,10 @@ class RegionLoader {
 	const VERSION = 1;
 	const COMPRESSION_GZIP = 1;
 	const COMPRESSION_ZLIB = 2;
-	const MAX_SECTOR_LENGTH = 256 << 12; //256 sectors, (1 MiB)
+
+	const MAX_SECTOR_LENGTH = 255 << 12; //255 sectors, (~0.996 MiB)
+	const REGION_HEADER_LENGTH = 8192; //4096 location table + 4096 timestamps
+
 	public static $COMPRESSION_LEVEL = 7;
 
 	protected $x;
@@ -59,10 +63,16 @@ class RegionLoader {
 		$this->z = $regionZ;
 		$this->levelProvider = $level;
 		$this->filePath = $this->levelProvider->getPath() . "region/r.$regionX.$regionZ.$fileExtension";
+	}
+
+	public function open(){
 		$exists = file_exists($this->filePath);
 		if(!$exists){
 			touch($this->filePath);
+		}elseif(filesize($this->filePath) % 4096 !== 0){
+			throw new ChunkException("Region file should be padded to a multiple of 4KiB");
 		}
+
 		$this->filePointer = fopen($this->filePath, "r+b");
 		stream_set_read_buffer($this->filePointer, 1024 * 16); //16KB
 		stream_set_write_buffer($this->filePointer, 1024 * 16); //16KB
@@ -99,9 +109,6 @@ class RegionLoader {
 	 */
 	public function readChunk(int $x, int $z){
 		$index = self::getChunkOffset($x, $z);
-		if($index < 0 or $index >= 4096){
-			return null;
-		}
 
 		$this->lastUsed = time();
 
@@ -115,8 +122,6 @@ class RegionLoader {
 
 		if($length <= 0 or $length > self::MAX_SECTOR_LENGTH){ //Not yet generated / corrupted
 			if($length >= self::MAX_SECTOR_LENGTH){
-				$this->locationTable[$index][0] = ++$this->lastSector;
-				$this->locationTable[$index][1] = 1;
 				MainLogger::getLogger()->error("Corrupted chunk header detected");
 			}
 			return null;
@@ -190,6 +195,7 @@ class RegionLoader {
 		$index = self::getChunkOffset($x, $z);
 		$this->locationTable[$index][0] = 0;
 		$this->locationTable[$index][1] = 0;
+		$this->writeLocationIndex($index);
 	}
 
 	/**
@@ -199,7 +205,7 @@ class RegionLoader {
 		$this->lastUsed = time();
 		$chunkData = $this->levelProvider->nbtSerialize($chunk);
 		if($chunkData !== false){
-			$this->saveChunk($chunk->getX() - ($this->getX() * 32), $chunk->getZ() - ($this->getZ() * 32), $chunkData);
+            $this->saveChunk($chunk->getX() & 0x1f, $chunk->getZ() & 0x1f, $chunkData);
 		}
 	}
 
@@ -210,12 +216,26 @@ class RegionLoader {
 	 * @return int
 	 */
 	protected static function getChunkOffset(int $x, int $z) : int{
-		return $x + ($z << 5);
+		if($x < 0 or $x > 31 or $z < 0 or $z > 31){
+			throw new \InvalidArgumentException("Invalid chunk position in region, expected x/z in range 0-31, got x=$x, z=$z");
+		}
+		return $x | ($z << 5);
 	}
 
-	public function close(){
-		$this->writeLocationTable();
-		fclose($this->filePointer);
+	/**
+	 * Writes the region header and closes the file
+	 *
+	 * @param bool $writeHeader
+	 */
+	public function close(bool $writeHeader = true){
+		if(is_resource($this->filePointer)){
+			if($writeHeader){
+				$this->writeLocationTable();
+			}
+
+			fclose($this->filePointer);
+		}
+
 		$this->levelProvider = null;
 	}
 
@@ -304,14 +324,34 @@ class RegionLoader {
 		fseek($this->filePointer, 0);
 		$this->lastSector = 1;
 
-		$data = unpack("N*", fread($this->filePointer, 4 * 1024 * 2)); //1024 records * 4 bytes * 2 times
+		$headerRaw = fread($this->filePointer, self::REGION_HEADER_LENGTH);
+		if(($len = strlen($headerRaw)) !== self::REGION_HEADER_LENGTH){
+			throw new CorruptedRegionException("Invalid region file header, expected " . self::REGION_HEADER_LENGTH . " bytes, got " . $len . " bytes");
+		}
+
+		$data = unpack("N*", $headerRaw);
+		$usedOffsets = [];
 		for($i = 0; $i < 1024; ++$i){
 			$index = $data[$i + 1];
+			$offset = $index >> 8;
+			if($offset !== 0){
+				fseek($this->filePointer, ($offset << 12));
+				if(feof($this->filePointer)){
+					throw new CorruptedRegionException("Region file location offset points to invalid location");
+				}elseif(isset($usedOffsets[$offset])){
+					throw new CorruptedRegionException("Found two chunk offsets pointing to the same location");
+				}else{
+					$usedOffsets[$offset] = true;
+				}
+			}
+
 			$this->locationTable[$i] = [$index >> 8, $index & 0xff, $data[1024 + $i + 1]];
 			if(($this->locationTable[$i][0] + $this->locationTable[$i][1] - 1) > $this->lastSector){
 				$this->lastSector = $this->locationTable[$i][0] + $this->locationTable[$i][1] - 1;
 			}
 		}
+
+		fseek($this->filePointer, 0);
 	}
 
 	private function writeLocationTable(){
@@ -370,4 +410,7 @@ class RegionLoader {
 		return $this->z;
 	}
 
+	public function getFilePath() : string{
+		return $this->filePath;
+	}
 }

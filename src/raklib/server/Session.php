@@ -103,7 +103,6 @@ class Session{
 		$this->port = $port;
 		$this->id = $clientId;
 		$this->sendQueue = new Datagram();
-		$this->sendQueue->headerFlags |= Datagram::BITFLAG_NEEDS_B_AND_AS;
 		$this->lastUpdate = microtime(true);
 		$this->isActive = false;
 		$this->windowStart = -1;
@@ -256,7 +255,6 @@ class Session{
 		if(count($this->sendQueue->packets) > 0){
 			$this->sendDatagram($this->sendQueue);
 			$this->sendQueue = new Datagram();
-			$this->sendQueue->headerFlags |= Datagram::BITFLAG_NEEDS_B_AND_AS;
 		}
 	}
 
@@ -553,7 +551,6 @@ class Session{
 
 			$this->sessionManager->getLogger()->debug("Closed session for $this->address $this->port");
 			$this->sessionManager->removeSessionInternal($this);
-			$this->sessionManager = null;
 		}
 	}
 }

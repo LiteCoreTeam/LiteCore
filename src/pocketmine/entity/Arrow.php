@@ -33,14 +33,14 @@ use pocketmine\Player;
 class Arrow extends Projectile {
 	const NETWORK_ID = 80;
 
-	public $width = 0.5;
-	public $length = 0.5;
-	public $height = 0.5;
+	public $width = 0.25;
+	public $length = 0.25;
+	public $height = 0.25;
 
 	protected $gravity = 0.05;
 	protected $drag = 0.01;
 
-	protected $damage = 2;
+	protected $damage = 2.0;
 
 	protected $isCritical;
 	protected $potionId;
@@ -60,6 +60,7 @@ class Arrow extends Projectile {
 		}
 		parent::__construct($level, $nbt, $shootingEntity);
 		$this->potionId = $this->namedtag["Potion"];
+		$this->setCritical($critical);
 	}
 
 	/**
@@ -67,6 +68,25 @@ class Arrow extends Projectile {
 	 */
 	public function isCritical() : bool{
 		return $this->isCritical;
+	}
+
+	/**
+	 * @return void
+	 */
+	public function setCritical(bool $value = true) : void{
+		$this->setDataFlag(self::DATA_FLAGS, self::DATA_FLAG_CRITICAL, $value);
+	}
+
+	/**
+	 * @return int
+	 */
+	public function getResultDamage() : int{
+		$base = parent::getResultDamage();
+		if($this->isCritical()){
+			return ($base + mt_rand(0, (int) ($base / 2) + 1));
+		}else{
+			return $base;
+		}
 	}
 
 	/**
@@ -90,13 +110,8 @@ class Arrow extends Projectile {
 
 		$hasUpdate = parent::onUpdate($currentTick);
 
-		if(!$this->hadCollision and $this->isCritical){
-			$this->level->addParticle(new CriticalParticle($this->add(
-				$this->width / 2 + mt_rand(-100, 100) / 500,
-				$this->height / 2 + mt_rand(-100, 100) / 500,
-				$this->width / 2 + mt_rand(-100, 100) / 500)));
-		}elseif($this->onGround){
-			$this->isCritical = false;
+		if($this->onGround or $this->hadCollision){
+			$this->setCritical(false);
 		}
 
 		if($this->potionId != 0){
@@ -111,7 +126,7 @@ class Arrow extends Projectile {
 		}
 
 		if($this->age > 1200){
-			$this->kill();
+			$this->close();
 			$hasUpdate = true;
 		}
 
@@ -133,6 +148,8 @@ class Arrow extends Projectile {
 		$pk->speedX = $this->motionX;
 		$pk->speedY = $this->motionY;
 		$pk->speedZ = $this->motionZ;
+		$pk->yaw = $this->yaw;
+		$pk->pitch = $this->pitch;
 		$pk->metadata = $this->dataProperties;
 		$player->dataPacket($pk);
 

@@ -68,7 +68,7 @@ class Ore {
 	public function placeObject(ChunkManager $level, $x, $y, $z){
 		$clusterSize = (int) $this->type->clusterSize;
 		$angle = $this->random->nextFloat() * M_PI;
-		$offset = VectorMath::getDirection2D($angle)->multiply($clusterSize)->divide(8);
+		$offset = VectorMath::getDirection2D($angle)->multiply($clusterSize / 8);
 		$x1 = $x + 8 + $offset->x;
 		$x2 = $x + 8 - $offset->x;
 		$z1 = $z + 8 + $offset->y;

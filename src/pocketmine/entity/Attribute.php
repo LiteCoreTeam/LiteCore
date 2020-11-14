@@ -201,6 +201,10 @@ class Attribute {
 		return $this;
 	}
 
+	public function resetToDefault(){
+		$this->setValue($this->getDefaultValue(), true);
+	}
+
 	/**
 	 * @return float
 	 */
@@ -215,7 +219,7 @@ class Attribute {
 	 *
 	 * @return $this
 	 */
-	public function setValue($value, bool $fit = true, bool $shouldSend = false){
+	public function setValue($value, bool $fit = false, bool $shouldSend = false){
 		if($value > $this->getMaxValue() or $value < $this->getMinValue()){
 			if(!$fit){
 				Server::getInstance()->getLogger()->error("[Attribute / {$this->getName()}] Value $value exceeds the range!");
@@ -226,11 +230,10 @@ class Attribute {
 		if($this->currentValue != $value){
 			$this->desynchronized = true;
 			$this->currentValue = $value;
-		}
-
-		if($shouldSend){
+		}elseif($shouldSend){
 			$this->desynchronized = true;
 		}
+
 		return $this;
 	}
 

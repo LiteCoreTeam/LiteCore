@@ -2,11 +2,11 @@
 
 /*
  *
- *  ____            _        _   __  __ _                  __  __ ____  
- * |  _ \ ___   ___| | _____| |_|  \/  (_)_ __   ___      |  \/  |  _ \ 
+ *  ____            _        _   __  __ _                  __  __ ____
+ * |  _ \ ___   ___| | _____| |_|  \/  (_)_ __   ___      |  \/  |  _ \
  * | |_) / _ \ / __| |/ / _ \ __| |\/| | | '_ \ / _ \_____| |\/| | |_) |
- * |  __/ (_) | (__|   <  __/ |_| |  | | | | | |  __/_____| |  | |  __/ 
- * |_|   \___/ \___|_|\_\___|\__|_|  |_|_|_| |_|\___|     |_|  |_|_| 
+ * |  __/ (_) | (__|   <  __/ |_| |  | | | | | |  __/_____| |  | |  __/
+ * |_|   \___/ \___|_|\_\___|\__|_|  |_|_|_| |_|\___|     |_|  |_|_|
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -15,7 +15,7 @@
  *
  * @author PocketMine Team
  * @link http://www.pocketmine.net/
- * 
+ *
  *
 */
 
@@ -39,15 +39,10 @@ class RCON {
 
 	/** @var Server */
 	private $server;
-	/** @var resource */
 	private $socket;
-	/** @var string */
 	private $password;
-	/** @var int */
-	private $threads;
 	/** @var RCONInstance[] */
 	private $workers = [];
-	/** @var int */
 	private $clientsPerThread;
 
 	/**
@@ -66,33 +61,32 @@ class RCON {
 		$this->password = (string) $password;
 		$this->server->getLogger()->info("Starting remote control listener");
 		if($this->password === ""){
-			$this->server->getLogger()->critical("RCON can't be started: Empty password");
-
-			return;
+			throw new \InvalidArgumentException("Empty password");
 		}
 		$this->threads = (int) max(1, $threads);
 		$this->clientsPerThread = (int) max(1, $clientsPerThread);
 		$this->socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
-		if($this->socket === false or !socket_bind($this->socket, $interface, (int) $port) or !socket_listen($this->socket)){
-			$this->server->getLogger()->critical("RCON can't be started: " . socket_strerror(socket_last_error()));
-			$this->threads = 0;
-			$this->server->getLogger()->warning("Попытка загрузить ещё раз..");
-			$this->server->RconReboot("reboot");
-			return;
+
+		if(!socket_set_option($this->socket, SOL_SOCKET, SO_REUSEADDR, 1)){
+			throw new \RuntimeException("Unable to set option on socket: " . trim(socket_strerror(socket_last_error())));
 		}
+
+		if($this->socket === false or !@socket_bind($this->socket, $interface, $port) or !@socket_listen($this->socket, 5)){
+			throw new \RuntimeException(trim(socket_strerror(socket_last_error())));
+		}
+
 		socket_set_block($this->socket);
 
 		for($n = 0; $n < $this->threads; ++$n){
 			$this->workers[$n] = new RCONInstance($this->server->getLogger(), $this->socket, $this->password, $this->clientsPerThread);
 		}
+
 		socket_getsockname($this->socket, $addr, $port);
 		$this->server->getLogger()->info("RCON running on $addr:$port");
 	}
 
 	public function stop(){
 		for($n = 0; $n < $this->threads; ++$n){
-			$this->workers[$n]->close();
-			Server::microSleep(50000);
 			$this->workers[$n]->close();
 			$this->workers[$n]->quit();
 		}

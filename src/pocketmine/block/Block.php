@@ -67,6 +67,9 @@ class Block extends Position implements BlockIds, Metadatable{
 	/** @var AxisAlignedBB */
 	public $boundingBox = null;
 
+	/** @var AxisAlignedBB[]|null */
+	protected $collisionBoxes = null;
+
 	public static function init(){
 		if(self::$list === null){
 			self::$list = new \SplFixedArray(256);
@@ -228,6 +231,8 @@ class Block extends Position implements BlockIds, Metadatable{
 			self::$list[self::TRAPPED_CHEST] = TrappedChest::class;
 			self::$list[self::REDSTONE_BLOCK] = Redstone::class;
 
+			self::$list[self::SHULKER_BOX] = ShulkerBox::class;
+
 			self::$list[self::QUARTZ_BLOCK] = Quartz::class;
 			self::$list[self::QUARTZ_STAIRS] = QuartzStairs::class;
 			self::$list[self::DOUBLE_WOOD_SLAB] = DoubleWoodSlab::class;
@@ -312,6 +317,11 @@ class Block extends Position implements BlockIds, Metadatable{
 			self::$list[self::TRIPWIRE_HOOK] = TripwireHook::class;
 			self::$list[self::ITEM_FRAME_BLOCK] = ItemFrame::class;
 			self::$list[self::DISPENSER] = Dispenser::class;
+
+			self::$list[self::PISTON] = Piston::class;
+			self::$list[self::STICKY_PISTON] = StickyPiston::class;
+			self::$list[self::PISTON_HEAD] = PistonHead::class;
+
 			self::$list[self::DROPPER] = Dropper::class;
 			self::$list[self::POWERED_REPEATER_BLOCK] = PoweredRepeater::class;
 			self::$list[self::UNPOWERED_REPEATER_BLOCK] = UnpoweredRepeater::class;
@@ -353,11 +363,15 @@ class Block extends Position implements BlockIds, Metadatable{
 				}else{
 					self::$lightFilter[$id] = 1;
 					for($data = 0; $data < 16; ++$data){
-						self::$fullList[($id << 4) | $data] = new Block($id, $data);
+						self::$fullList[($id << 4) | $data] = new UnknownBlock($id, $data);
 					}
 				}
 			}
 		}
+	}
+
+	public static function isInit() : bool{
+		return self::$fullList !== null;
 	}
 
 	/**
@@ -372,15 +386,15 @@ class Block extends Position implements BlockIds, Metadatable{
 			trigger_error("BlockID cannot be higher than 255, defaulting to 0", E_USER_NOTICE);
 			$id = 0;
 		}
-
+		
 		try{
 			if(self::$fullList !== null){
 			    $block = clone self::$fullList[($id << 4) | $meta];
 			}else{
-				$block = new Block($id, $meta);
+				$block = new UnknownBlock($id, $meta);
 			}
 		}catch(\RuntimeException $e){
-			$block = new Block($id, $meta);
+			$block = new UnknownBlock($id, $meta);
 		}
 
 		if($pos !== null){
@@ -564,6 +578,10 @@ class Block extends Position implements BlockIds, Metadatable{
 		return false;
 	}
 
+	public function canBePlacedAt(Block $blockReplace, Vector3 $clickVector, int $face, bool $isClickedBlock) : bool{
+		return $blockReplace->canBeReplaced();
+	}
+
 	/**
 	 * @return bool
 	 */
@@ -613,6 +631,10 @@ class Block extends Position implements BlockIds, Metadatable{
 		return false;
 	}
 
+	public function canClimb() : bool{
+		return false;
+	}
+
 	/**
 	 * @return string
 	 */
@@ -646,6 +668,27 @@ class Block extends Position implements BlockIds, Metadatable{
 	}
 
 	/**
+	 * Bitmask to use to remove superfluous information from block meta when getting its item form or name.
+	 * This defaults to -1 (don't remove any data). Used to remove rotation data and bitflags from block drops.
+	 *
+	 * If your block should not have any meta value when it's dropped as an item, override this to return 0 in
+	 * descendent classes.
+	 *
+	 * @return int
+	 */
+	public function getVariantBitmask() : int{
+		return -1;
+	}
+
+	/**
+	 * Returns the block meta, stripped of non-variant flags.
+	 * @return int
+	 */
+	public function getVariant() : int{
+		return $this->meta & $this->getVariantBitmask();
+	}
+
+	/**
 	 * Sets the block position to a new Position object
 	 *
 	 * @param Position $v
@@ -670,7 +713,7 @@ class Block extends Position implements BlockIds, Metadatable{
 			return [];
 		}else{
 			return [
-				[$this->getId(), $this->getDamage(), 1],
+				[$this->getId(), $this->getVariant(), 1]
 			];
 		}
 	}
@@ -715,7 +758,7 @@ class Block extends Position implements BlockIds, Metadatable{
 		}
 
 		if($item->isSword()){
-			$base *= 0.5;
+			$base /= 1.5;
 		}
 
 		return $base;
@@ -756,9 +799,15 @@ class Block extends Position implements BlockIds, Metadatable{
 	 * @return bool
 	 */
 	public function collidesWithBB(AxisAlignedBB $bb){
-		$bb2 = $this->getBoundingBox();
+		$bbs = $this->getCollisionBoxes();
 
-		return $bb2 !== null and $bb->intersectsWith($bb2);
+		foreach($bbs as $bb2){
+			if($bb->intersectsWith($bb2)){
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	/**
@@ -766,6 +815,28 @@ class Block extends Position implements BlockIds, Metadatable{
 	 */
 	public function onEntityCollide(Entity $entity){
 
+	}
+
+	/**
+	 * @return AxisAlignedBB[]
+	 */
+	public function getCollisionBoxes() : array{
+		if($this->collisionBoxes === null){
+			$this->collisionBoxes = $this->recalculateCollisionBoxes();
+		}
+
+		return $this->collisionBoxes;
+	}
+
+	/**
+	 * @return AxisAlignedBB[]
+	 */
+	protected function recalculateCollisionBoxes() : array{
+		if($bb = $this->recalculateBoundingBox()){
+			return [$bb];
+		}
+
+		return [];
 	}
 
 	/**
@@ -793,91 +864,45 @@ class Block extends Position implements BlockIds, Metadatable{
 	}
 
 	/**
+	 * Clears any cached precomputed bounding boxes. This is called on block neighbour update and when the block is set
+	 * into the world to remove any outdated precomputed AABBs and force recalculation.
+	 */
+	public function clearBoundingBoxes() : void{
+		$this->boundingBox = null;
+		$this->collisionBoxes = null;
+	}
+
+	/**
 	 * @param Vector3 $pos1
 	 * @param Vector3 $pos2
 	 *
 	 * @return MovingObjectPosition
 	 */
 	public function calculateIntercept(Vector3 $pos1, Vector3 $pos2){
-		$bb = $this->getBoundingBox();
-		if($bb === null){
+		$bbs = $this->getCollisionBoxes();
+		if(count($bbs) === 0){
 			return null;
 		}
 
-		$v1 = $pos1->getIntermediateWithXValue($pos2, $bb->minX);
-		$v2 = $pos1->getIntermediateWithXValue($pos2, $bb->maxX);
-		$v3 = $pos1->getIntermediateWithYValue($pos2, $bb->minY);
-		$v4 = $pos1->getIntermediateWithYValue($pos2, $bb->maxY);
-		$v5 = $pos1->getIntermediateWithZValue($pos2, $bb->minZ);
-		$v6 = $pos1->getIntermediateWithZValue($pos2, $bb->maxZ);
+		/** @var RayTraceResult|null $currentHit */
+		$currentHit = null;
+		/** @var int|float $currentDistance */
+		$currentDistance = PHP_INT_MAX;
 
-		if($v1 !== null and !$bb->isVectorInYZ($v1)){
-			$v1 = null;
+		foreach($bbs as $bb){
+			$nextHit = $bb->calculateIntercept($pos1, $pos2);
+			if($nextHit === null){
+				continue;
+			}
+
+			$nextDistance = $nextHit->hitVector->distanceSquared($pos1);
+			if($nextDistance < $currentDistance){
+				$currentHit = $nextHit;
+				$currentDistance = $nextDistance;
+			}
 		}
 
-		if($v2 !== null and !$bb->isVectorInYZ($v2)){
-			$v2 = null;
-		}
-
-		if($v3 !== null and !$bb->isVectorInXZ($v3)){
-			$v3 = null;
-		}
-
-		if($v4 !== null and !$bb->isVectorInXZ($v4)){
-			$v4 = null;
-		}
-
-		if($v5 !== null and !$bb->isVectorInXY($v5)){
-			$v5 = null;
-		}
-
-		if($v6 !== null and !$bb->isVectorInXY($v6)){
-			$v6 = null;
-		}
-
-		$vector = $v1;
-
-		if($v2 !== null and ($vector === null or $pos1->distanceSquared($v2) < $pos1->distanceSquared($vector))){
-			$vector = $v2;
-		}
-
-		if($v3 !== null and ($vector === null or $pos1->distanceSquared($v3) < $pos1->distanceSquared($vector))){
-			$vector = $v3;
-		}
-
-		if($v4 !== null and ($vector === null or $pos1->distanceSquared($v4) < $pos1->distanceSquared($vector))){
-			$vector = $v4;
-		}
-
-		if($v5 !== null and ($vector === null or $pos1->distanceSquared($v5) < $pos1->distanceSquared($vector))){
-			$vector = $v5;
-		}
-
-		if($v6 !== null and ($vector === null or $pos1->distanceSquared($v6) < $pos1->distanceSquared($vector))){
-			$vector = $v6;
-		}
-
-		if($vector === null){
-			return null;
-		}
-
-		$f = -1;
-
-		if($vector === $v1){
-			$f = 4;
-		}elseif($vector === $v2){
-			$f = 5;
-		}elseif($vector === $v3){
-			$f = 0;
-		}elseif($vector === $v4){
-			$f = 1;
-		}elseif($vector === $v5){
-			$f = 2;
-		}elseif($vector === $v6){
-			$f = 3;
-		}
-
-		return MovingObjectPosition::fromBlock($this->x, $this->y, $this->z, $f, $vector->add($this->x, $this->y, $this->z));
+		return $currentHit;
 	}
 
 	public function setMetadata($metadataKey, MetadataValue $metadataValue){

@@ -25,6 +25,9 @@ use pocketmine\level\Level;
 use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\network\mcpe\protocol\AddEntityPacket;
 use pocketmine\Player;
+use pocketmine\event\entity\ProjectileHitEvent;
+use pocketmine\item\Item;
+use pocketmine\level\particle\ItemBreakParticle;
 
 class Egg extends Projectile {
 	const NETWORK_ID = 82;
@@ -45,6 +48,13 @@ class Egg extends Projectile {
 	 */
 	public function __construct(Level $level, CompoundTag $nbt, Entity $shootingEntity = null){
 		parent::__construct($level, $nbt, $shootingEntity);
+	}
+
+	protected function onHit(ProjectileHitEvent $event) : void{
+		for($i = 0; $i < 6; ++$i){
+			$this->level->addParticle(new ItemBreakParticle($this, Item::get(Item::EGG)));
+		}
+		parent::onHit($event);
 	}
 
 	/**

@@ -73,12 +73,16 @@ class ServerScheduler {
 	 *
 	 * @param AsyncTask $task
 	 *
-	 * @return void
+	 * @return int
 	 */
-	public function scheduleAsyncTask(AsyncTask $task){
+	public function scheduleAsyncTask(AsyncTask $task) : int{
+		if($task->getTaskId() !== null){
+			throw new \UnexpectedValueException("Attempt to schedule the same AsyncTask instance twice");
+		}
 		$id = $this->nextId();
 		$task->setTaskId($id);
-		$this->asyncPool->submitTask($task);
+		$task->progressUpdates = new \Threaded;
+		return $this->asyncPool->submitTask($task);
 	}
 
 	/**
@@ -90,8 +94,12 @@ class ServerScheduler {
 	 * @return void
 	 */
 	public function scheduleAsyncTaskToWorker(AsyncTask $task, $worker){
+		if($task->getTaskId() !== null){
+			throw new \UnexpectedValueException("Attempt to schedule the same AsyncTask instance twice");
+		}
 		$id = $this->nextId();
 		$task->setTaskId($id);
+		$task->progressUpdates = new \Threaded;
 		$this->asyncPool->submitTaskToWorker($task, $worker);
 	}
 
@@ -194,12 +202,8 @@ class ServerScheduler {
 	 * @throws PluginException
 	 */
 	private function addTask(Task $task, $delay, $period){
-		if($task instanceof PluginTask){
-			if(!($task->getOwner() instanceof Plugin)){
-				throw new PluginException("Invalid owner of PluginTask " . get_class($task));
-			}elseif(!$task->getOwner()->isEnabled()){
-				throw new PluginException("Plugin '" . $task->getOwner()->getName() . "' attempted to register a task while disabled");
-			}
+		if($task instanceof PluginTask and !$task->getOwner()->isEnabled()){
+			throw new PluginException("Plugin '" . $task->getOwner()->getName() . "' attempted to register a task while disabled");
 		}
 
 		if($delay <= 0){
@@ -232,6 +236,11 @@ class ServerScheduler {
 		$this->queue->insert($handler, $nextRun);
 
 		return $handler;
+	}
+
+	public function shutdown() : void{
+		$this->cancelAllTasks();
+		$this->asyncPool->shutdown();
 	}
 
 	/**
@@ -267,13 +276,8 @@ class ServerScheduler {
 		$this->asyncPool->collectTasks();
 	}
 
-	/**
-	 * @param $currentTicks
-	 *
-	 * @return bool
-	 */
 	private function isReady($currentTicks){
-		return count($this->tasks) > 0 and $this->queue->current()->getNextRun() <= $currentTicks;
+		return !$this->queue->isEmpty() and $this->queue->current()->getNextRun() <= $currentTicks;
 	}
 
 	/**

@@ -24,6 +24,7 @@ namespace pocketmine\block;
 use pocketmine\inventory\AnvilInventory;
 use pocketmine\item\Item;
 use pocketmine\item\Tool;
+use pocketmine\math\AxisAlignedBB;
 use pocketmine\Player;
 use pocketmine\network\mcpe\protocol\LevelEventPacket;
 
@@ -36,19 +37,16 @@ class Anvil extends Fallable {
 	protected $id = self::ANVIL;
 
 	/**
-	 * @return bool
-	 */
-	public function isSolid(){
-		return false;
-	}
-
-	/**
 	 * Anvil constructor.
 	 *
 	 * @param int $meta
 	 */
 	public function __construct($meta = 0){
 		$this->meta = $meta;
+	}
+
+	public function isTransparent(){
+		return true;
 	}
 
 	/**
@@ -90,6 +88,30 @@ class Anvil extends Fallable {
 	 */
 	public function getToolType(){
 		return Tool::TYPE_PICKAXE;
+	}
+
+	public function recalculateBoundingBox(){
+		$inset = 0.125;
+
+		if($this->meta & 0x01){ //east/west
+			return new AxisAlignedBB(
+				$this->x,
+				$this->y,
+				$this->z + $inset,
+				$this->x + 1,
+				$this->y + 1,
+				$this->z + 1 - $inset
+			);
+		}else{
+			return new AxisAlignedBB(
+				$this->x + $inset,
+				$this->y,
+				$this->z,
+				$this->x + 1 - $inset,
+				$this->y + 1,
+				$this->z + 1
+			);
+		}
 	}
 
 	/**

@@ -24,18 +24,21 @@
 
 namespace pocketmine\entity;
 
+use pocketmine\item\Item as ItemItem;
+use pocketmine\math\Vector3;
+use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\network\mcpe\protocol\AddEntityPacket;
 use pocketmine\Player;
-use pocketmine\item\Item as ItemItem;
 
-class Wither extends FlyingAnimal {
+class Wither extends Animal {
 	const NETWORK_ID = 52;
 
 	public $width = 0.72;
 	public $length = 6;
-	public $height = 2;
+	public $height = 0;
 
-	public $dropExp = 50;
+	public $dropExp = [25, 50];
+	private $boomTicks = 0;
 
 	/**
 	 * @return string
@@ -78,5 +81,49 @@ class Wither extends FlyingAnimal {
 	public function getDrops(){
 		$drops = [ItemItem::get(ItemItem::NETHER_STAR, 0, 1)];
 		return $drops;
+	}
+	
+	public function getBombNBT() : CompoundTag{
+        return Entity::createBaseNBT($this->add(0, 2, 0), new Vector3(0, 0, 0), $this->yaw, $this->pitch);
+    }
+	
+	public function getBombRightNBT() : CompoundTag{
+        return Entity::createBaseNBT($this->add(0, 2, 0), new Vector3(0, 0, 0), $this->yaw + 90, $this->pitch);
+    }
+
+	public function getBombLeftNBT() : CompoundTag{
+        return Entity::createBaseNBT($this->add(0, 2, 0), new Vector3(0, 0, 0), $this->yaw - 90, $this->pitch);
+	}
+	
+	public function onUpdate($currentTick){
+		if($this->closed){
+			return false;
+		}
+
+		$this->timings->startTiming();
+
+		$hasUpdate = parent::onUpdate($currentTick);
+		
+		if($this->boomTicks < 40){
+			$this->boomTicks++;
+		}else{
+			$nbt = $this->getBombNBT();
+			$tnt = new WitherTNT($this->level, $nbt);
+			$tnt->spawnToAll();
+			
+			$nbtright = $this->getBombRightNBT();
+			$tntright = new WitherTNT($this->level, $nbtright);
+			$tntright->spawnToAll();
+			
+			$nbtleft = $this->getBombLeftNBT();
+			$tntleft = new WitherTNT($this->level, $nbtleft);
+			$tntleft->spawnToAll();
+			
+			$this->close();
+		}
+		
+		$this->timings->stopTiming();
+
+		return $hasUpdate;
 	}
 }

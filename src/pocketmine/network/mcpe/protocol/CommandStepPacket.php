@@ -49,7 +49,7 @@ class CommandStepPacket extends DataPacket {
 		$this->inputJson = json_decode($this->getString());
 		$this->outputJson = $this->getString();
 
-		$this->get(true);
+		$this->getRemaining();
 	}
 
 	/**

@@ -16,11 +16,11 @@
 namespace raklib\protocol;
 
 #ifndef COMPILE
-use raklib\Binary;
+use pocketmine\utils\Binary;
 
 #endif
 
-#include <rules/RakLibPacket.h>
+#include <rules/BinaryIO.h>
 
 abstract class Packet{
 	public static $ID = -1;
@@ -176,7 +176,7 @@ abstract class Packet{
 	}
 
 	public function clean(){
-		$this->buffer = null;
+		$this->buffer = "";
 		$this->offset = 0;
 		$this->sendTime = null;
 		return $this;

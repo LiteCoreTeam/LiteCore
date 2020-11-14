@@ -56,6 +56,7 @@ class LevelEventPacket extends DataPacket {
 	const EVENT_SOUND_ITEMFRAME_ROTATE_ITEM = 1044;
 	const EVENT_SOUND_CAMERA = 1050;
 	const EVENT_SOUND_ORB = 1051;
+	const EVENT_SOUND_TOTEM = 1052;
 	const EVENT_PARTICLE_SHOOT = 2000;
 	const EVENT_PARTICLE_DESTROY = 2001;
 	const EVENT_PARTICLE_SPLASH = 2002; //This is actually the splash potion sound with particles
@@ -63,7 +64,9 @@ class LevelEventPacket extends DataPacket {
 	const EVENT_PARTICLE_SPAWN = 2004;
 	const EVENT_GUARDIAN_CURSE = 2006;
 	const EVENT_PARTICLE_BLOCK_FORCE_FIELD = 2008;
+	const EVENT_PARTICLE_PROJECTILE_HIT = 2009;
 
+	const EVENT_PARTICLE_ENDERMAN_TELEPORT = 2013;
 	const EVENT_PARTICLE_PUNCH_BLOCK = 2014;
 
 	const EVENT_START_RAIN = 3001;

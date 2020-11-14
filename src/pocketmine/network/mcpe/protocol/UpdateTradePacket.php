@@ -2,12 +2,14 @@
 
 namespace pocketmine\network\mcpe\protocol;
 
+use pocketmine\network\mcpe\protocol\types\InventoryNetworkIds;
+
 class UpdateTradePacket extends DataPacket {
 
 	const NETWORK_ID = ProtocolInfo::UPDATE_TRADE_PACKET;
 
-	public $byte1;
-	public $byte2;
+	public $windowId;
+	public $windowType = InventoryNetworkIds::TRADING; //Mojang hardcoded this -_-
 	public $varint1;
 	public $varint2;
 	public $isWilling;
@@ -20,15 +22,15 @@ class UpdateTradePacket extends DataPacket {
 	 *
 	 */
 	public function decode(){
-		$this->byte1 = $this->getByte();
-		$this->byte2 = $this->getByte();
+		$this->windowId = $this->getByte();
+		$this->windowType = $this->getByte();
 		$this->varint1 = $this->getVarInt();
 		$this->varint2 = $this->getVarInt();
 		$this->isWilling = $this->getBool();
 		$this->traderEid = $this->getEntityId();
 		$this->playerEid = $this->getEntityId();
 		$this->displayName = $this->getString();
-		$this->offers = $this->get(true);
+		$this->offers = $this->getRemaining();
 	}
 
 	/**
@@ -36,8 +38,8 @@ class UpdateTradePacket extends DataPacket {
 	 */
 	public function encode(){
 		$this->reset();
-		$this->putByte($this->byte1);
-		$this->putByte($this->byte2);
+		$this->putByte($this->windowId);
+		$this->putByte($this->windowType);
 		$this->putVarInt($this->varint1);
 		$this->putVarInt($this->varint2);
 		$this->putBool($this->isWilling);

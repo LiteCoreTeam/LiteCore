@@ -39,6 +39,7 @@ class ExplodePacket extends DataPacket {
 	 */
 	public function clean(){
 		$this->records = [];
+		
 		return parent::clean();
 	}
 

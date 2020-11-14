@@ -16,11 +16,11 @@
 namespace raklib\protocol;
 
 #ifndef COMPILE
-use raklib\Binary;
+use pocketmine\utils\Binary;
 
 #endif
 
-#include <rules/RakLibPacket.h>
+#include <rules/BinaryIO.h>
 
 abstract class AcknowledgePacket extends Packet{
 	/** @var int[] */

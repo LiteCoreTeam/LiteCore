@@ -29,11 +29,9 @@ use pocketmine\utils\Random;
 abstract class Tree {
 	public $overridable = [
 		Block::AIR => true,
-		6 => true,
-		17 => true,
-		18 => true,
+		Block::SAPLING => true,
+		Block::LEAVES => true,
 		Block::SNOW_LAYER => true,
-		Block::LOG2 => true,
 		Block::LEAVES2 => true
 	];
 

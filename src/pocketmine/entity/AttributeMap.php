@@ -42,7 +42,7 @@ class AttributeMap implements \ArrayAccess {
 	}
 
 	/**
-	 * @return array
+	 * @return Attribute[]
 	 */
 	public function getAll() : array{
 		return $this->attributes;
@@ -76,10 +76,13 @@ class AttributeMap implements \ArrayAccess {
 	}
 
 	/**
-	 * @param mixed $offset
-	 * @param mixed $value
+	 * @param int|null $offset
+	 * @param float    $value
 	 */
 	public function offsetSet($offset, $value){
+		if($offset === null){
+			throw new \InvalidArgumentException("Array push syntax is not supported");
+		}
 		$this->attributes[$offset]->setValue($value);
 	}
 

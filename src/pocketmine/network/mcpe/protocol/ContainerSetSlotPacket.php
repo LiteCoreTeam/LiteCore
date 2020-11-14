@@ -33,8 +33,8 @@ class ContainerSetSlotPacket extends DataPacket {
 	public $slot;
 	/** @var Item */
 	public $item;
-	public $hotbarSlot;
-	public $unknown;
+	public $hotbarSlot = 0;
+	public $selectSlot = 0;
 
 	/**
 	 *
@@ -44,7 +44,7 @@ class ContainerSetSlotPacket extends DataPacket {
 		$this->slot = $this->getVarInt();
 		$this->hotbarSlot = $this->getVarInt();
 		$this->item = $this->getSlot();
-		$this->unknown = $this->getByte();
+		$this->selectSlot = $this->getByte();
 	}
 
 	/**
@@ -56,7 +56,7 @@ class ContainerSetSlotPacket extends DataPacket {
 		$this->putVarInt($this->slot);
 		$this->putVarInt($this->hotbarSlot);
 		$this->putSlot($this->item);
-		$this->putByte($this->unknown);
+		$this->putByte($this->selectSlot);
 	}
 
 	/**

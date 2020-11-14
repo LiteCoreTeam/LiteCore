@@ -77,9 +77,9 @@ class Anvil extends McRegion {
 
 		$entities = [];
 
-		foreach($chunk->getSavableEntities() as $entity){
-			$entity->saveNBT();
-			$entities[] = $entity->namedtag;
+        foreach($chunk->getSavableEntities() as $entity){
+            $entity->saveNBT();
+            $entities[] = $entity->namedtag;
 		}
 
 		$nbt->Entities = new ListTag("Entities", $entities);

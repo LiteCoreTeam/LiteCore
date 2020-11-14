@@ -182,7 +182,7 @@ class Binary {
 	 * @return int
 	 */
 	public static function readSignedShort($str){
-		if(PHP_INT_SIZE === 8){
+        if(PHP_INT_SIZE === 8){
 			return self::signShort(unpack("n", $str)[1]);
 		}else{
 			return unpack("n", $str)[1] << 16 >> 16;

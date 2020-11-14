@@ -28,11 +28,14 @@ class SetSpawnPositionPacket extends DataPacket {
 
 	const NETWORK_ID = ProtocolInfo::SET_SPAWN_POSITION_PACKET;
 
-	public $unknown;
+	const TYPE_PLAYER_SPAWN = 0;
+	const TYPE_WORLD_SPAWN = 1;
+
+	public $spawnType;
 	public $x;
 	public $y;
 	public $z;
-	public $unknownBool;
+	public $spawnForced;
 
 	/**
 	 *
@@ -46,9 +49,9 @@ class SetSpawnPositionPacket extends DataPacket {
 	 */
 	public function encode(){
 		$this->reset();
-		$this->putVarInt($this->unknown);
+		$this->putVarInt($this->spawnType);
 		$this->putBlockCoords($this->x, $this->y, $this->z);
-		$this->putBool($this->unknownBool);
+		$this->putBool($this->spawnForced);
 	}
 
 	/**

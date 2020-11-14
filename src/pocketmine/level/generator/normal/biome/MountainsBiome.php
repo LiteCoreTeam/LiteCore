@@ -37,7 +37,7 @@ class MountainsBiome extends GrassyBiome {
 		$this->addPopulator($trees);
 
 		$tallGrass = new TallGrass();
-		$tallGrass->setBaseAmount(6);
+		$tallGrass->setBaseAmount(1);
 
 		$this->addPopulator($tallGrass);
 

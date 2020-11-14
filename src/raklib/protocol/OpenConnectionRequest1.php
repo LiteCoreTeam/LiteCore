@@ -15,8 +15,7 @@
 
 namespace raklib\protocol;
 
-#include <rules/RakLibPacket.h>
-
+#include <rules/BinaryIO.h>
 
 use raklib\RakLib;
 
@@ -29,7 +28,7 @@ class OpenConnectionRequest1 extends OfflineMessage{
 	protected function encodePayload(){
 		$this->writeMagic();
 		$this->putByte($this->protocol);
-		$this->buffer = str_pad($this->buffer, "\x00", $this->mtuSize);
+		$this->buffer = str_pad($this->buffer, $this->mtuSize, "\x00");
 	}
 
 	protected function decodePayload(){

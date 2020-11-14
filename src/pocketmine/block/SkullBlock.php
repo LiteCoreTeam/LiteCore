@@ -126,10 +126,9 @@ class SkullBlock extends Flowable {
 	public function place(Item $item, Block $block, Block $target, $face, $fx, $fy, $fz, Player $player = null){
 		if($face !== 0){
 			$this->meta = $face;
-			if($face === 1){
+			$rot = 0;
+			if($face === Vector3::SIDE_UP and $player !== null){
 				$rot = floor(($player->yaw * 16 / 360) + 0.5) & 0x0F;
-			}else{
-				$rot = 0;
 			}
 			$this->getLevel()->setBlock($block, $this, true);
 			$moveMouth = false;

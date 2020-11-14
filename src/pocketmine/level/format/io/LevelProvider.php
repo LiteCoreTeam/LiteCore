@@ -161,16 +161,6 @@ interface LevelProvider {
 	public function isChunkPopulated(int $chunkX, int $chunkZ) : bool;
 
 	/**
-	 * Requests a MC: PE network chunk to be sent
-	 *
-	 * @param int $x
-	 * @param int $z
-	 *
-	 * @return \pocketmine\scheduler\AsyncTask|null
-	 */
-	public function requestChunkTask(int $x, int $z);
-
-	/**
 	 * @return string
 	 */
 	public function getName();

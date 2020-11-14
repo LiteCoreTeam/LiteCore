@@ -22,6 +22,7 @@
 namespace pocketmine\scheduler;
 
 use pocketmine\event\Timings;
+use pocketmine\utils\MainLogger;
 
 class TaskHandler {
 
@@ -65,98 +66,75 @@ class TaskHandler {
 		$this->task->setHandler($this);
 	}
 
-	/**
-	 * @return bool
-	 */
 	public function isCancelled(){
-		return $this->cancelled === true;
+		return $this->cancelled;
 	}
 
-	/**
-	 * @return int
-	 */
 	public function getNextRun(){
 		return $this->nextRun;
 	}
 
 	/**
-	 * @param int $ticks
+	 * @return void
 	 */
 	public function setNextRun($ticks){
 		$this->nextRun = $ticks;
 	}
 
-	/**
-	 * @return int
-	 */
 	public function getTaskId(){
 		return $this->taskId;
 	}
 
-	/**
-	 * @return Task
-	 */
 	public function getTask(){
 		return $this->task;
 	}
 
-	/**
-	 * @return int
-	 */
 	public function getDelay(){
 		return $this->delay;
 	}
 
-	/**
-	 * @return bool
-	 */
 	public function isDelayed(){
 		return $this->delay > 0;
 	}
 
-	/**
-	 * @return bool
-	 */
 	public function isRepeating(){
 		return $this->period > 0;
 	}
 
-	/**
-	 * @return int
-	 */
 	public function getPeriod(){
 		return $this->period;
 	}
 
 	/**
-	 * WARNING: Do not use this, it's only for internal use.
-	 * Changes to this function won't be recorded on the version.
+	 * @return void
 	 */
 	public function cancel(){
 		try{
 			if(!$this->isCancelled()){
 				$this->task->onCancel();
 			}
+		}catch(\Throwable $e){
+			MainLogger::getLogger()->logException($e);
 		}finally{
 			$this->remove();
 		}
 	}
 
+	/**
+	 * @return void
+	 */
 	public function remove(){
 		$this->cancelled = true;
 		$this->task->setHandler(null);
 	}
 
 	/**
-	 * @param int $currentTick
+	 * @return void
 	 */
-	public function run($currentTick){
+	public function run(int $currentTick){
 		$this->task->onRun($currentTick);
 	}
 
-	/**
-	 * @return string
-	 */
 	public function getTaskName(){
 		if($this->timingName !== null){
 			return $this->timingName;

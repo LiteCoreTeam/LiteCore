@@ -32,7 +32,8 @@ class SetEntityDataPacket extends DataPacket {
 	 *
 	 */
 	public function decode(){
-
+        $this->eid = $this->getEntityId();
+        $this->metadata = $this->getEntityMetadata(true);
 	}
 
 	/**

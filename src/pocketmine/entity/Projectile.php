@@ -33,6 +33,7 @@ use pocketmine\level\MovingObjectPosition;
 use pocketmine\math\Vector3;
 use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\nbt\tag\ShortTag;
+use pocketmine\nbt\tag\DoubleTag;
 
 abstract class Projectile extends Entity {
 
@@ -80,6 +81,9 @@ abstract class Projectile extends Entity {
 			$this->age = $this->namedtag["Age"];
 		}
 
+		if(isset($this->namedtag->damage)){
+			$this->damage = $this->namedtag["damage"];
+		}
 	}
 
 	/**
@@ -91,9 +95,19 @@ abstract class Projectile extends Entity {
 		return $entity instanceof Living and !$this->onGround;
 	}
 
+	/**
+	 * Called when the projectile hits something. Override this to perform non-target-specific effects when the
+	 * projectile hits something.
+	 */
+	protected function onHit(ProjectileHitEvent $event) : void{
+
+	}
+
 	public function saveNBT(){
 		parent::saveNBT();
+
 		$this->namedtag->Age = new ShortTag("Age", $this->age);
+		$this->namedtag->damage = new DoubleTag("damage", $this->damage);
 	}
 
 	/**

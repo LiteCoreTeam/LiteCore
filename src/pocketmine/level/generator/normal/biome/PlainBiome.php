@@ -40,7 +40,7 @@ class PlainBiome extends GrassyBiome {
 		$sugarcane = new Sugarcane();
 		$sugarcane->setBaseAmount(6);
 		$tallGrass = new TallGrass();
-		$tallGrass->setBaseAmount(25);
+		$tallGrass->setBaseAmount(12);
 		$waterPit = new WaterPit();
 		$waterPit->setBaseAmount(9999);
 		$lilyPad = new LilyPad();
@@ -63,7 +63,7 @@ class PlainBiome extends GrassyBiome {
 		$this->addPopulator($waterPit);
 		$this->addPopulator($lilyPad);
 
-		$this->setElevation(61, 68);
+		$this->setElevation(63, 68);
 
 		$this->temperature = 0.8;
 		$this->rainfall = 0.4;

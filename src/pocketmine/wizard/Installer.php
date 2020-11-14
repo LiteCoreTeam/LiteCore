@@ -60,15 +60,16 @@ class Installer {
 	 * @return bool
 	 */
 	public function run(){
-		echo "[*] Пожалуйста, выберите язык:\n";
+		echo "[*] GenisysPro set-up wizard\n";
+		echo "[*] Please select a language:\n";
 		foreach(InstallerLang::$languages as $short => $native){
 			echo " $native => $short\n";
 		}
 		do{
-			echo "[?] Язык (rus): ";
-			$lang = strtolower($this->getInput("rus"));
+			echo "[?] Language (eng): ";
+			$lang = strtolower($this->getInput("eng"));
 			if(!isset(InstallerLang::$languages[$lang])){
-				echo "[!] Не удалось найти выбранный Вами язык\n";
+				echo "[!] Couldn't find the language\n";
 				$lang = false;
 			}
 			$this->defaultLang = $lang;

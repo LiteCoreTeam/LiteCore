@@ -68,8 +68,7 @@ use pocketmine\command\defaults\SummonCommand;
 use pocketmine\command\defaults\TeleportCommand;
 
 use pocketmine\command\defaults\TransferServerCommand;
-use pocketmine\command\defaults\RakLibCommand;
-use pocketmine\command\defaults\RconCommand;
+
 use pocketmine\command\defaults\TellCommand;
 use pocketmine\command\defaults\TimeCommand;
 use pocketmine\command\defaults\TimingsCommand;
@@ -139,7 +138,6 @@ class SimpleCommandMap implements CommandMap {
 		$this->register("pocketmine", new VersionCommand("version"));
 		$this->register("pocketmine", new FillCommand("fill"));
 		$this->register("pocketmine", new PluginsCommand("plugins"));
-		$this->register("pocketmine", new PingCommand("ping"));
 		$this->register("pocketmine", new SeedCommand("seed"));
 		$this->register("pocketmine", new HelpCommand("help"), null, true);
 		$this->register("pocketmine", new StopCommand("stop"), null, true);
@@ -165,14 +163,14 @@ class SimpleCommandMap implements CommandMap {
 		$this->register("pocketmine", new EffectCommand("effect"));
 		$this->register("pocketmine", new EnchantCommand("enchant"));
 		$this->register("pocketmine", new ParticleCommand("particle"));
+		$this->register("pocketmine", new PingCommand("ping"));
 		$this->register("pocketmine", new GamemodeCommand("gamemode"));
 		$this->register("pocketmine", new KillCommand("kill"));
 		$this->register("pocketmine", new SpawnpointCommand("spawnpoint"));
 		$this->register("pocketmine", new SetWorldSpawnCommand("setworldspawn"));
 		$this->register("pocketmine", new SummonCommand("summon"));
 		$this->register("pocketmine", new TeleportCommand("tp"));
-		$this->register("pocketmine", new RakLibCommand("raklib"));
-		$this->register("pocketmine", new RconCommand("rcon"));
+
 		$this->register("pocketmine", new TransferServerCommand("transfer"));
 
 		$this->register("pocketmine", new TimeCommand("time"));
@@ -181,11 +179,9 @@ class SimpleCommandMap implements CommandMap {
 		$this->register("pocketmine", new XpCommand("xp"));
 		$this->register("pocketmine", new SetBlockCommand("setblock"));
 
-		if($this->server->getProperty("debug.commands", false)){
-			$this->register("pocketmine", new StatusCommand("status"), null, true);
-			$this->register("pocketmine", new GarbageCollectorCommand("gc"), null, true);
-			$this->register("pocketmine", new DumpMemoryCommand("dumpmemory"), null, true);
-		}
+		$this->register("pocketmine", new StatusCommand("status"), null, true);
+		$this->register("pocketmine", new GarbageCollectorCommand("gc"), null, true);
+		$this->register("pocketmine", new DumpMemoryCommand("dumpmemory"), null, true);
 	}
 
 
@@ -347,14 +343,16 @@ class SimpleCommandMap implements CommandMap {
 
 		return true;
 	}
-	
+
 	public function unregister(Command $command){
 		foreach($this->knownCommands as $lbl => $cmd){
 			if($cmd === $command){
 				unset($this->knownCommands[$lbl]);
 			}
 		}
+
 		$command->unregister($this);
+		
 		return true;
 	}
 

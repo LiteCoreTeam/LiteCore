@@ -27,7 +27,6 @@ use pocketmine\level\format\io\BaseLevelProvider;
 use pocketmine\level\format\io\ChunkUtils;
 use pocketmine\level\generator\Generator;
 use pocketmine\level\generator\Flat;
-use pocketmine\Player;
 use pocketmine\level\Level;
 use pocketmine\level\LevelException;
 use pocketmine\nbt\NBT;
@@ -50,14 +49,6 @@ class LevelDB extends BaseLevelProvider {
 	const TAG_PENDING_TICK = "3";
 	const TAG_BLOCK_EXTRA_DATA = "4";
 	const TAG_BIOME_STATE = "5";
-	const TAG_STATE_FINALISATION = "6";
-
-	const TAG_BORDER_BLOCKS = "8";
-	const TAG_HARDCODED_SPAWNERS = "9";
-
-	const FINALISATION_NEEDS_INSTATICKING = 0;
-	const FINALISATION_NEEDS_POPULATION = 1;
-	const FINALISATION_DONE = 2;
 
 	const TAG_VERSION = "v";
 
@@ -68,24 +59,12 @@ class LevelDB extends BaseLevelProvider {
 	const GENERATOR_FLAT = 2;
 
 	const CURRENT_STORAGE_VERSION = 5; //Current MCPE level format version
-	const CURRENT_LEVEL_CHUNK_VERSION = 7;
-	const CURRENT_LEVEL_SUBCHUNK_VERSION = 0;
 
 	/** @var Chunk[] */
 	protected $chunks = [];
 
 	/** @var \LevelDB */
 	protected $db;
-
-	private static function checkForLevelDBExtension(){
-		if(!extension_loaded('leveldb')){
-			throw new LevelException("The leveldb PHP extension is required to use this world format");
-		}
-
-		if(!defined('LEVELDB_ZLIB_RAW_COMPRESSION')){
-			throw new LevelException("Given version of php-leveldb doesn't support zlib raw compression");
-		}
-	}
 
 	/**
 	 * LevelDB constructor.
@@ -94,14 +73,17 @@ class LevelDB extends BaseLevelProvider {
 	 * @param string $path
 	 */
 	public function __construct(Level $level, string $path){
-		self::checkForLevelDBExtension();
 		$this->level = $level;
 		$this->path = $path;
 		if(!file_exists($this->path)){
 			mkdir($this->path, 0777, true);
 		}
+		$rawLevelData = file_get_contents($this->getPath() . "level.dat");
+		if($rawLevelData === false or strlen($rawLevelData) <= 8){
+			throw new LevelException("Truncated level.dat");
+		}
 		$nbt = new NBT(NBT::LITTLE_ENDIAN);
-		$nbt->read(substr(file_get_contents($this->getPath() . "level.dat"), 8));
+		$nbt->read(substr($rawLevelData, 8));
 		$levelData = $nbt->getData();
 		if($levelData instanceof CompoundTag){
 			$this->levelData = $levelData;
@@ -110,8 +92,12 @@ class LevelDB extends BaseLevelProvider {
 		}
 
 		$this->db = new \LevelDB($this->path . "/db", [
-			"compression" => LEVELDB_ZLIB_RAW_COMPRESSION
+			"compression" => LEVELDB_ZLIB_COMPRESSION
 		]);
+
+		if(isset($this->levelData->StorageVersion) and $this->levelData->StorageVersion->getValue() > self::CURRENT_STORAGE_VERSION){
+			throw new LevelException("Specified LevelDB world format version is newer than the version supported by the server");
+		}
 
 		if(!isset($this->levelData->generatorName)){
 			if(isset($this->levelData->Generator)){
@@ -176,7 +162,9 @@ class LevelDB extends BaseLevelProvider {
 	 * @param array      $options
 	 */
 	public static function generate(string $path, string $name, $seed, string $generator, array $options = []){
-		self::checkForLevelDBExtension();
+		if(!file_exists($path)){
+			mkdir($path, 0777, true);
+		}
 
 		if(!file_exists($path . "/db")){
 			mkdir($path . "/db", 0777, true);
@@ -235,7 +223,7 @@ class LevelDB extends BaseLevelProvider {
 
 
 		$db = new \LevelDB($path . "/db", [
-			"compression" => LEVELDB_ZLIB_RAW_COMPRESSION
+			"compression" => LEVELDB_ZLIB_COMPRESSION
 		]);
 
 		if($generatorType === self::GENERATOR_FLAT and isset($options["preset"])){
@@ -320,7 +308,7 @@ class LevelDB extends BaseLevelProvider {
 		$this->level->timings->syncChunkLoadDataTimer->startTiming();
 		$chunk = $this->readChunk($chunkX, $chunkZ);
 		if($chunk === null and $create){
-			$chunk = new Chunk($chunkX, $chunkZ);
+			$chunk = Chunk::getEmptyChunk($chunkX, $chunkZ);
 		}
 		$this->level->timings->syncChunkLoadDataTimer->stopTiming();
 
@@ -432,12 +420,6 @@ class LevelDB extends BaseLevelProvider {
 				}
 			}
 
-			foreach($entities as $entityNBT){
-				if($entityNBT->id instanceof IntTag){
-					$entityNBT["id"] &= 0xff;
-				}
-			}
-
 			$tiles = [];
 			if(($tileData = $this->db->get($index . self::TAG_BLOCK_ENTITY)) !== false and strlen($tileData) > 0){
 				$nbt->read($tileData, true);
@@ -497,71 +479,44 @@ class LevelDB extends BaseLevelProvider {
 	 */
 	private function writeChunk(Chunk $chunk){
 		$index = LevelDB::chunkIndex($chunk->getX(), $chunk->getZ());
-		$this->db->put($index . self::TAG_VERSION, chr(self::CURRENT_LEVEL_CHUNK_VERSION));
-
+		$this->db->put($index . self::TAG_VERSION, chr(self::CURRENT_STORAGE_VERSION));
+		$highestIndex = $chunk->getHighestSubChunkIndex();
 		$subChunks = $chunk->getSubChunks();
-		foreach($subChunks as $y => $subChunk){
-			$key = $index . self::TAG_SUBCHUNK_PREFIX . chr($y);
-			if($subChunk->isEmpty(false)){ //MCPE doesn't save light anymore as of 1.1
-				$this->db->delete($key);
-			}else{
-				$this->db->put($key,
-					chr(self::CURRENT_LEVEL_SUBCHUNK_VERSION) .
-					$subChunks[$y]->getBlockIdArray() .
-					$subChunks[$y]->getBlockDataArray()
-				);
-			}
+		for($y = $highestIndex; $y >= 0; --$y){ //Subchunks behave like a stack
+
+			$this->db->put($index . self::TAG_SUBCHUNK_PREFIX . chr($y),
+				"\x00" . //Subchunk version byte
+				$subChunks[$y]->getBlockIdArray() .
+				$subChunks[$y]->getBlockDataArray() .
+				$subChunks[$y]->getSkyLightArray() .
+				$subChunks[$y]->getBlockLightArray()
+			);
 		}
 
 		$this->db->put($index . self::TAG_DATA_2D, pack("v*", ...$chunk->getHeightMapArray()) . $chunk->getBiomeIdArray());
 
-		$extraData = $chunk->getBlockExtraDataArray();
-		if(count($extraData) > 0){
-			$stream = new BinaryStream();
-			$stream->putLInt(count($extraData));
-			foreach($extraData as $key => $value){
-				$stream->putLInt($key);
-				$stream->putLShort($value);
-			}
+		$this->writeTags($chunk->getTiles(), $index . self::TAG_BLOCK_ENTITY);
+		$this->writeTags($chunk->getEntities(), $index . self::TAG_ENTITY);
 
-			$this->db->put($index . self::TAG_BLOCK_EXTRA_DATA, $stream->getBuffer());
-		}else{
-			$this->db->delete($index . self::TAG_BLOCK_EXTRA_DATA);
-		}
-
-		//TODO: use this properly
-		$this->db->put($index . self::TAG_STATE_FINALISATION, chr(self::FINALISATION_DONE));
-
-		/** @var CompoundTag[] $tiles */
-		$tiles = [];
-		foreach($chunk->getTiles() as $tile){
-			if(!$tile->isClosed()){
-				$tile->saveNBT();
-				$tiles[] = $tile->namedtag;
-			}
-		}
-		$this->writeTags($tiles, $index . self::TAG_BLOCK_ENTITY);
-
-		/** @var CompoundTag[] $entities */
-		$entities = [];
-		foreach($chunk->getSavableEntities() as $entity){
-			$entity->saveNBT();
-			$entities[] = $entity->namedtag;
-		}
-		$this->writeTags($entities, $index . self::TAG_ENTITY);
-
-		$this->db->delete($index . self::TAG_DATA_2D_LEGACY);
-		$this->db->delete($index . self::TAG_LEGACY_TERRAIN);
+		//TODO: clean up old data
 	}
 
 	/**
-	 * @param CompoundTag[] $targets
-	 * @param string        $index
+	 * @param array  $targets
+	 * @param string $index
 	 */
 	private function writeTags(array $targets, string $index){
+		$nbt = new NBT(NBT::LITTLE_ENDIAN);
+		$out = [];
+		foreach($targets as $target){
+			if(!$target->closed){
+				$target->saveNBT();
+				$out[] = $target->namedtag;
+			}
+		}
+
 		if(!empty($targets)){
-			$nbt = new NBT(NBT::LITTLE_ENDIAN);
-			$nbt->setData($targets);
+			$nbt->setData($out);
 			$this->db->put($index, $nbt->write());
 		}else{
 			$this->db->delete($index);
@@ -596,7 +551,7 @@ class LevelDB extends BaseLevelProvider {
 		if($this->isChunkLoaded($chunkX, $chunkZ)){
 			$chunk = $this->getChunk($chunkX, $chunkZ);
 			if(!$chunk->isGenerated()){
-				throw new LevelException("Cannot save un-generated chunk");
+				throw new \InvalidStateException("Cannot save un-generated chunk");
 			}
 			$this->writeChunk($chunk);
 
@@ -674,7 +629,11 @@ class LevelDB extends BaseLevelProvider {
 	 * @return bool
 	 */
 	public function isChunkGenerated(int $chunkX, int $chunkZ) : bool{
-		return $this->chunkExists($chunkX, $chunkZ) and ($chunk = $this->getChunk($chunkX, $chunkZ, false)) !== null;
+		if($this->chunkExists($chunkX, $chunkZ) and ($chunk = $this->getChunk($chunkX, $chunkZ, false)) !== null){
+			return true;
+		}
+
+		return false;
 	}
 
 	/**

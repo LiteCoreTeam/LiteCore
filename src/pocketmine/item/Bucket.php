@@ -40,11 +40,8 @@ class Bucket extends Item {
 		parent::__construct(self::BUCKET, $meta, $count, "Bucket");
 	}
 
-	/**
-	 * @return int
-	 */
 	public function getMaxStackSize() : int{
-		return 1;
+		return $this->meta === Block::AIR ? 16 : 1; //empty buckets stack to 16
 	}
 
 	/**
@@ -71,7 +68,10 @@ class Bucket extends Item {
 
 		if($targetBlock instanceof Air){
 			if($target instanceof Liquid and $target->getDamage() === 0){
-				$result = clone $this;
+				$stack = clone $this;
+
+				$result = $stack->pop();
+
 				$id = $target->getId();
 				if($id == self::STILL_WATER){
 					$id = self::WATER;
@@ -84,8 +84,16 @@ class Bucket extends Item {
 				if(!$ev->isCancelled()){
 					$player->getLevel()->setBlock($target, new Air(), true, true);
 					if($player->isSurvival()){
-						$player->getInventory()->setItemInHand($ev->getItem());
+						if($stack->getCount() === 0){
+							$player->getInventory()->setItemInHand($ev->getItem());
+						}else{
+							$player->getInventory()->setItemInHand($stack);
+							$player->getInventory()->addItem($ev->getItem());
+						}
+					}else{
+						$player->getInventory()->addItem($ev->getItem());
 					}
+					
 					return true;
 				}else{
 					$player->getInventory()->sendContents($player);

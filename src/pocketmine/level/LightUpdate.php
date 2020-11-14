@@ -21,17 +21,16 @@
 namespace pocketmine\level;
 
 use pocketmine\block\Block;
-use pocketmine\level\Level;
-use pocketmine\level\ChunkManager;
 
 //TODO: make light updates asynchronous
-abstract class LightUpdate{
+abstract class LightUpdate
+{
     /** @var Level */
     protected $level;
+    /** @var int[][] blockhash => [x, y, z, new light level] */
+    protected $updateNodes = [];
     /** @var \SplQueue */
     protected $spreadQueue;
-    /** @var int[][] blockhash => [x, y, z, new light level] */
-	protected $updateNodes = [];
     /** @var bool[] */
     protected $spreadVisited = [];
     /** @var \SplQueue */
@@ -46,24 +45,40 @@ abstract class LightUpdate{
         $this->spreadQueue = new \SplQueue();
     }
 
+    public function addSpreadNode(int $x, int $y, int $z)
+    {
+        $this->spreadQueue->enqueue([$x, $y, $z]);
+    }
+
+    public function addRemoveNode(int $x, int $y, int $z, int $oldLight)
+    {
+        $this->spreadQueue->enqueue([$x, $y, $z, $oldLight]);
+    }
+
     abstract protected function getLight(int $x, int $y, int $z): int;
 
+    /**
+     * @return void
+     */
     abstract protected function setLight(int $x, int $y, int $z, int $level);
 
+    /**
+     * @return void
+     */
     public function setAndUpdateLight(int $x, int $y, int $z, int $newLevel){
         $this->updateNodes[Level::blockHash($x, $y, $z)] = [$x, $y, $z, $newLevel];
     }
 
-    public function prepareNodes() : void{
-    	foreach($this->updateNodes as $blockHash => [$x, $y, $z, $newLevel]){
+    private function prepareNodes() : void{
+        foreach($this->updateNodes as $blockHash => [$x, $y, $z, $newLevel]){
             $oldLevel = $this->getLight($x, $y, $z);
 
-            if ($oldLevel !== $newLevel) {
+            if($oldLevel !== $newLevel){
                 $this->setLight($x, $y, $z, $newLevel);
-                if ($oldLevel < $newLevel) { //light increased
+                if($oldLevel < $newLevel){ //light increased
                     $this->spreadVisited[$blockHash] = true;
                     $this->spreadQueue->enqueue([$x, $y, $z]);
-                } else { //light removed
+                }else{ //light removed
                     $this->removalVisited[$blockHash] = true;
                     $this->removalQueue->enqueue([$x, $y, $z, $oldLevel]);
                 }
@@ -71,8 +86,11 @@ abstract class LightUpdate{
         }
     }
 
+    /**
+     * @return void
+     */
     public function execute(){
-    	$this->prepareNodes();
+        $this->prepareNodes();
 
         while (!$this->removalQueue->isEmpty()) {
             list($x, $y, $z, $oldAdjacentLight) = $this->removalQueue->dequeue();
@@ -122,13 +140,16 @@ abstract class LightUpdate{
         }
     }
 
+    /**
+     * @return void
+     */
     protected function computeRemoveLight(int $x, int $y, int $z, int $oldAdjacentLevel){
         $current = $this->getLight($x, $y, $z);
 
         if ($current !== 0 and $current < $oldAdjacentLevel) {
             $this->setLight($x, $y, $z, 0);
 
-            if (!isset($visited[$index = Level::blockHash($x, $y, $z)])) {
+            if (!isset($this->removalVisited[$index = Level::blockHash($x, $y, $z)])) {
                 $this->removalVisited[$index] = true;
                 if ($current > 1) {
                     $this->removalQueue->enqueue([$x, $y, $z, $current]);
@@ -142,6 +163,9 @@ abstract class LightUpdate{
         }
     }
 
+    /**
+     * @return void
+     */
     protected function computeSpreadLight(int $x, int $y, int $z, int $newAdjacentLevel){
         $current = $this->getLight($x, $y, $z);
         $potentialLight = $newAdjacentLevel - Block::$lightFilter[$this->level->getBlockIdAt($x, $y, $z)];
@@ -149,7 +173,7 @@ abstract class LightUpdate{
         if ($current < $potentialLight) {
             $this->setLight($x, $y, $z, $potentialLight);
 
-            if (!isset($this->spreadVisited[$index = Level::blockHash($x, $y, $z)])) {
+            if (!isset($this->spreadVisited[$index = Level::blockHash($x, $y, $z)]) and $potentialLight > 1) {
                 $this->spreadVisited[$index] = true;
                 $this->spreadQueue->enqueue([$x, $y, $z]);
             }

@@ -21,11 +21,14 @@
 
 namespace pocketmine\block;
 
+use pocketmine\item\Item;
 use pocketmine\level\Level;
 
 class GlowingRedstoneOre extends RedstoneOre implements SolidLight {
 
 	protected $id = self::GLOWING_REDSTONE_ORE;
+
+	protected $itemId = self::REDSTONE_ORE;
 
 	/**
 	 * @return string

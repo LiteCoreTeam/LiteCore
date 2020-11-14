@@ -27,7 +27,7 @@ use pocketmine\level\Level;
 use pocketmine\Player;
 use pocketmine\Server;
 
-class CocoaBlock extends Solid {
+class CocoaBlock extends Transparent{
 
 	protected $id = self::COCOA_BLOCK;
 
@@ -85,7 +85,7 @@ class CocoaBlock extends Solid {
 			if(!$ev->isCancelled()){
 				$this->getLevel()->setBlock($this, $ev->getNewState(), true, true);
 			}
-			$item->count--;
+            $item->pop();
 			return true;
 		}
 		return false;

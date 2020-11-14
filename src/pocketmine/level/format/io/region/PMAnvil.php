@@ -78,9 +78,11 @@ class PMAnvil extends Anvil {
 
 		$entities = [];
 
-		foreach($chunk->getSavableEntities() as $entity){
-			$entity->saveNBT();
-			$entities[] = $entity->namedtag;
+		foreach($chunk->getEntities() as $entity){
+			if(!($entity instanceof Player) and !$entity->closed){
+				$entity->saveNBT();
+				$entities[] = $entity->namedtag;
+			}
 		}
 
 		$nbt->Entities = new ListTag("Entities", $entities);

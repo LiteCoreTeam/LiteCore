@@ -29,7 +29,9 @@ use pocketmine\item\enchantment\Enchantment;
 use pocketmine\item\Item;
 use pocketmine\Player;
 
-
+/**
+ * Called when an entity takes damage.
+ */
 class EntityDamageEvent extends EntityEvent implements Cancellable {
 	public static $handlerList = null;
 
@@ -39,6 +41,8 @@ class EntityDamageEvent extends EntityEvent implements Cancellable {
 	const MODIFIER_PROTECTION = 3;
 	const MODIFIER_STRENGTH = 4;
 	const MODIFIER_WEAKNESS = 5;
+	const MODIFIER_CRITICAL = 7;
+	const MODIFIER_TOTEM = 8;
 
 	const CAUSE_CONTACT = 0;
 	const CAUSE_ENTITY_ATTACK = 1;
@@ -56,9 +60,7 @@ class EntityDamageEvent extends EntityEvent implements Cancellable {
 	const CAUSE_MAGIC = 13;
 	const CAUSE_CUSTOM = 14;
 	const CAUSE_STARVATION = 15;
-
 	const CAUSE_LIGHTNING = 16;
-
 
 	private $cause;
 	private $EPF = 0;

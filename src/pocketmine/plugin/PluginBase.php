@@ -238,9 +238,8 @@ abstract class PluginBase implements Plugin {
 		$resources = [];
 		if(is_dir($this->file . "resources/")){
 			foreach(new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($this->file . "resources/")) as $resource){
-				if($resource->isFile() === true){
-					$path = str_replace(DIRECTORY_SEPARATOR, "/", substr((string) $resource, strlen($this->file . "resources/")));
-					$resources[$path] = $resource;
+				if($resource->isFile()){
+					$resources[] = $resource;
 				}
 			}
 		}
@@ -275,15 +274,20 @@ abstract class PluginBase implements Plugin {
 		if(!file_exists($this->configFile)){
 			$this->saveResource("config.yml", false);
 		}
-		return false;
 	}
 
 	/**
 	 *
 	 */
 	public function reloadConfig(){
-		$this->saveDefaultConfig();
+		if(!$this->saveDefaultConfig()){
+			@mkdir($this->dataFolder);
+		}
 		$this->config = new Config($this->configFile);
+		if(($configStream = $this->getResource("config.yml")) !== null){
+			$this->config->setDefaults(yaml_parse(Config::fixYAMLIndexes(stream_get_contents($configStream))));
+			fclose($configStream);
+		}
 	}
 
 	/**

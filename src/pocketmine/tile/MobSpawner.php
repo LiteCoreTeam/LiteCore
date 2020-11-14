@@ -24,7 +24,6 @@ namespace pocketmine\tile;
 use pocketmine\entity\Entity;
 use pocketmine\event\entity\EntityGenerateEvent;
 use pocketmine\item\Item;
-use pocketmine\level\format\Chunk;
 use pocketmine\level\Level;
 use pocketmine\math\Vector3;
 use pocketmine\nbt\tag\CompoundTag;
@@ -192,9 +191,6 @@ class MobSpawner extends Spawnable {
 
 		$this->timings->startTiming();
 
-		if(!($this->chunk instanceof Chunk)){
-			return false;
-		}
 		if($this->canUpdate()){
 			if($this->getDelay() <= 0){
 				$success = 0;

@@ -28,9 +28,6 @@
 
 namespace pocketmine\item;
 
-use pocketmine\Player;
-use pocketmine\Server;
-use pocketmine\utils\Binary;
 use pocketmine\block\Block;
 use pocketmine\entity\CaveSpider;
 use pocketmine\entity\Entity;
@@ -48,8 +45,12 @@ use pocketmine\nbt\tag\ByteTag;
 use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\nbt\tag\IntTag;
 use pocketmine\nbt\tag\ListTag;
+use pocketmine\nbt\tag\NamedTag;
 use pocketmine\nbt\tag\ShortTag;
 use pocketmine\nbt\tag\StringTag;
+use pocketmine\Player;
+use pocketmine\Server;
+use pocketmine\utils\Binary;
 use pocketmine\utils\Config;
 
 class Item implements ItemIds, \JsonSerializable {
@@ -91,8 +92,7 @@ class Item implements ItemIds, \JsonSerializable {
 	protected $block;
 	protected $id;
 	protected $meta;
-	private $tags = "";
-	private $cachedNBT = null;
+	private $nbt = null;
 	public $count;
 	protected $durability = 0;
 	protected $name;
@@ -116,11 +116,13 @@ class Item implements ItemIds, \JsonSerializable {
 			self::$list[self::EYE_OF_ENDER] = EyeOfEnder::class;
 			self::$list[self::DRAGONS_BREATH] = DragonsBreath::class;
 			self::$list[self::SHULKER_SHELL] = ShulkerShell::class;
+			self::$list[self::TOTEM] = Totem::class;
 			self::$list[self::POPPED_CHORUS_FRUIT] = PoppedChorusFruit::class;
 			self::$list[self::WHEAT_SEEDS] = WheatSeeds::class;
 			self::$list[self::PUMPKIN_SEEDS] = PumpkinSeeds::class;
 			self::$list[self::MELON_SEEDS] = MelonSeeds::class;
 			self::$list[self::MUSHROOM_STEW] = MushroomStew::class;
+			self::$list[self::MINECART_WITH_TNT] = MinecartTNT::class;
 			self::$list[self::RABBIT_STEW] = RabbitStew::class;
 			self::$list[self::BEETROOT_SOUP] = BeetrootSoup::class;
 			self::$list[self::BEETROOT_SEEDS] = BeetrootSeeds::class;
@@ -201,6 +203,7 @@ class Item implements ItemIds, \JsonSerializable {
 
 			self::$list[self::NETHER_QUARTZ] = NetherQuartz::class;
 			self::$list[self::POTION] = Potion::class;
+			self::$list[self::FISHING_ROD] = FishingRod::class;
 			self::$list[self::GLASS_BOTTLE] = GlassBottle::class;
 			self::$list[self::SPLASH_POTION] = SplashPotion::class;
 			self::$list[self::ENCHANTING_BOTTLE] = EnchantingBottle::class;
@@ -217,7 +220,6 @@ class Item implements ItemIds, \JsonSerializable {
 			self::$list[self::RAW_PORKCHOP] = RawPorkchop::class;
 			self::$list[self::COOKED_PORKCHOP] = CookedPorkchop::class;
 			self::$list[self::GOLDEN_APPLE] = GoldenApple::class;
-			self::$list[self::MINECART] = Minecart::class;
 			self::$list[self::REDSTONE] = Redstone::class;
 			self::$list[self::LEATHER] = Leather::class;
 			self::$list[self::CLAY] = Clay::class;
@@ -285,38 +287,37 @@ class Item implements ItemIds, \JsonSerializable {
 		self::initCreativeItems();
 	}
 
-	private static $creative = [];
-
 	private static function initCreativeItems(){
 		self::clearCreativeItems();
 
 		$creativeItems = new Config(Server::getInstance()->getFilePath() . "src/pocketmine/resources/creativeitems.json", Config::JSON, []);
 
 		foreach($creativeItems->getAll() as $data){
-			$item = Item::get($data["id"], $data["damage"], $data["count"], $data["nbt"]);
+			$item = Item::get($data["id"], $data["damage"], $data["count"], hex2bin($data["nbt_hex"]));
 			if($item->getName() === "Unknown"){
 				continue;
 			}
+
 			self::addCreativeItem($item);
 		}
 	}
 
 	public static function clearCreativeItems(){
-		Item::$creative = [];
+		CreativeItemsStorage::getInstance()->clearItems();
 	}
 
 	/**
 	 * @return array
 	 */
 	public static function getCreativeItems() : array{
-		return Item::$creative;
+		return CreativeItemsStorage::getInstance()->getItems();
 	}
 
 	/**
 	 * @param Item $item
 	 */
 	public static function addCreativeItem(Item $item){
-		Item::$creative[] = clone $item;
+		CreativeItemsStorage::getInstance()->addItem($item);
 	}
 
 	/**
@@ -325,7 +326,7 @@ class Item implements ItemIds, \JsonSerializable {
 	public static function removeCreativeItem(Item $item){
 		$index = self::getCreativeItemIndex($item);
 		if($index !== -1){
-			unset(Item::$creative[$index]);
+			CreativeItemsStorage::getInstance()->removeItemByIndex($index);
 		}
 	}
 
@@ -335,13 +336,7 @@ class Item implements ItemIds, \JsonSerializable {
 	 * @return bool
 	 */
 	public static function isCreativeItem(Item $item) : bool{
-		foreach(Item::$creative as $i => $d){
-			if($item->equals($d, !$item->isTool())){
-				return true;
-			}
-		}
-
-		return false;
+		return Item::getCreativeItemIndex($item) !== -1;
 	}
 
 	/**
@@ -350,7 +345,7 @@ class Item implements ItemIds, \JsonSerializable {
 	 * @return Item
 	 */
 	public static function getCreativeItem(int $index){
-		return isset(Item::$creative[$index]) ? Item::$creative[$index] : null;
+		return CreativeItemsStorage::getInstance()->getItemByIndex($index);
 	}
 
 	/**
@@ -359,7 +354,7 @@ class Item implements ItemIds, \JsonSerializable {
 	 * @return int
 	 */
 	public static function getCreativeItemIndex(Item $item) : int{
-		foreach(Item::$creative as $i => $d){
+		foreach(self::getCreativeItems() as $i => $d){
 			if($item->equals($d, !$item->isTool())){
 				return $i;
 			}
@@ -398,7 +393,7 @@ class Item implements ItemIds, \JsonSerializable {
 	 * @return Item[]|Item
 	 */
 	public static function fromString(string $str, bool $multiple = false){
-		if($multiple === true){
+		if($multiple){
 			$blocks = [];
 			foreach(explode(",", $str) as $b){
 				$blocks[] = self::fromString($b, false);
@@ -409,17 +404,18 @@ class Item implements ItemIds, \JsonSerializable {
 			$b = explode(":", str_replace([" ", "minecraft:"], ["_", ""], trim($str)));
 			if(!isset($b[1])){
 				$meta = 0;
+			}elseif(is_numeric($b[1])){
+				$meta = (int) $b[1];
 			}else{
-				$meta = $b[1] & 0xFFFF;
+				throw new \InvalidArgumentException("Unable to parse \"" . $b[1] . "\" from \"" . $str . "\" as a valid meta value");
 			}
 
-			if(defined(Item::class . "::" . strtoupper($b[0]))){
+			if(is_numeric($b[0])){
+				$item = self::get((int) $b[0] & 0xFFFF, $meta);
+			}elseif(defined(Item::class . "::" . strtoupper($b[0]))){
 				$item = self::get(constant(Item::class . "::" . strtoupper($b[0])), $meta);
-				if($item->getId() === self::AIR and strtoupper($b[0]) !== "AIR"){
-					$item = self::get($b[0] & 0xFFFF, $meta);
-				}
 			}else{
-				$item = self::get($b[0] & 0xFFFF, $meta);
+				throw new \InvalidArgumentException("Unable to resolve \"" . $str . "\" to a valid item");
 			}
 
 			return $item;
@@ -436,7 +432,7 @@ class Item implements ItemIds, \JsonSerializable {
 	 */
 	public function __construct(int $id, int $meta = 0, int $count = 1, string $name = "Unknown"){
 		$this->id = $id & 0xffff;
-		$this->meta = $meta !== -1 ? $meta & 0xffff : -1;
+		$this->setDamage($meta);
 		$this->count = $count;
 		$this->name = $name;
 		if(!isset($this->block) and $this->id <= 0xff and isset(Block::$list[$this->id])){
@@ -446,6 +442,9 @@ class Item implements ItemIds, \JsonSerializable {
 	}
 
 	/**
+	 * @deprecated This method accepts NBT serialized in a network-dependent format.
+	 * @see Item::setNamedTag()
+	 *
 	 * @param $tags
 	 *
 	 * @return $this
@@ -453,9 +452,10 @@ class Item implements ItemIds, \JsonSerializable {
 	public function setCompoundTag($tags){
 		if($tags instanceof CompoundTag){
 			$this->setNamedTag($tags);
+		}elseif(is_string($tags) and strlen($tags) > 0){
+			$this->setNamedTag(self::parseCompoundTag($tags));
 		}else{
-			$this->tags = (string) $tags;
-			$this->cachedNBT = null;
+			$this->clearNamedTag();
 		}
 
 		return $this;
@@ -465,14 +465,14 @@ class Item implements ItemIds, \JsonSerializable {
 	 * @return string
 	 */
 	public function getCompoundTag() : string{
-		return $this->tags;
+		return $this->nbt !== null ? self::writeCompoundTag($this->nbt) : "";
 	}
 
 	/**
 	 * @return bool
 	 */
 	public function hasCompoundTag() : bool{
-		return $this->tags !== "";
+		return $this->nbt !== null and $this->nbt->getCount() > 0;
 	}
 
 	/**
@@ -484,8 +484,11 @@ class Item implements ItemIds, \JsonSerializable {
 		}
 
 		$tag = $this->getNamedTag();
+		if(isset($tag->BlockEntityTag) and $tag->BlockEntityTag instanceof CompoundTag){
+			return true;
+		}
 
-		return isset($tag->BlockEntityTag) and $tag->BlockEntityTag instanceof CompoundTag;
+		return false;
 	}
 
 	/**
@@ -818,10 +821,10 @@ class Item implements ItemIds, \JsonSerializable {
 	 */
 	public function setCustomName(string $name){
 		if($name === ""){
-			$this->clearCustomName();
+			return $this->clearCustomName();
 		}
 
-		if(!($hadCompoundTag = $this->hasCompoundTag())){
+		if(!$this->hasCompoundTag()){
 			$tag = new CompoundTag("", []);
 		}else{
 			$tag = $this->getNamedTag();
@@ -835,9 +838,7 @@ class Item implements ItemIds, \JsonSerializable {
 			]);
 		}
 
-		if(!$hadCompoundTag){
-			$this->setCompoundTag($tag);
-		}
+		$this->setCompoundTag($tag);
 
 		return $this;
 	}
@@ -894,7 +895,7 @@ class Item implements ItemIds, \JsonSerializable {
 		foreach($lines as $line){
 			$tag->display->Lore[$count++] = new StringTag("", $line);
 		}
-		
+
 		$this->setNamedTag($tag);
 
 		return $this;
@@ -915,16 +916,23 @@ class Item implements ItemIds, \JsonSerializable {
 		return null;
 	}
 
+	public function setNamedTagEntry(NamedTag $new) : void{
+		$tag = $this->getNamedTag();
+		$tag->{$new->getName()} = $new;
+		$this->setNamedTag($tag);
+	}
+
+	public function removeNamedTagEntry(string $name) : void{
+		$tag = $this->getNamedTag();
+		unset($tag->{$name});
+		$this->setNamedTag($tag);
+	}
+
 	/**
 	 * @return null|CompoundTag
 	 */
 	public function getNamedTag(){
-		if(!$this->hasCompoundTag()){
-			return null;
-		}elseif($this->cachedNBT !== null){
-			return $this->cachedNBT;
-		}
-		return $this->cachedNBT = self::parseCompoundTag($this->tags);
+		return $this->nbt ?? ($this->nbt = new CompoundTag());
 	}
 
 	/**
@@ -937,8 +945,7 @@ class Item implements ItemIds, \JsonSerializable {
 			return $this->clearNamedTag();
 		}
 
-		$this->cachedNBT = $tag;
-		$this->tags = self::writeCompoundTag($tag);
+		$this->nbt = clone $tag;
 
 		return $this;
 	}
@@ -947,7 +954,8 @@ class Item implements ItemIds, \JsonSerializable {
 	 * @return Item
 	 */
 	public function clearNamedTag(){
-		return $this->setCompoundTag("");
+		$this->nbt = null;
+		return $this;
 	}
 
 	/**
@@ -965,10 +973,41 @@ class Item implements ItemIds, \JsonSerializable {
 	}
 
 	/**
+	 * Pops an item from the stack and returns it, decreasing the stack count of this item stack by one.
+	 *
+	 * @return static A clone of this itemstack containing the amount of items that were removed from this stack.
+	 * @throws \InvalidArgumentException if trying to pop more items than are on the stack
+	 */
+	public function pop(int $count = 1) : Item{
+		if($count > $this->count){
+			throw new \InvalidArgumentException("Cannot pop $count items from a stack of $this->count");
+		}
+
+		$item = clone $this;
+		$item->count = $count;
+
+		$this->count -= $count;
+
+		return $item;
+	}
+
+	public function isNull() : bool{
+		return $this->count <= 0 or $this->id === Item::AIR;
+	}
+
+	/**
 	 * @return string
 	 */
 	final public function getName() : string{
-		return $this->hasCustomName() ? $this->getCustomName() : $this->name;
+		return $this->hasCustomName() ? $this->getCustomName() : $this->getVanillaName();
+	}
+
+	/**
+	 * Returns the vanilla name of the item, disregarding custom names.
+	 * @return string
+	 */
+	public function getVanillaName() : string{
+		return $this->name;
 	}
 
 	/**
@@ -1034,9 +1073,12 @@ class Item implements ItemIds, \JsonSerializable {
 
 	/**
 	 * @param int $meta
+	 * @return $this
 	 */
 	public function setDamage(int $meta){
-		$this->meta = $meta !== -1 ? $meta & 0xFFFF : -1;
+		$this->meta = $meta !== -1 ? $meta & 0x7FFF : -1;
+
+		return $this;
 	}
 
 	/**
@@ -1256,6 +1298,7 @@ class Item implements ItemIds, \JsonSerializable {
 				return true;
 			}
 		}
+
 		return false;
 	}
 
@@ -1263,7 +1306,7 @@ class Item implements ItemIds, \JsonSerializable {
 	 * @return string
 	 */
 	final public function __toString() : string{
-		return "Item " . $this->name . " (" . $this->id . ":" . ($this->meta === null ? "?" : $this->meta) . ")x" . $this->count . ($this->hasCompoundTag() ? " tags:0x" . bin2hex($this->getCompoundTag()) : "");
+		return "Item " . $this->name . " (" . $this->id . ":" . ($this->meta === null ? "?" : $this->meta) . ")x" . $this->count . ($this->hasCompoundTag() ? " tags:" . base64_encode($this->getCompoundTag()) : "");
 	}
 
 	/**
@@ -1274,7 +1317,7 @@ class Item implements ItemIds, \JsonSerializable {
 			"id" => $this->id,
 			"damage" => $this->meta,
 			"count" => $this->count, //TODO: separate items and stacks
-			"nbt" => $this->tags
+			"nbt" => $this->nbt
 		];
 	}
 
@@ -1288,7 +1331,7 @@ class Item implements ItemIds, \JsonSerializable {
 	 */
 	public function nbtSerialize(int $slot = -1, string $tagName = "") : CompoundTag{
 		$tag = new CompoundTag($tagName, [
-			"id" => new ShortTag("id", $this->id),
+			"id" => new ShortTag("id", Binary::signShort($this->id)),
 			"Count" => new ByteTag("Count", Binary::signByte($this->count)),
 			"Damage" => new ShortTag("Damage", $this->meta),
 		]);
@@ -1321,7 +1364,7 @@ class Item implements ItemIds, \JsonSerializable {
 		$meta = isset($tag->Damage) ? $tag->Damage->getValue() : 0;
 
 		if($tag->id instanceof ShortTag){
-			$item = Item::get($tag->id->getValue(), $meta, $count);
+			$item = Item::get(Binary::unsignShort($tag->id->getValue()), $meta, $count);
 		}elseif($tag->id instanceof StringTag){ //PC item save format
 			$item = Item::fromString($tag->id->getValue());
 			$item->setDamage($meta);
@@ -1337,6 +1380,16 @@ class Item implements ItemIds, \JsonSerializable {
 		}
 
 		return $item;
+	}
+
+	public function __clone(){
+		if($this->block !== null){
+			$this->block = clone $this->block;
+		}
+
+		if($this->nbt !== null){
+			$this->nbt = clone $this->nbt;
+		}
 	}
 
 }

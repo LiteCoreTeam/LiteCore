@@ -99,14 +99,17 @@ interface Inventory {
 	public function removeItem(...$slots);
 
 	/**
+	 * @param bool $includeEmpty
+	 *
 	 * @return Item[]
 	 */
-	public function getContents();
+	public function getContents(bool $includeEmpty = false) : array;
 
 	/**
 	 * @param Item[] $items
+	 * @param bool   $send
 	 */
-	public function setContents(array $items);
+	public function setContents(array $items, bool $send = true);
 
 	/**
 	 * @param Player|Player[] $target

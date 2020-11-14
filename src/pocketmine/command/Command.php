@@ -32,7 +32,7 @@ use pocketmine\Player;
 use pocketmine\Server;
 use pocketmine\utils\TextFormat;
 
-abstract class Command {
+abstract class Command{
 	/** @var \stdClass */
 	private static $defaultDataTemplate = null;
 
@@ -47,9 +47,7 @@ abstract class Command {
 	/** @var string */
 	private $label;
 
-	/**
-	 * @var string[]
-	 */
+	/** @var string[] */
 	private $aliases = [];
 
 	/**

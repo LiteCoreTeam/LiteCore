@@ -99,10 +99,10 @@ class Enchantment {
 	const TYPE_FISHING_FORTUNE = 23;
 	const TYPE_FISHING_LURE = 24;
 
-	const RARITY_COMMON = 0;
-	const RARITY_UNCOMMON = 1;
+	const RARITY_COMMON = 10;
+	const RARITY_UNCOMMON = 5;
 	const RARITY_RARE = 2;
-	const RARITY_MYTHIC = 3;
+	const RARITY_MYTHIC = 1;
 
 	const ACTIVATION_EQUIP = 0;
 	const ACTIVATION_HELD = 1;

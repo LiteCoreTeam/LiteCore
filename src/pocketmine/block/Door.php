@@ -222,6 +222,7 @@ abstract class Door extends Transparent implements ElectricalAppliance {
 		return $bb;
 	}
 
+
 	/**
 	 * @param int $type
 	 *

@@ -32,8 +32,8 @@ use pocketmine\event\Timings;
 use pocketmine\item\Item as ItemItem;
 use pocketmine\math\Vector3;
 use pocketmine\nbt\tag\FloatTag;
+use pocketmine\nbt\tag\Tag;
 use pocketmine\network\mcpe\protocol\EntityEventPacket;
-use pocketmine\Player;
 use pocketmine\utils\BlockIterator;
 
 abstract class Living extends Entity implements Damageable {
@@ -43,25 +43,31 @@ abstract class Living extends Entity implements Damageable {
 
 	protected $attackTime = 0;
 
+	/** @var int */
+	protected $maxDeadTicks = 25;
+
 	protected $invisible = false;
+
+	protected $jumpVelocity = 0.42;
 
 	protected function initEntity(){
 		parent::initEntity();
 
 		$health = $this->getMaxHealth();
-		
+
 		if(isset($this->namedtag->HealF)){
-			$health = $this->namedtag->getFloat("HealF");
-			$this->namedtag->removeTag("HealF");
+			$health = $this->namedtag["HealF"];
+			unset($this->namedtag["HealF"]);
 		}elseif(isset($this->namedtag->Health)){
 			$healthTag = $this->namedtag->Health;
+			/** @var Tag $healthTag */
 			$health = (float) $healthTag->getValue(); //Older versions of PocketMine-MP incorrectly saved this as a short instead of a float
 			if(!($healthTag instanceof FloatTag)){
 				unset($this->namedtag->Health);
 			}
 		}
 
-        $this->setHealth($health);
+		$this->setHealth($health);
 	}
 
 	/**
@@ -100,16 +106,20 @@ abstract class Living extends Entity implements Damageable {
 	}
 
 	/**
-	 * @param float                   $amount
-	 * @param EntityRegainHealthEvent $source
+	 * Returns the initial upwards velocity of a jumping entity in blocks/tick, including additional velocity due to effects.
+	 * @return float
 	 */
-	public function heal($amount, EntityRegainHealthEvent $source){
-		parent::heal($amount, $source);
-		if($source->isCancelled()){
-			return;
-		}
+	public function getJumpVelocity() : float{
+		return $this->jumpVelocity + ($this->hasEffect(Effect::JUMP) ? (($this->getEffect(Effect::JUMP)->getAmplifier() + 1) / 10) : 0);
+	}
 
-		$this->attackTime = 0;
+	/**
+	 * Called when the entity jumps from the ground. This method adds upwards velocity to the entity.
+	 */
+	public function jump(){
+		if($this->onGround){
+			$this->motionY = $this->getJumpVelocity(); //Y motion should already be 0 if we're jumping from the ground.
+		}
 	}
 
 	/**
@@ -138,13 +148,19 @@ abstract class Living extends Entity implements Damageable {
 				$e = $source->getChild();
 			}
 
-			if($e->isOnFire() > 0 and !($e instanceof Player)){
-				$this->setOnFire(2 * $this->server->getDifficulty());
+			if($e !== null){
+				if((
+					$source->getCause() === EntityDamageEvent::CAUSE_PROJECTILE or
+					$source->getCause() === EntityDamageEvent::CAUSE_ENTITY_ATTACK
+				) and $e->isOnFire()){
+					$this->setOnFire(2 * $this->server->getDifficulty());
+				}
+
+			    $deltaX = $this->x - $e->x;
+				$deltaZ = $this->z - $e->z;
+				$this->knockBack($e, $damage, $deltaX, $deltaZ, $source->getKnockBack());
 			}
 
-			$deltaX = $this->x - $e->x;
-			$deltaZ = $this->z - $e->z;
-			$this->knockBack($e, $damage, $deltaX, $deltaZ, $source->getKnockBack());
 			if($e instanceof Husk){
 				$this->addEffect(Effect::getEffect(Effect::HUNGER)->setDuration(7 * 20 * $this->server->getDifficulty()));
 			}
@@ -170,29 +186,41 @@ abstract class Living extends Entity implements Damageable {
 		if($f <= 0){
 			return;
 		}
+		if(mt_rand() / mt_getrandmax() > $this->getAttributeMap()->getAttribute(Attribute::KNOCKBACK_RESISTANCE)->getValue()){
+			$f = 1 / $f;
 
-		$f = 1 / $f;
+			$motion = new Vector3($this->motionX, $this->motionY, $this->motionZ);
 
-		$baseY = max(0.4, $base / 1.5);
+			$motion->x /= 2;
+			$motion->y /= 2;
+			$motion->z /= 2;
+			$motion->x += $x * $f * $base;
+			$motion->y += $base;
+			$motion->z += $z * $f * $base;
 
-		$motion = new Vector3($this->motionX, $this->motionY, $this->motionZ);
+			if($motion->y > $base){
+				$motion->y = $base;
+			}
 
-		$motion->x /= 2;
-		$motion->y /= 2;
-		$motion->z /= 2;
-		$motion->x += $x * $f * $base;
-		$motion->y += $baseY;
-		$motion->z += $z * $f * $base;
-
-		if($motion->y > $baseY){
-			$motion->y = $baseY;
+			$this->setMotion($motion);
 		}
+	}
 
-		$this->setMotion($motion);
+	protected function addAttributes() : void{
+		$this->attributeMap->addAttribute(Attribute::getAttribute(Attribute::HEALTH));
+		$this->attributeMap->addAttribute(Attribute::getAttribute(Attribute::FOLLOW_RANGE));
+		$this->attributeMap->addAttribute(Attribute::getAttribute(Attribute::KNOCKBACK_RESISTANCE));
+		$this->attributeMap->addAttribute(Attribute::getAttribute(Attribute::MOVEMENT_SPEED));
+		$this->attributeMap->addAttribute(Attribute::getAttribute(Attribute::ATTACK_DAMAGE));
+		$this->attributeMap->addAttribute(Attribute::getAttribute(Attribute::ABSORPTION));
 	}
 
 	public function kill(){
 		parent::kill();
+		$this->callDeathEvent();
+	}
+
+	protected function callDeathEvent(){
 		$this->server->getPluginManager()->callEvent($ev = new EntityDeathEvent($this, $this->getDrops()));
 		foreach($ev->getDrops() as $item){
 			$this->getLevel()->dropItem($this, $item);

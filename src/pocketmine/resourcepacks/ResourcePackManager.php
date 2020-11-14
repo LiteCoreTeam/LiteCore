@@ -76,7 +76,7 @@ class ResourcePackManager {
 			if(file_exists($this->server->getFilePath() . "src/pocketmine/resources/resource_packs_$lang.yml")){
 				$content = file_get_contents($file = $this->server->getFilePath() . "src/pocketmine/resources/resource_packs_$lang.yml");
 			}else{
-				$content = file_get_contents($file = $this->server->getFilePath() . "src/pocketmine/resources/resource_packs_rus.yml");
+				$content = file_get_contents($file = $this->server->getFilePath() . "src/pocketmine/resources/resource_packs_eng.yml");
 			}
 			file_put_contents($this->path . "resource_packs.yml", $content);
 		}
@@ -89,40 +89,50 @@ class ResourcePackManager {
 
 		foreach($this->resourcePacksConfig->get("resource_stack", []) as $pos => $pack){
 			try{
+				$pack = (string) $pack;
+			}catch(\ErrorException $e){
+				$logger->critical("Found invalid entry in resource pack list at offset $pos of type " . gettype($pack));
+				continue;
+			}
+			try{
+				/** @var string $pack */
 				$packPath = $this->path . DIRECTORY_SEPARATOR . $pack;
-				if(file_exists($packPath)){
-					$newPack = null;
-					//Detect the type of resource pack.
-					if(is_dir($packPath)){
-						$this->server->getLogger()->warning($this->server->getLanguage()->translateString("pocketmine.resourcepacks.folderNotSupported", [$path]));
-					}else{
-						$info = new \SplFileInfo($packPath);
-						switch($info->getExtension()){
-							case "zip":
-								$newPack = new ZippedResourcePack($packPath);
-								break;
-							case "mcpack":
-								$newPack = new ZippedResourcePack($packPath);
-								break;
-							default:
-								$this->server->getLogger()->warning($this->server->getLanguage()->translateString("pocketmine.resourcepacks.unsupportedType", [$path]));
-								break;
-						}
-					}
-
-					if($newPack instanceof ResourcePack){
-						$this->resourcePacks[] = $newPack;
-						$this->uuidList[$newPack->getPackId()] = $newPack;
-					}
-				}else{
-					$this->server->getLogger()->warning($this->server->getLanguage()->translateString("pocketmine.resourcepacks.packNotFound", [$path]));
+				if(!file_exists($packPath)){
+					throw new ResourcePackException("File or directory not found");
 				}
-			}catch(\Throwable $e){
-				$this->server->getLogger()->logException($e);
+				if(is_dir($packPath)){
+					throw new ResourcePackException("Directory resource packs are unsupported");
+				}
+
+				$newPack = null;
+				//Detect the type of resource pack.
+				$info = new \SplFileInfo($packPath);
+				switch($info->getExtension()){
+					case "zip":
+					case "mcpack":
+						$newPack = new ZippedResourcePack($packPath);
+						break;
+				}
+
+				if($newPack instanceof ResourcePack){
+					$this->resourcePacks[] = $newPack;
+					$this->uuidList[strtolower($newPack->getPackId())] = $newPack;
+				}else{
+					throw new ResourcePackException("Format not recognized");
+				}
+			}catch(ResourcePackException $e){
+				$logger->critical("Could not load resource pack \"$pack\": " . $e->getMessage());
 			}
 		}
 
 		$this->server->getLogger()->debug($this->server->getLanguage()->translateString("pocketmine.resourcepacks.loadFinished", [count($this->resourcePacks)]));
+	}
+
+	/**
+	 * Returns the directory which resource packs are loaded from.
+	 */
+	public function getPath() : string{
+		return $this->path;
 	}
 
 	/**
@@ -145,7 +155,7 @@ class ResourcePackManager {
 	 * @return ResourcePack|null
 	 */
 	public function getPackById(string $id){
-		return $this->uuidList[$id] ?? null;
+		return $this->uuidList[strtolower($id)] ?? null;
 	}
 
 	/**

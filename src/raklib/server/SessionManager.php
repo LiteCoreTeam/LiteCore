@@ -15,7 +15,7 @@
 
 namespace raklib\server;
 
-use raklib\Binary;
+use pocketmine\utils\Binary;
 use raklib\protocol\ACK;
 use raklib\protocol\AdvertiseSystem;
 use raklib\protocol\Datagram;
@@ -71,11 +71,15 @@ class SessionManager{
 	/** @var int */
 	protected $startTimeMS;
 
-	public function __construct(RakLibServer $server, UDPServerSocket $socket){
+	/** @var int */
+	protected $maxMtuSize;
+
+	public function __construct(RakLibServer $server, UDPServerSocket $socket, int $maxMtuSize){
 		$this->server = $server;
 		$this->socket = $socket;
 
 		$this->startTimeMS = (int) (microtime(true) * 1000);
+		$this->maxMtuSize = $maxMtuSize;
 
 		$this->offlineMessageHandler = new OfflineMessageHandler($this);
 
@@ -96,6 +100,10 @@ class SessionManager{
 		return $this->server->getPort();
 	}
 
+	public function getMaxMtuSize() : int{
+		return $this->maxMtuSize;
+	}
+
 	public function getLogger(){
 		return $this->server->getLogger();
 	}
@@ -107,16 +115,34 @@ class SessionManager{
 	private function tickProcessor(){
 		$this->lastMeasure = microtime(true);
 
-		while(!$this->shutdown){
+		while(!$this->shutdown or count($this->sessions) > 0){
 			$start = microtime(true);
-			while($this->receivePacket()){}
-			while($this->receiveStream()){}
+			
+			/*
+			 * The below code is designed to allow co-op between sending and receiving to avoid slowing down either one
+			 * when high traffic is coming either way. Yielding will occur after 100 messages.
+			 */
+			do{
+                $stream = !$this->shutdown;//if we received a shutdown event, we don't care about any more messages from the event source
+                for($i = 0; $i < 100 && $stream; ++$i){
+                    $stream = $this->receiveStream();
+                }
+
+                $socket = !$this->shutdown;
+				for($i = 0; $i < 100 && $socket; ++$i){
+					$socket = $this->receivePacket();
+				}
+			}while($stream || $socket);
+
+			$this->tick();
+
 			$time = microtime(true) - $start;
 			if($time < self::RAKLIB_TIME_PER_TICK){
 				@time_sleep_until(microtime(true) + self::RAKLIB_TIME_PER_TICK - $time);
 			}
-			$this->tick();
 		}
+
+//		$this->socket->close();
 	}
 
 	private function tick(){
@@ -128,14 +154,16 @@ class SessionManager{
 		$this->ipSec = [];
 
 		if(($this->ticks % self::RAKLIB_TPS) === 0){
-			$diff = max(0.005, $time - $this->lastMeasure);
-			$this->streamOption("bandwidth", serialize([
-				"up" => $this->sendBytes / $diff,
-				"down" => $this->receiveBytes / $diff
-			]));
+			if($this->sendBytes > 0 or $this->receiveBytes > 0){
+				$diff = max(0.005, $time - $this->lastMeasure);
+				$this->streamOption("bandwidth", serialize([
+					"up" => $this->sendBytes / $diff,
+					"down" => $this->receiveBytes / $diff
+				]));
+				$this->sendBytes = 0;
+				$this->receiveBytes = 0;
+			}
 			$this->lastMeasure = $time;
-			$this->sendBytes = 0;
-			$this->receiveBytes = 0;
 
 			if(count($this->block) > 0){
 				asort($this->block);
@@ -156,65 +184,94 @@ class SessionManager{
 
 	private function receivePacket(){
 		$len = $this->socket->readPacket($buffer, $source, $port);
-		if($buffer !== null){
-			$this->receiveBytes += $len;
-			if(isset($this->block[$source])){
+		if($len === false){
+			$error = $this->socket->getLastError();
+			if($error === SOCKET_EWOULDBLOCK){ //no data
+				return false;
+			}elseif($error === SOCKET_ECONNRESET){ //client disconnected improperly, maybe crash or lost connection
 				return true;
 			}
 
-			if(isset($this->ipSec[$source])){
-				if(++$this->ipSec[$source] >= $this->packetLimit){
-					$this->blockAddress($source);
-					return true;
-				}
-			}else{
-				$this->ipSec[$source] = 1;
-			}
+			$this->getLogger()->debug("Socket error occurred while trying to recv ($error): " . trim(socket_strerror($error)));
+			return false;
+		}
+		if($buffer === null){
+			return false; //no data
+		}
+		$len = strlen($buffer);
 
-			if($len > 0){
-				try{
-					$pid = ord($buffer{0});
-
-					$session = $this->getSession($source, $port);
-					if($session === null){
-						$pk = $this->getPacketFromPool($pid, $buffer);
-						if($pk instanceof OfflineMessage){
-							$pk->decode();
-							if($pk->isValid()){
-								if(!$this->offlineMessageHandler->handle($pk, $source, $port)){
-									$this->server->getLogger()->debug("Unhandled offline message " . get_class($pk) . " received from $source $port");
-								}
-							}else{
-								$this->server->getLogger()->debug("Received garbage message from $source $port: " . bin2hex($pk->buffer));
-							}
-						}else{
-							$this->streamRaw($source, $port, $buffer);
-						}
-					}else{
-						if(($pid & Datagram::BITFLAG_VALID) === 0){
-							$this->server->getLogger()->debug("Ignored non-connected message 0x" . bin2hex($buffer{0}) . " from $source $port due to session already opened");
-						}else{
-							if($pid & Datagram::BITFLAG_ACK){
-								$session->handlePacket(new ACK($buffer));
-							}elseif($pid & Datagram::BITFLAG_NAK){
-								$session->handlePacket(new NACK($buffer));
-							}else{
-								$session->handlePacket(new Datagram($buffer));
-							}
-						}
-					}
-				}catch(\Throwable $e){
-					$logger = $this->getLogger();
-					$logger->debug("Packet from $source $port (" . strlen($buffer) . " bytes): 0x" . bin2hex($buffer));
-					$logger->logException($e);
-					$this->blockAddress($source, 500);
-				}
-			}
-
+		$this->receiveBytes += $len;
+		if(isset($this->block[$source])){
 			return true;
 		}
 
-		return false;
+		if(isset($this->ipSec[$source])){
+			if(++$this->ipSec[$source] >= $this->packetLimit){
+				$this->blockAddress($source);
+				return true;
+			}
+		}else{
+			$this->ipSec[$source] = 1;
+		}
+
+		if($len < 1){
+			return true;
+		}
+
+		try{
+			$pid = ord($buffer{0});
+
+			$session = $this->getSession($source, $port);
+			if($session !== null){
+				if(($pid & Datagram::BITFLAG_VALID) !== 0){
+					if($pid & Datagram::BITFLAG_ACK){
+						$session->handlePacket(new ACK($buffer));
+					}elseif($pid & Datagram::BITFLAG_NAK){
+						$session->handlePacket(new NACK($buffer));
+					}else{
+						$session->handlePacket(new Datagram($buffer));
+					}
+				}else{
+					$this->server->getLogger()->debug("Ignored unconnected packet from $source $port due to session already opened (0x" . dechex($pid) . ")");
+				}
+			}elseif(($pk = $this->getPacketFromPool($pid, $buffer)) instanceof OfflineMessage){
+				/** @var OfflineMessage $pk */
+				do{
+					try{
+						$pk->decode();
+						if(!$pk->isValid()){
+							throw new \InvalidArgumentException("Packet magic is invalid");
+						}
+					}catch(\Throwable $e){
+						$logger = $this->server->getLogger();
+						$logger->debug("Received garbage message from $source $port (" . $e->getMessage() . "): " . bin2hex($pk->buffer));
+						foreach($this->server->getTrace(0, $e->getTrace()) as $line){
+							$logger->debug($line);
+						}
+						$this->blockAddress($source, 5);
+						break;
+					}
+
+					if(!$this->offlineMessageHandler->handle($pk, $source, $port)){
+						$this->server->getLogger()->debug("Unhandled unconnected packet " . get_class($pk) . " received from $source $port");
+					}
+				}while(false);
+			}elseif(($pid & Datagram::BITFLAG_VALID) !== 0 and ($pid & 0x03) === 0){
+				// Loose datagram, don't relay it as a raw packet
+				// RakNet does not currently use the 0x02 or 0x01 bitflags on any datagram header, so we can use
+				// this to identify the difference between loose datagrams and packets like Query.
+				$this->server->getLogger()->debug("Ignored connected packet from $source $port due to no session opened (0x" . dechex($pid) . ")");
+			}else{
+				$this->streamRaw($source, $port, $buffer);
+			}
+		}catch(\Throwable $e){
+			$logger = $this->getLogger();
+			$logger->debug("Packet from $source $port (" . strlen($buffer) . " bytes): 0x" . bin2hex($buffer));
+			$logger->logException($e);
+			$this->blockAddress($source, 5);
+		}
+
+		return true;
 	}
 
 	public function sendPacket(Packet $packet, $dest, $port){
@@ -263,6 +320,10 @@ class SessionManager{
 		$identifier = $session->getAddress() . ":" . $session->getPort();
 		$buffer = chr(RakLib::PACKET_REPORT_PING) . chr(strlen($identifier)) . $identifier . Binary::writeInt($pingMS);
 		$this->server->pushThreadToMainPacket($buffer);
+	}
+
+	public function sessionExists(string $ip, int $port) : bool{
+		return isset($this->sessions[self::addressHash($ip, $port)]);
 	}
 
 	public function receiveStream(){
@@ -334,12 +395,14 @@ class SessionManager{
 					$this->removeSession($session);
 				}
 
+                $this->shutdown = true;
 				$this->socket->close();
-				$this->shutdown = true;
+
 			}elseif($id === RakLib::PACKET_EMERGENCY_SHUTDOWN){
 				$this->shutdown = true;
+				$this->socket->close();
 			}else{
-				return false;
+				$this->getLogger()->debug("Unknown RakLib internal packet (ID 0x" . dechex($id) . ") received from main thread");
 			}
 
 			return true;
@@ -357,7 +420,7 @@ class SessionManager{
 				$this->getLogger()->notice("Blocked $address for $timeout seconds");
 				$d = date("d.m.y H:i:s");
                 $ab = @fopen("RakLib.log","a+");
-                fwrite($ab,"\n[$d] Blocked /$address for $timeout seconds");
+                fwrite($ab,"[$d] Blocked /$address for $timeout seconds\n");
                 fclose($ab);
 			}
 			$this->block[$address] = $final;

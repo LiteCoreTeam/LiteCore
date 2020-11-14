@@ -66,7 +66,7 @@ class DoubleChestInventory extends ChestInventory implements InventoryHolder {
 	 * @return Item
 	 */
 	public function getItem($index){
-		return $index < $this->left->getSize() ? $this->left->getItem($index) : $this->right->getItem($index - $this->right->getSize());
+		return $index < $this->left->getSize() ? $this->left->getItem($index) : $this->right->getItem($index - $this->left->getSize());
 	}
 
     /**
@@ -85,27 +85,15 @@ class DoubleChestInventory extends ChestInventory implements InventoryHolder {
 		return false;
 	}
 
-    /**
-     * @param int $index
-     *
-     * @param bool $send
-     * @return bool
-     */
-	public function clear($index, $send = true){
-		return $index < $this->left->getSize() ? $this->left->clear($index) : $this->right->clear($index - $this->right->getSize());
-	}
+	public function getContents(bool $includeEmpty = false) : array{
+		$result = $this->left->getContents($includeEmpty);
+		$leftSize = $this->left->getSize();
 
-    /**
-     * @param bool $withAir
-     * @return array
-     */
-	public function getContents($withAir = false){
-		$contents = [];
-		for($i = 0; $i < $this->getSize(); ++$i){
-			$contents[$i] = $this->getItem($i);
+		foreach($this->right->getContents($includeEmpty) as $i => $item){
+			$result[$i + $leftSize] = $item;
 		}
 
-		return $contents;
+		return $result;
 	}
 
     /**
@@ -116,7 +104,6 @@ class DoubleChestInventory extends ChestInventory implements InventoryHolder {
 		if(count($items) > $this->size){
 			$items = array_slice($items, 0, $this->size, true);
 		}
-
 
 		for($i = 0; $i < $this->size; ++$i){
 			if(!isset($items[$i])){
@@ -130,6 +117,10 @@ class DoubleChestInventory extends ChestInventory implements InventoryHolder {
 			}elseif(!$this->setItem($i, $items[$i])){
 				$this->clear($i);
 			}
+		}
+
+		if($send){
+			$this->sendContents($this->getViewers());
 		}
 	}
 

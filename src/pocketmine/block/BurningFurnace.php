@@ -36,6 +36,8 @@ class BurningFurnace extends Solid {
 
 	protected $id = self::BURNING_FURNACE;
 
+	protected $itemId = self::FURNACE;
+
 	/**
 	 * BurningFurnace constructor.
 	 *

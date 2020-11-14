@@ -39,6 +39,8 @@ class RakLibServer extends \Thread{
 
 	/** @var int */
 	protected $serverId = 0;
+	/** @var int */
+	protected $maxMtuSize;
 
 	/**
 	 * @param \ThreadedLogger $logger
@@ -48,7 +50,7 @@ class RakLibServer extends \Thread{
 	 *
 	 * @throws \Exception
 	 */
-	public function __construct(\ThreadedLogger $logger, $autoloaderPath, $port, $interface = "0.0.0.0", bool $autoStart = true){
+	public function __construct(\ThreadedLogger $logger, $autoloaderPath, $port, $interface = "0.0.0.0", bool $autoStart = true, int $maxMtuSize = 1492){
 		$this->port = (int) $port;
 		if($port < 1 or $port > 65536){
 			throw new \Exception("Invalid port range");
@@ -57,6 +59,7 @@ class RakLibServer extends \Thread{
 		$this->interface = $interface;
 
 		$this->serverId = mt_rand(0, PHP_INT_MAX);
+		$this->maxMtuSize = $maxMtuSize;
 
 		$this->logger = $logger;
 		$this->loaderPath = $autoloaderPath;
@@ -172,7 +175,7 @@ class RakLibServer extends \Thread{
 
 		$this->getLogger()->debug("An $errno error happened: \"$errstr\" in \"$errfile\" at line $errline");
 
-		foreach(($trace = $this->getTrace(2)) as $i => $line){
+		foreach($this->getTrace(2) as $i => $line){
 			$this->getLogger()->debug($line);
 		}
 
@@ -226,8 +229,8 @@ class RakLibServer extends \Thread{
 			register_shutdown_function([$this, "shutdownHandler"]);
 
 
-			$socket = new UDPServerSocket($this->getLogger(), $this->port, $this->interface);
-			new SessionManager($this, $socket);
+			$socket = new UDPServerSocket($this->port, $this->interface);
+			new SessionManager($this, $socket, $this->maxMtuSize);
 		}catch(\Throwable $e){
 			$this->logger->logException($e);
 		}

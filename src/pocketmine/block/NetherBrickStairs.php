@@ -27,13 +27,13 @@ use pocketmine\item\Tool;
 class NetherBrickStairs extends Stair {
 
 	protected $id = self::NETHER_BRICKS_STAIRS;
-	
+
 	/**
 	 * NetherBrickStairs constructor.
 	 *
 	 * @param int $meta
 	 */
-	public function __construct(int $meta = 0){
+	public function __construct($meta = 0){
 		$this->meta = $meta;
 	}
 

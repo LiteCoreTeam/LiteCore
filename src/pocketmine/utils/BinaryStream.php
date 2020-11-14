@@ -21,7 +21,7 @@
 
 namespace pocketmine\utils;
 
-#include <rules/DataPacket.h>
+#include <rules/BinaryIO.h>
 #ifndef COMPILE
 #endif
 
@@ -29,16 +29,12 @@ use pocketmine\item\Item;
 
 class BinaryStream extends \stdClass {
 
+	/** @var int */
 	public $offset;
+	/** @var string */
 	public $buffer;
 
-	/**
-	 * BinaryStream constructor.
-	 *
-	 * @param string $buffer
-	 * @param int    $offset
-	 */
-	public function __construct($buffer = "", $offset = 0){
+	public function __construct(string $buffer = "", int $offset = 0){
 		$this->buffer = $buffer;
 		$this->offset = $offset;
 	}
@@ -49,67 +45,84 @@ class BinaryStream extends \stdClass {
 	}
 
 	/**
-	 * @param null $buffer
-	 * @param int  $offset
+	 * Rewinds the stream pointer to the start.
 	 */
-	public function setBuffer($buffer = null, $offset = 0){
-		$this->buffer = $buffer;
-		$this->offset = (int) $offset;
+	public function rewind() : void{
+		$this->offset = 0;
 	}
 
-	/**
-	 * @return int
-	 */
-	public function getOffset(){
+	public function setOffset(int $offset) : void{
+		$this->offset = $offset;
+	}
+
+	public function setBuffer(string $buffer = "", int $offset = 0) : void{
+		$this->buffer = $buffer;
+		$this->offset = $offset;
+	}
+
+	public function getOffset() : int{
 		return $this->offset;
 	}
 
-	/**
-	 * @return string
-	 */
-	public function getBuffer(){
+	public function getBuffer() : string{
 		return $this->buffer;
 	}
 
 	/**
-	 * @param $len
+	 * @param int $len
 	 *
-	 * @return bool|string
+	 * @return string
+	 *
+	 * @throws BinaryDataException if there are not enough bytes left in the buffer
 	 */
-	public function get($len){
-		if($len < 0){
-			$this->offset = strlen($this->buffer) - 1;
-
+	public function get(int $len) : string{
+		if($len === 0){
 			return "";
-		}elseif($len === true){
-			$str = substr($this->buffer, $this->offset);
-			$this->offset = strlen($this->buffer);
+		}
+		if($len < 0){
+			throw new \InvalidArgumentException("Length must be positive");
+		}
 
-			return $str;
+		$remaining = strlen($this->buffer) - $this->offset;
+		if($remaining < $len){
+			throw new BinaryDataException("Not enough bytes left in buffer: need $len, have $remaining");
 		}
 
 		return $len === 1 ? $this->buffer{$this->offset++} : substr($this->buffer, ($this->offset += $len) - $len, $len);
 	}
 
 	/**
-	 * @param $str
+	 * @return string
+	 * @throws BinaryDataException
 	 */
-	public function put($str){
+	public function getRemaining() : string{
+		$buflen = strlen($this->buffer);
+		if($this->offset >= $buflen){
+			throw new BinaryDataException("No bytes left to read");
+		}
+		$str = substr($this->buffer, $this->offset);
+		$this->offset = $buflen;
+		return $str;
+	}
+
+	public function put($str) : void{
 		$this->buffer .= $str;
 	}
 
-	/**
-	 * @return bool
-	 */
 	public function getBool() : bool{
-		return (bool) $this->getByte();
+		return $this->get(1) !== "\x00";
 	}
 
-	/**
-	 * @param $v
-	 */
-	public function putBool($v){
+	public function putBool($v) : void{
 		$this->putByte((bool) $v);
+	}
+
+	public function getByte() : int{
+		return ord($this->get(1));
+	}
+
+	public function putByte($v) : void{
+		$this->buffer .= chr($v);
 	}
 
 	/**
@@ -273,23 +286,10 @@ class BinaryStream extends \stdClass {
 	}
 
 	/**
-	 * @return int
-	 */
-	public function getByte(){
-		return ord($this->buffer{$this->offset++});
-	}
-
-	/**
-	 * @param $v
-	 */
-	public function putByte($v){
-		$this->buffer .= chr($v);
-	}
-
-	/**
 	 * @return UUID
 	 */
-	public function getUUID() : UUID{
+	public function getUUID(){
+		//This is actually two little-endian longs: UUID Most followed by UUID Least
 		$part1 = $this->getLInt();
 		$part0 = $this->getLInt();
 		$part3 = $this->getLInt();
@@ -477,9 +477,10 @@ class BinaryStream extends \stdClass {
 	}
 
 	/**
+	 * Returns whether the offset has reached the end of the buffer.
 	 * @return bool
 	 */
-	public function feof(){
+	public function feof() : bool{
 		return !isset($this->buffer{$this->offset});
 	}
 }

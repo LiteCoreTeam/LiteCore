@@ -28,6 +28,11 @@ class AnimatePacket extends DataPacket {
 
 	const NETWORK_ID = ProtocolInfo::ANIMATE_PACKET;
 
+	const ACTION_SWING_ARM = 1;
+
+	const ACTION_STOP_SLEEP = 3;
+	const ACTION_CRITICAL_HIT = 4;
+
 	public $action;
 	public $eid;
 	public $float;

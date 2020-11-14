@@ -60,7 +60,14 @@ class Obsidian extends Solid {
 	 * @return int
 	 */
 	public function getHardness(){
-		return 35;
+		return 35; //50 in PC
+	}
+
+	/**
+	 * @return float
+	 */
+	public function getBlastResistance() : float{
+		return 6000;
 	}
 
 	/**

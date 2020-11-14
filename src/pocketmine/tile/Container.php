@@ -21,9 +21,10 @@
 
 namespace pocketmine\tile;
 
+use pocketmine\inventory\Inventory;
 use pocketmine\item\Item;
 
-interface Container {
+interface Container{
 
 	/**
 	 * @param int $index
@@ -42,4 +43,9 @@ interface Container {
 	 * @return int
 	 */
 	public function getSize();
+
+	/**
+	 * @return Inventory
+	 */
+	public function getInventory();
 }

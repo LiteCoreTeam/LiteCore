@@ -58,7 +58,7 @@ class Painting extends Hanging {
 		parent::spawnTo($player);
 	}
 
-	protected function updateMovement(){
+	protected function updateMovement(bool $teleport = false){
 		//Nothing to update, paintings cannot move.
 	}
 

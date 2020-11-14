@@ -73,9 +73,11 @@ class Sugarcane extends Flowable {
 					$b = $this->getLevel()->getBlock(new Vector3($this->x, $this->y + $y, $this->z));
 					if($b->getId() === self::AIR){
 						Server::getInstance()->getPluginManager()->callEvent($ev = new BlockGrowEvent($b, new Sugarcane()));
-						if(!$ev->isCancelled()){
-							$this->getLevel()->setBlock($b, $ev->getNewState(), true);
+						if($ev->isCancelled()){
+							break;
 						}
+						$this->getLevel()->setBlock($b, $ev->getNewState(), true);
+					}else{
 						break;
 					}
 				}
@@ -83,7 +85,7 @@ class Sugarcane extends Flowable {
 				$this->getLevel()->setBlock($this, $this, true);
 			}
 			if(($player->gamemode & 0x01) === 0){
-				$item->count--;
+                $item->pop();
 			}
 
 			return true;

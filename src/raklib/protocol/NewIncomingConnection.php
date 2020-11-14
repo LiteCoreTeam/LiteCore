@@ -21,7 +21,7 @@
 
 namespace raklib\protocol;
 
-#include <rules/RakLibPacket.h>
+#include <rules/BinaryIO.h>
 
 use raklib\RakLib;
 
@@ -37,7 +37,12 @@ class NewIncomingConnection extends Packet{
 	public $sendPongTime;
 
 	protected function encodePayload(){
-		//TODO
+		$this->putAddress($this->address);
+		foreach($this->systemAddresses as $address){
+			$this->putAddress($address);
+		}
+		$this->putLong($this->sendPingTime);
+		$this->putLong($this->sendPongTime);
 	}
 
 	protected function decodePayload(){

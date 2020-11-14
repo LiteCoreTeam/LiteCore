@@ -318,7 +318,7 @@ class Server{
 	 * @return string
 	 */
 	public function getName() : string{
-        return "LiteCore-mod v1.0.0-release";
+        return "LiteCore-public v1.0.1";
 	}
 
 	/**

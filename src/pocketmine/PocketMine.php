@@ -84,7 +84,7 @@ namespace pocketmine {
 	const API_VERSION = "3.0.1";
 	const CODENAME = "vk.com/litecore_team";
 	const GENISYS_API_VERSION = '2.0.0';
-	const CORE_VERSION = '1.0.0-release';
+	const CORE_VERSION = '1.0.1-public';
 
 	/*
 	 * Startup code. Do not look at it, it may harm you.

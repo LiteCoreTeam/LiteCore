@@ -27,9 +27,9 @@ use pocketmine\item\Item;
 use pocketmine\item\Tool;
 use pocketmine\level\Level;
 use pocketmine\math\AxisAlignedBB;
+use pocketmine\math\Vector3;
 
-
-class GrassPath extends Transparent {
+class GrassPath extends Transparent{
 
 	protected $id = self::GRASS_PATH;
 
@@ -63,7 +63,7 @@ class GrassPath extends Transparent {
 			$this->y,
 			$this->z,
 			$this->x + 1,
-			$this->y + 0.9375,
+			$this->y + 1, //TODO: this should be 0.9375, but MCPE currently treats them as a full block (https://bugs.mojang.com/browse/MCPE-12109)
 			$this->z + 1
 		);
 	}
@@ -74,13 +74,11 @@ class GrassPath extends Transparent {
 	 * @return bool|int
 	 */
 	public function onUpdate($type){
-		if($type == Level::BLOCK_UPDATE_NORMAL){
-			$block = $this->getSide(self::SIDE_UP);
-			if($block->getId() != self::AIR){
-				$this->getLevel()->setBlock($this, new Dirt(), true);
-			}
+		if($type === Level::BLOCK_UPDATE_NORMAL and $this->getSide(Vector3::SIDE_UP)->isSolid()){
+			$this->getLevel()->setBlock($this, new Dirt(), true);
 			return Level::BLOCK_UPDATE_NORMAL;
 		}
+
 		return false;
 	}
 

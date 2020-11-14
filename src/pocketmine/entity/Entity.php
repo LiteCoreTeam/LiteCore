@@ -1303,9 +1303,9 @@ abstract class Entity extends Location implements Metadatable {
 			return;
 		}
 		
-		$i = Math::floorFloat($x);
-		$j = Math::floorFloat($y);
-		$k = Math::floorFloat($z);
+		$i = (int) floor($x);
+		$j = (int) floor($y);
+		$k = (int) floor($z);
 
 		$diffX = $x - $i;
 		$diffY = $y - $j;

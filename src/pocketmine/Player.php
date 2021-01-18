@@ -2000,7 +2000,7 @@ class Player extends Human implements CommandSender, InventoryHolder, ChunkLoade
 		$this->sendAttributes();
 
 		if(!$this->isAlive() and $this->spawned){
-			$this->deadTicks += $tickDiff;
+			++$this->deadTicks;
 			if($this->deadTicks >= $this->maxDeadTicks){
 				$this->despawnFromAll();
 			}

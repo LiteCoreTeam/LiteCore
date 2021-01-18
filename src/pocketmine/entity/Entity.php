@@ -1556,7 +1556,7 @@ abstract class Entity extends Location implements Metadatable {
 		$this->lastUpdate = $currentTick;
 
 		if(!$this->isAlive()){
-			$this->deadTicks += $tickDiff;
+			++$this->deadTicks;
 			if($this->deadTicks >= $this->maxDeadTicks){
 				$this->despawnFromAll();
 				if(!$this->isPlayer){

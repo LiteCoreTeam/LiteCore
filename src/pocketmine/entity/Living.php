@@ -44,7 +44,7 @@ abstract class Living extends Entity implements Damageable {
 	protected $attackTime = 0;
 
 	/** @var int */
-	protected $maxDeadTicks = 25;
+	protected $maxDeadTicks = 10;
 
 	protected $invisible = false;
 

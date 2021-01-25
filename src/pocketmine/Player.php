@@ -3715,11 +3715,15 @@ class Player extends Human implements CommandSender, InventoryHolder, ChunkLoade
 	 *
 	 * @return bool
 	 */
-	public function kick($reason = "", $isAdmin = true){
-		$this->server->getPluginManager()->callEvent($ev = new PlayerKickEvent($this, $reason, $this->getLeaveMessage()));
+	public function kick($reason = "", $isAdmin = true, $quitMessage = null){
+		$this->server->getPluginManager()->callEvent($ev = new PlayerKickEvent($this, $reason, $quitMessage ?? $this->getLeaveMessage()));
 		if(!$ev->isCancelled()){
+			$reason = $ev->getReason();
+			$message = $reason;
 			if($isAdmin){
-				$message = "Kicked by admin." . ($reason !== "" ? " Reason: " . $reason : "");
+				if(!$this->isBanned()){
+					$message = "Kicked by admin." . ($reason !== "" ? " Reason: " . $reason : "");
+				}
 			}else{
 				if($reason === ""){
 					$message = "disconnectionScreen.noReason";

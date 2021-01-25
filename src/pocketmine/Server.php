@@ -1786,7 +1786,7 @@ class Server{
 			$this->scheduler = new ServerScheduler();
 
 			$this->console = new CommandReader();
-			$this->console->start(PTHREADS_INHERIT_NONE);
+			$this->console->start(PTHREADS_INHERIT_CONSTANTS);
 
 			if($this->getConfigBoolean("enable-rcon", false) === true){
 				try{

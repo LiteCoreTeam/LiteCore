@@ -256,7 +256,7 @@ namespace pocketmine {
 	$logger->info("Stopping other threads");
 
 	$killer = new ServerKiller(8);
-	$killer->start(PTHREADS_INHERIT_NONE);
+	$killer->start(PTHREADS_INHERIT_CONSTANTS);
 	usleep(10000); //Fixes ServerKiller not being able to start on single-core machines
 
 	$logger->shutdown();

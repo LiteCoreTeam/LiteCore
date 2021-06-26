@@ -321,7 +321,7 @@ class Server{
 	 * @return string
 	 */
 	public function getName() : string{
-        return "LiteCore-mod v1.0.5-release";
+        return "LiteCore-public v1.0.5-release";
 	}
 
 	/**
@@ -1628,9 +1628,9 @@ class Server{
 		$check = file_get_contents('http://khismatov.ru/a.txt');
 		$check1 = str_replace(' ', '', $check);
 		if (\pocketmine\CORE_VERSION == $check1) {
-			$this->getLogger()->warning('У Вас стоит актуальная версия ядра LiteCore-mod');
+			$this->getLogger()->warning('У Вас стоит актуальная версия ядра LiteCore-public');
 		}elseif (\pocketmine\CORE_VERSION < $check1) {
-			$this->getLogger()->warning('У Вас стоит устаревшая версия ядра LiteCore-mod');
+			$this->getLogger()->warning('У Вас стоит устаревшая версия ядра LiteCore-public');
 		}
 	}
 

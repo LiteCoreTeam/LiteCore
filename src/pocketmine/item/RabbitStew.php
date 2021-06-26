@@ -29,7 +29,7 @@ class RabbitStew extends Food {
 	 * @param int $count
 	 */
 	public function __construct($meta = 0, $count = 1){
-		parent::__construct(self::RABBIT_STEW, 0, $count, "Rabbit Stew");
+		parent::__construct(self::RABBIT_STEW, $meta, $count, "Rabbit Stew");
 	}
 
 	/**

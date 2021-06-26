@@ -46,7 +46,8 @@ class SetEntityMotionPacket extends DataPacket {
 	 *
 	 */
 	public function decode(){
-
+        $this->eid = $this->getEntityId();
+        $this->getVector3f($this->x, $this->y, $this->z);
 	}
 
 	/**
@@ -59,7 +60,7 @@ class SetEntityMotionPacket extends DataPacket {
 	}
 
 	/**
-	 * @return PacketName|string
+	 * @return string Current packet name
 	 */
 	public function getName(){
 		return "SetEntityMotionPacket";

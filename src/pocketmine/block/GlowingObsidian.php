@@ -53,7 +53,7 @@ class GlowingObsidian extends Solid implements SolidLight {
 		return 10;
 	}
 
-	public function getBlastResistance() : float{
+	public function getResistance(){
 		return 50;
 	}
 }

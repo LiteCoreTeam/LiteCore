@@ -25,6 +25,9 @@ use pocketmine\entity\Entity;
 use pocketmine\item\Item;
 use pocketmine\level\Level;
 use pocketmine\level\sound\TNTPrimeSound;
+use pocketmine\entity\Arrow;
+use pocketmine\item\Durable;
+use pocketmine\item\enchantment\Enchantment;
 use pocketmine\nbt\tag\ByteTag;
 use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\nbt\tag\DoubleTag;
@@ -63,6 +66,10 @@ class TNT extends Solid implements ElectricalAppliance {
 	 * @return bool
 	 */
 	public function canBeActivated() : bool{
+		return true;
+	}
+
+	public function hasEntityCollision(){
 		return true;
 	}
 
@@ -113,6 +120,13 @@ class TNT extends Solid implements ElectricalAppliance {
 		$this->level->addSound(new TNTPrimeSound($this));
 	}
 
+	public function onEntityCollide(Entity $entity){
+		if($entity instanceof Arrow and $entity->isOnFire()){
+			$this->prime();
+			$this->getLevel()->setBlock($this, new Air(), true);
+		}
+	}
+
 	/**
 	 * @param int $type
 	 *
@@ -159,7 +173,7 @@ class TNT extends Solid implements ElectricalAppliance {
 	 * @return bool
 	 */
 	public function onActivate(Item $item, Player $player = null){
-		if($item->getId() === Item::FLINT_STEEL){
+		if($item->getId() === Item::FLINT_STEEL or $item->hasEnchantment(Enchantment::TYPE_WEAPON_FIRE_ASPECT)){
 			$this->prime($player);
 			$this->getLevel()->setBlock($this, new Air(), true);
 

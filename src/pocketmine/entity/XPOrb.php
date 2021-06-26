@@ -147,6 +147,10 @@ class XPOrb extends Entity {
 		return false;
 	}
 
+	public function canBeCollidedWith() : bool{
+		return false;
+	}
+
 	/**
 	 * @param $exp
 	 */

@@ -30,7 +30,7 @@ class Feather extends Item {
 	 * @param int $count
 	 */
 	public function __construct($meta = 0, $count = 1){
-		parent::__construct(self::FEATHER, 0, $count, "Feather");
+		parent::__construct(self::FEATHER, $meta, $count, "Feather");
 	}
 
 }

@@ -41,7 +41,7 @@ class ByteTag extends NamedTag {
 	 * @return mixed|void
 	 */
 	public function read(NBT $nbt, bool $network = false){
-		$this->value = $nbt->getByte();
+		$this->value = $nbt->getSignedByte();
 	}
 
 	/**

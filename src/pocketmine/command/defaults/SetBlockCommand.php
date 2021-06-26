@@ -73,7 +73,7 @@ class SetBlockCommand extends VanillaCommand {
 			$y = $args[1];
 			$z = $args[2];
 
-			if($x{0} === "~"){
+			if($x[0] === "~"){
 				if((is_numeric(trim($x, "~")) or trim($x, "~") === "") and ($sender instanceof Player)) $x = (int) round(trim($x, "~") + $sender->x);
 			}elseif(is_numeric($x)){
 				$x = (int) round($x);
@@ -81,7 +81,7 @@ class SetBlockCommand extends VanillaCommand {
 				$sender->sendMessage(new TranslationContainer("commands.generic.usage", [$this->usageMessage]));
 				return false;
 			}
-			if($y{0} === "~"){
+			if($y[0] === "~"){
 				if((is_numeric(trim($y, "~")) or trim($y, "~") === "") and ($sender instanceof Player)) $y = (int) round(trim($y, "~") + $sender->y);
 				if($y < 0 or $y > 256) return false;
 			}elseif(is_numeric($y)){
@@ -90,7 +90,7 @@ class SetBlockCommand extends VanillaCommand {
 				$sender->sendMessage(new TranslationContainer("commands.generic.usage", [$this->usageMessage]));
 				return false;
 			}
-			if($z{0} === "~"){
+			if($z[0] === "~"){
 				if((is_numeric(trim($z, "~")) or trim($z, "~") === "") and ($sender instanceof Player)) $z = (int) round(trim($z, "~") + $sender->z);
 			}elseif(is_numeric($z)){
 				$z = (int) round($z);

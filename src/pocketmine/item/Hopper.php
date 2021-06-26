@@ -32,6 +32,6 @@ class Hopper extends Item {
 	 */
 	public function __construct($meta = 0, $count = 1){
 		$this->block = Block::get(Block::HOPPER_BLOCK);
-		parent::__construct(self::HOPPER, 0, $count, "Hopper");
+		parent::__construct(self::HOPPER, $meta, $count, "Hopper");
 	}
 }

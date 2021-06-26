@@ -21,7 +21,7 @@
 
 namespace pocketmine\item;
 
-class RawPorkchop extends Food {
+class RawPorkchop extends Food{
 	/**
 	 * RawPorkchop constructor.
 	 *

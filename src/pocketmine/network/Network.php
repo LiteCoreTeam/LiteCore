@@ -25,6 +25,8 @@
 
 namespace pocketmine\network;
 
+use InvalidArgumentException;
+use InvalidStateException;
 use pocketmine\network\mcpe\protocol\AddEntityPacket;
 use pocketmine\network\mcpe\protocol\AddHangingEntityPacket;
 use pocketmine\network\mcpe\protocol\AddItemEntityPacket;
@@ -117,12 +119,17 @@ use pocketmine\Player;
 use pocketmine\Server;
 use pocketmine\utils\BinaryStream;
 use pocketmine\utils\MainLogger;
+use SplFixedArray;
+use Throwable;
+use UnexpectedValueException;
+use const pocketmine\DEBUG;
+use function spl_object_hash;
 
 class Network {
 
 	public static $BATCH_THRESHOLD = 512;
 
-	/** @var \SplFixedArray */
+	/** @var SplFixedArray */
 	private $packetPool;
 
 	/** @var Server */
@@ -145,7 +152,6 @@ class Network {
 	 * @param Server $server
 	 */
 	public function __construct(Server $server){
-
 		$this->registerPackets();
 
 		$this->server = $server;
@@ -188,27 +194,23 @@ class Network {
 
 	public function processInterfaces(){
 		foreach($this->interfaces as $interface){
-			try{
-				$interface->process();
-			}catch(\Throwable $e){
-				$logger = $this->server->getLogger();
-				if(\pocketmine\DEBUG > 1){
-					if($logger instanceof MainLogger){
-						$logger->logException($e);
-					}
-				}
-
-				$interface->emergencyShutdown();
-				$this->unregisterInterface($interface);
-				$logger->critical($this->server->getLanguage()->translateString("pocketmine.server.networkError", [get_class($interface), $e->getMessage()]));
-			}
+			$interface->process();
 		}
+	}
+
+	/**
+	 * @deprecated
+	 * @param SourceInterface $interface
+	 */
+	public function processInterface(SourceInterface $interface) : void{
+		$interface->process();
 	}
 
 	/**
 	 * @param SourceInterface $interface
 	 */
 	public function registerInterface(SourceInterface $interface){
+		$interface->start();
 		$this->interfaces[$hash = spl_object_hash($interface)] = $interface;
 		if($interface instanceof AdvancedSourceInterface){
 			$this->advancedInterfaces[$hash] = $interface;
@@ -249,7 +251,7 @@ class Network {
 
 	/**
 	 * @param int        $id 0-255
-	 * @param DataPacket $class
+	 * @param string $class
 	 */
 	public function registerPacket($id, $class){
 		$this->packetPool[$id] = new $class;
@@ -262,42 +264,72 @@ class Network {
 		return $this->server;
 	}
 
+	/** @var int[] */
+	private $packetsFloodFilter;
+
 	/**
 	 * @param BatchPacket $packet
-	 * @param Player      $p
+	 * @param Player      $player
 	 */
-	public function processBatch(BatchPacket $packet, Player $p){
+	public function processBatch(BatchPacket $packet, Player $player){
 		try{
 			if(strlen($packet->payload) === 0){
 				//prevent zlib_decode errors for incorrectly-decoded packets
-				throw new \InvalidArgumentException("BatchPacket payload is empty or packet decode error");
+				throw new InvalidArgumentException("BatchPacket payload is empty or packet decode error");
 			}
 
 			$str = zlib_decode($packet->payload, 1024 * 1024 * 2); //Max 2MB
 			$len = strlen($str);
 
 			if($len === 0){
-				throw new \InvalidStateException("Decoded BatchPacket payload is empty");
+				throw new InvalidStateException("Decoded BatchPacket payload is empty");
 			}
 
 			$stream = new BinaryStream($str);
 
-			while($stream->offset < $len){
+			$count = 0;
+
+			/*$packetsCounter = [];
+			$isFiltered = false;*/
+			while(!$stream->feof()){
+				if($count++ >= 500){
+				    throw new UnexpectedValueException("Too many packets in a single batch");
+			    }
+
 				$buf = $stream->getString();
-				if(($pk = $this->getPacket(ord($buf{0}))) !== null){
-					if($pk::NETWORK_ID === 0xfe){
-						throw new \InvalidStateException("Invalid BatchPacket inside BatchPacket");
-					}
+				if(($pk = $this->getPacket(ord($buf[0]))) !== null){
+					if(!$pk->canBeBatched()){
+				        throw new UnexpectedValueException("Received invalid " . get_class($pk) . " inside BatchPacket");
+			        }
+
+			        /*@$packetsCounter[$pk::NETWORK_ID]++;
+					if(@$packetsCounter[$pk::NETWORK_ID] > 150){
+						$isFiltered = true;
+					}*/
 
 					$pk->setBuffer($buf, 1);
 
 					$pk->decode();
-					assert($pk->feof(), "Still " . strlen(substr($pk->buffer, $pk->offset)) . " bytes unread in " . get_class($pk));
-					$p->handleDataPacket($pk);
+					if(!$pk->feof() and !$pk->mayHaveUnreadBytes()){
+			            $remains = substr($pk->buffer, $pk->offset);
+			            $this->server->getLogger()->debug("Still " . strlen($remains) . " bytes unread in " . $pk->getName() . ": 0x" . bin2hex($remains));
+		            }
+					$player->handleDataPacket($pk);
 				}
 			}
-		}catch(\Throwable $e){
-			if(\pocketmine\DEBUG > 1){
+
+			/*if($isFiltered){
+				if (@$this->packetsFloodFilter[$player->getAddress()] < 10){
+					@$this->packetsFloodFilter[$player->getAddress()]++;
+				}else{
+					unset($this->packetsFloodFilter[$player->getAddress()]);
+					$this->blockAddress($player->getAddress(), 1200);
+				}
+			}else{
+				unset($this->packetsFloodFilter[$player->getAddress()]);
+			}*/
+		}catch(Throwable $e){
+			if(DEBUG > 1){
 				$logger = $this->server->getLogger();
 				if($logger instanceof MainLogger){
 					$logger->debug("BatchPacket " . " 0x" . bin2hex($packet->payload));
@@ -357,7 +389,7 @@ class Network {
 	}
 
 	private function registerPackets(){
-		$this->packetPool = new \SplFixedArray(256);
+		$this->packetPool = new SplFixedArray(256);
 
 		$this->registerPacket(ProtocolInfo::ADD_ENTITY_PACKET, AddEntityPacket::class);
 		$this->registerPacket(ProtocolInfo::ADD_HANGING_ENTITY_PACKET, AddHangingEntityPacket::class);

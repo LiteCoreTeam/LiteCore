@@ -164,39 +164,19 @@ class OfflinePlayer implements IPlayer, Metadatable {
 		return $this->namedtag instanceof CompoundTag;
 	}
 
-	/**
-	 * @param string        $metadataKey
-	 * @param MetadataValue $metadataValue
-	 */
-	public function setMetadata($metadataKey, MetadataValue $metadataValue){
-		$this->server->getPlayerMetadata()->setMetadata($this, $metadataKey, $metadataValue);
+	public function setMetadata(string $metadataKey, MetadataValue $newMetadataValue){
+		$this->server->getPlayerMetadata()->setMetadata($this, $metadataKey, $newMetadataValue);
 	}
 
-	/**
-	 * @param string $metadataKey
-	 *
-	 * @return MetadataValue[]
-	 */
-	public function getMetadata($metadataKey){
+	public function getMetadata(string $metadataKey){
 		return $this->server->getPlayerMetadata()->getMetadata($this, $metadataKey);
 	}
 
-	/**
-	 * @param string $metadataKey
-	 *
-	 * @return bool
-	 */
-	public function hasMetadata($metadataKey){
+	public function hasMetadata(string $metadataKey) : bool{
 		return $this->server->getPlayerMetadata()->hasMetadata($this, $metadataKey);
 	}
 
-	/**
-	 * @param string $metadataKey
-	 * @param Plugin $plugin
-	 */
-	public function removeMetadata($metadataKey, Plugin $plugin){
-		$this->server->getPlayerMetadata()->removeMetadata($this, $metadataKey, $plugin);
+	public function removeMetadata(string $metadataKey, Plugin $owningPlugin){
+		$this->server->getPlayerMetadata()->removeMetadata($this, $metadataKey, $owningPlugin);
 	}
-
-
 }

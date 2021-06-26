@@ -63,14 +63,15 @@ abstract class TextFormat {
 	}
 
 	/**
-	 * Cleans the string from Minecraft codes and ANSI Escape Codes
+	 * Cleans the string from Minecraft codes, ANSI Escape Codes and invalid UTF-8 characters
 	 *
 	 * @param string $string
 	 * @param bool   $removeFormat
 	 *
-	 * @return mixed
+	 * @return string valid clean UTF-8
 	 */
 	public static function clean($string, $removeFormat = true){
+		$string = mb_scrub($string, 'UTF-8');
 		if($removeFormat){
 			return str_replace(TextFormat::ESCAPE, "", preg_replace(["/" . TextFormat::ESCAPE . "[0123456789abcdefklmnor]/", "/\x1b[\\(\\][[0-9;\\[\\(]+[Bm]/"], "", $string));
 		}

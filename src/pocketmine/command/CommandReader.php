@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace pocketmine\command;
 
+use pocketmine\snooze\SleeperNotifier;
 use pocketmine\Thread;
 use pocketmine\utils\Utils;
 
@@ -38,19 +39,21 @@ class CommandReader extends Thread {
 
 	private $type = self::TYPE_STREAM;
 
-	/**
-	 * CommandReader constructor.
-	 */
-	public function __construct(){
+    /** @var SleeperNotifier|null */
+    private $notifier;
+
+	public function __construct(?SleeperNotifier $notifier = null){
 		$this->buffer = new \Threaded;
+		$this->notifier = $notifier;
 
 		$opts = getopt("", ["disable-readline", "enable-readline"]);
+		
 		if(extension_loaded("readline") and (Utils::getOS() === "win" ? isset($opts["enable-readline"]) : !isset($opts["disable-readline"])) and !$this->isPipe(STDIN)){
 			$this->type = self::TYPE_READLINE;
 		}
 
 		$this->setClassLoader();
-	}
+    }
 
 	public function shutdown(){
 		$this->shutdown = true;
@@ -148,6 +151,9 @@ class CommandReader extends Thread {
 
 		if($line !== ""){
 			$this->buffer[] = preg_replace("#\\x1b\\x5b([^\\x1b]*\\x7e|[\\x40-\\x50])#", "", $line);
+			if($this->notifier !== null){
+			    $this->notifier->wakeupSleeper();
+            }
 		}
 
 		return true;

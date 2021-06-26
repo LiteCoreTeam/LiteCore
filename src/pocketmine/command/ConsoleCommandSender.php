@@ -89,13 +89,6 @@ class ConsoleCommandSender implements CommandSender {
 	}
 
 	/**
-	 * @return bool
-	 */
-	public function isPlayer(){
-		return false;
-	}
-
-	/**
 	 * @return \pocketmine\Server
 	 */
 	public function getServer(){

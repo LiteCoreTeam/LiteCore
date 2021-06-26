@@ -30,7 +30,7 @@ class GoldIngot extends Item {
 	 * @param int $count
 	 */
 	public function __construct($meta = 0, $count = 1){
-		parent::__construct(self::GOLD_INGOT, 0, $count, "Gold Ingot");
+		parent::__construct(self::GOLD_INGOT, $meta, $count, "Gold Ingot");
 	}
 
 }

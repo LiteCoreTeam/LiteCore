@@ -34,7 +34,6 @@
 */
 
 namespace pocketmine\resourcepacks;
-
 use function assert;
 use function count;
 use function fclose;

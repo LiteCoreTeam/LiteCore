@@ -31,7 +31,9 @@ class ExplodePacket extends DataPacket {
 	public $x;
 	public $y;
 	public $z;
+	/** @var float */
 	public $radius;
+	/** @var Vector3[] */
 	public $records = [];
 
 	/**
@@ -39,7 +41,6 @@ class ExplodePacket extends DataPacket {
 	 */
 	public function clean(){
 		$this->records = [];
-		
 		return parent::clean();
 	}
 
@@ -56,7 +57,7 @@ class ExplodePacket extends DataPacket {
 	public function encode(){
 		$this->reset();
 		$this->putVector3f($this->x, $this->y, $this->z);
-		$this->putLFloat($this->radius);
+		$this->putVarInt((int) ($this->radius * 32));
 		$this->putUnsignedVarInt(count($this->records));
 		if(count($this->records) > 0){
 			foreach($this->records as $record){
@@ -66,7 +67,7 @@ class ExplodePacket extends DataPacket {
 	}
 
 	/**
-	 * @return PacketName|string
+	 * @return string Current packet name
 	 */
 	public function getName(){
 		return "ExplodePacket";

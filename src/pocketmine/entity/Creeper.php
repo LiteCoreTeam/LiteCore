@@ -15,7 +15,7 @@
  * (at your option) any later version.
  *
  * @author genisyspromcpe
- * @link https://github.com/genisyspromcpe/LiteCore
+ * @link https://github.com/LiteCoreTeam/LiteCore
  *
  *
 */

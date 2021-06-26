@@ -15,7 +15,7 @@
 
 namespace raklib\protocol;
 
-#include <rules/BinaryIO.h>
+#include <rules/RakLibPacket.h>
 
 class OpenConnectionReply1 extends OfflineMessage{
 	public static $ID = MessageIdentifiers::ID_OPEN_CONNECTION_REPLY_1;
@@ -32,6 +32,8 @@ class OpenConnectionReply1 extends OfflineMessage{
 		$this->putLong($this->serverID);
 		$this->putByte($this->serverSecurity ? 1 : 0);
 		$this->putShort($this->mtuSize);
+
+		//$this->put(str_repeat("\x00", $this->mtuSize - strlen($this->buffer) - 28)); //Если не заходят игроки с Украины и т.п
 	}
 
 	protected function decodePayload(){

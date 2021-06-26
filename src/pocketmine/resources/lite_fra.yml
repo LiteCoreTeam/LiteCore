@@ -132,4 +132,4 @@ dserver:
  
  inventory:
   #Configurez ceci comme vrai si vous avez des problèmes avec les enclumes. Cela permettra de traiter les transactions d'inventaire de manière vanille sans anti-triche ou de vérification.
-  allow-cheats: false
+  allow-cheats: true

@@ -55,9 +55,9 @@ class EnderPearl extends Projectile {
 	public function teleportShooter(){
 		if(!$this->hasTeleportedShooter){
 			$this->hasTeleportedShooter = true;
-			if($this->shootingEntity instanceof Player and $this->y > 0){
-				$this->getLevel()->addSound(new EndermanTeleportSound($this->getPosition()), array($this->shootingEntity));
-				$this->shootingEntity->teleport($this->getPosition());
+			if($this->getOwningEntity() instanceof Player and $this->y > 0){
+				$this->getLevel()->addSound(new EndermanTeleportSound($this->getPosition()), array($this->getOwningEntity()));
+				$this->getOwningEntity()->teleport($this->getPosition());
 			}
 
 			$this->kill();

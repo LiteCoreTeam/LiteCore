@@ -12,7 +12,7 @@ settings:
  #サーバーのクローズ時に送るメッセージ
  shutdown-message: "サーバーは閉じられました"
  #クエリ経由でプラグインのリスト表示を許可する
- query-plugins: true
+ query-plugins: false
  #プラグインが非推奨のAPIメソッドを使用しているときにコンソールメッセージを表示する
  deprecated-verbose: true
  #プラグインとコアプロファイリングをデフォルトで有効にする
@@ -84,15 +84,20 @@ network:
  #Set to 0 to compress everything, -1 to disable.
  batch-threshold: 256
  #Compression level used when sending batched packets. Higher = Uses More CPU, Less = More Bandwidth Usage
- compression-level: 7
+ compression-level: 6
  #Use AsyncTasks for compression. Adds half/one tick delay, less CPU load on main thread
  async-compression: false
  #Experimental, only for Windows. Tries to use UPnP to automatically port forward
  upnp-forwarding: false
+ #Maximum size in bytes of packets sent over the network (default 1492 bytes). Packets larger than this will be
+ #fragmented or split into smaller parts. Clients can request MTU sizes up to but not more than this number.
+ max-mtu-size: 1492
 
 debug:
  #If > 1, it will show debug messages in the console
  level: 1
+ #Если true, будет записывать логи.
+ logs: false
 
 player:
  #Choose whether to enable player data saving.

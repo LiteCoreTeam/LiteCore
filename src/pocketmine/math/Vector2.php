@@ -22,8 +22,13 @@
 namespace pocketmine\math;
 
 use pocketmine\utils\Random;
+use function abs;
+use function ceil;
+use function floor;
+use function round;
+use function sqrt;
 
-class Vector2 {
+class Vector2{
 	/** @var float */
 	public $x;
 	/** @var float */

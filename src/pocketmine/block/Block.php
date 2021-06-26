@@ -60,6 +60,8 @@ class Block extends Position implements BlockIds, Metadatable{
 	public static $transparent = null;
     /** @var \SplFixedArray */
     public static $diffusesSkyLight = null;
+    /** @var \SplFixedArray */
+	public static $blastResistance = null;
 
 	protected $id;
 	protected $meta = 0;
@@ -80,6 +82,7 @@ class Block extends Position implements BlockIds, Metadatable{
 			self::$hardness = new \SplFixedArray(256);
 			self::$transparent = new \SplFixedArray(256);
             self::$diffusesSkyLight = new \SplFixedArray(256);
+            self::$blastResistance = new \SplFixedArray(256);
 			self::$list[self::AIR] = Air::class;
 			self::$list[self::STONE] = Stone::class;
 			self::$list[self::GRASS] = Grass::class;
@@ -339,33 +342,21 @@ class Block extends Position implements BlockIds, Metadatable{
 					for($data = 0; $data < 16; ++$data){
 						self::$fullList[($id << 4) | $data] = new $class($data);
 					}
-
-					self::$solid[$id] = $block->isSolid();
-					self::$transparent[$id] = $block->isTransparent();
-					self::$hardness[$id] = $block->getHardness();
-					self::$light[$id] = $block->getLightLevel();
-
-					if($block->isSolid()){
-						if($block->isTransparent()){
-							if($block instanceof Liquid or $block instanceof Ice){
-								self::$lightFilter[$id] = 2;
-							}else{
-								self::$lightFilter[$id] = 1;
-							}
-						}elseif($block instanceof SolidLight){
-							self::$lightFilter[$id] = 1;
-						}else{
-							self::$lightFilter[$id] = 15;
-						}
-					}else{
-						self::$lightFilter[$id] = 1;
-					}
 				}else{
-					self::$lightFilter[$id] = 1;
+					$block = new UnknownBlock($id);
+
 					for($data = 0; $data < 16; ++$data){
 						self::$fullList[($id << 4) | $data] = new UnknownBlock($id, $data);
 					}
 				}
+
+				self::$solid[$id] = $block->isSolid();
+				self::$transparent[$id] = $block->isTransparent();
+				self::$hardness[$id] = $block->getHardness();
+				self::$light[$id] = $block->getLightLevel();
+				self::$lightFilter[$id] = min(15, $block->getLightFilter() + 1); //opacity plus 1 standard light filter
+				self::$diffusesSkyLight[$id] = $block->diffusesSkyLight();
+				self::$blastResistance[$id] = $block->getResistance();
 			}
 		}
 	}
@@ -398,9 +389,9 @@ class Block extends Position implements BlockIds, Metadatable{
 		}
 
 		if($pos !== null){
-			$block->x = $pos->x;
-			$block->y = $pos->y;
-			$block->z = $pos->z;
+			$block->x = $pos->getFloorX();
+			$block->y = $pos->getFloorY();
+			$block->z = $pos->getFloorZ();
 			$block->level = $pos->level;
 		}
 
@@ -443,10 +434,6 @@ class Block extends Position implements BlockIds, Metadatable{
 	 */
 	public function isBreakable(Item $item){
 		return true;
-	}
-
-	public function tickRate() : int{
-		return 10;
 	}
 
 	/**
@@ -554,6 +541,29 @@ class Block extends Position implements BlockIds, Metadatable{
 	 */
 	public function getLightLevel(){
 		return 0;
+	}
+
+	/**
+	 * Returns the amount of light this block will filter out when light passes through this block.
+	 * This value is used in light spread calculation.
+	 *
+	 * @return int 0-15
+	 */
+	public function getLightFilter() : int{
+		return 15;
+	}
+
+	/**
+	 * Returns whether this block will diffuse sky light passing through it vertically.
+	 * Diffusion means that full-strength sky light passing through this block will not be reduced, but will start being filtered below the block.
+	 * Examples of this behaviour include leaves and cobwebs.
+	 *
+	 * Light-diffusing blocks are included by the heightmap.
+	 *
+	 * @return bool
+	 */
+	public function diffusesSkyLight() : bool{
+		return false;
 	}
 
 	/**
@@ -785,6 +795,35 @@ class Block extends Position implements BlockIds, Metadatable{
 	}
 
 	/**
+	 * Returns the 4 blocks on the horizontal axes around the block (north, south, east, west)
+	 *
+	 * @return Block[]
+	 */
+	public function getHorizontalSides() : array{
+		return [
+			$this->getSide(Vector3::SIDE_NORTH),
+			$this->getSide(Vector3::SIDE_SOUTH),
+			$this->getSide(Vector3::SIDE_WEST),
+			$this->getSide(Vector3::SIDE_EAST)
+		];
+	}
+
+	/**
+	 * Returns the six blocks around this block.
+	 *
+	 * @return Block[]
+	 */
+	public function getAllSides() : array{
+		return array_merge(
+			[
+				$this->getSide(Vector3::SIDE_DOWN),
+				$this->getSide(Vector3::SIDE_UP)
+			],
+			$this->getHorizontalSides()
+		);
+	}
+
+	/**
 	 * @return string
 	 */
 	public function __toString(){
@@ -799,9 +838,7 @@ class Block extends Position implements BlockIds, Metadatable{
 	 * @return bool
 	 */
 	public function collidesWithBB(AxisAlignedBB $bb){
-		$bbs = $this->getCollisionBoxes();
-
-		foreach($bbs as $bb2){
+		foreach($this->getCollisionBoxes() as $bb2){
 			if($bb->intersectsWith($bb2)){
 				return true;
 			}
@@ -832,7 +869,7 @@ class Block extends Position implements BlockIds, Metadatable{
 	 * @return AxisAlignedBB[]
 	 */
 	protected function recalculateCollisionBoxes() : array{
-		if($bb = $this->recalculateBoundingBox()){
+		if(($bb = $this->recalculateBoundingBox()) !== null){
 			return [$bb];
 		}
 
@@ -864,10 +901,10 @@ class Block extends Position implements BlockIds, Metadatable{
 	}
 
 	/**
-	 * Clears any cached precomputed bounding boxes. This is called on block neighbour update and when the block is set
-	 * into the world to remove any outdated precomputed AABBs and force recalculation.
+	 * Clears any cached precomputed objects, such as bounding boxes. This is called on block neighbour update and when
+	 * the block is set into the world to remove any outdated precomputed things such as AABBs and force recalculation.
 	 */
-	public function clearBoundingBoxes() : void{
+	public function clearCaches() : void{
 		$this->boundingBox = null;
 		$this->collisionBoxes = null;
 	}
@@ -905,13 +942,13 @@ class Block extends Position implements BlockIds, Metadatable{
 		return $currentHit;
 	}
 
-	public function setMetadata($metadataKey, MetadataValue $metadataValue){
+	public function setMetadata(string $metadataKey, MetadataValue $newMetadataValue){
 		if($this->getLevel() instanceof Level){
-			$this->getLevel()->getBlockMetadata()->setMetadata($this, $metadataKey, $metadataValue);
+			$this->getLevel()->getBlockMetadata()->setMetadata($this, $metadataKey, $newMetadataValue);
 		}
 	}
 
-	public function getMetadata($metadataKey){
+	public function getMetadata(string $metadataKey){
 		if($this->getLevel() instanceof Level){
 			return $this->getLevel()->getBlockMetadata()->getMetadata($this, $metadataKey);
 		}
@@ -919,15 +956,17 @@ class Block extends Position implements BlockIds, Metadatable{
 		return null;
 	}
 
-	public function hasMetadata($metadataKey){
+	public function hasMetadata(string $metadataKey) : bool{
 		if($this->getLevel() instanceof Level){
-			$this->getLevel()->getBlockMetadata()->hasMetadata($this, $metadataKey);
+			return $this->getLevel()->getBlockMetadata()->hasMetadata($this, $metadataKey);
 		}
+
+		return false;
 	}
 
-	public function removeMetadata($metadataKey, Plugin $plugin){
+	public function removeMetadata(string $metadataKey, Plugin $owningPlugin){
 		if($this->getLevel() instanceof Level){
-			$this->getLevel()->getBlockMetadata()->removeMetadata($this, $metadataKey, $plugin);
+			$this->getLevel()->getBlockMetadata()->removeMetadata($this, $metadataKey, $owningPlugin);
 		}
 	}
 }

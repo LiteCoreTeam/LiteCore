@@ -51,9 +51,16 @@ class LoginPacket extends DataPacket {
 	public $deviceModel;
 	public $deviceOS;
 
-	/**
-	 *
-	 */
+	public $languageCode;
+
+	public function canBeSentBeforeLogin() : bool{
+		return true;
+	}
+
+	public function mayHaveUnreadBytes() : bool{
+		return $this->protocol !== ProtocolInfo::CURRENT_PROTOCOL;
+	}
+
 	public function decode(){
 		$this->protocol = $this->getInt();
 		if(!in_array($this->protocol, ProtocolInfo::ACCEPTED_PROTOCOLS)){
@@ -108,6 +115,10 @@ class LoginPacket extends DataPacket {
 
 		if(isset($this->clientData["SkinData"])){
 			$this->skin = base64_decode($this->clientData["SkinData"]);
+		}
+
+		if (isset($this->clientData["LanguageCode"])) {
+			$this->languageCode = $this->clientData["LanguageCode"];
 		}
 
 		if(isset($this->clientData["DeviceModel"])){

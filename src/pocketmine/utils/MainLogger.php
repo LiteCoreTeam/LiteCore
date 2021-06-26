@@ -42,6 +42,9 @@ class MainLogger extends \AttachableThreadedLogger {
 	public $shouldRecordMsg = false;
 	private $lastGet = 0;
 
+	/** @var string */
+	private $timezone;
+
 	/**
 	 * @param $b
 	 */
@@ -67,6 +70,7 @@ class MainLogger extends \AttachableThreadedLogger {
 	 * @throws \RuntimeException
 	 */
 	public function __construct($logFile, $logDebug = false){
+		parent::__construct();
 		if(static::$logger instanceof MainLogger){
 			throw new \RuntimeException("MainLogger has been already created");
 		}
@@ -74,6 +78,7 @@ class MainLogger extends \AttachableThreadedLogger {
 		$this->logFile = $logFile;
 		$this->logDebug = (bool) $logDebug;
 		$this->logStream = new \Threaded;
+		$this->timezone = Timezone::get();
 		$this->start(PTHREADS_INHERIT_NONE);
 	}
 
@@ -262,7 +267,12 @@ class MainLogger extends \AttachableThreadedLogger {
 	 * @param $color
 	 */
 	protected function send($message, $level, $prefix, $color){
-		$now = time();
+		/** @var \DateTime|null $time */
+		static $time = null;
+		if($time === null){ //thread-local
+			$time = new \DateTime('now', new \DateTimeZone($this->timezone));
+		}
+		$time->setTimestamp(time());
 
 		$thread = \Thread::getCurrentThread();
 		if($thread === null){
@@ -281,8 +291,8 @@ class MainLogger extends \AttachableThreadedLogger {
 			}
 		}
 
-		$message = TextFormat::toANSI(TextFormat::AQUA . "[" . date("H:i:s", $now) . "] " . TextFormat::RESET . $color . "[" . $threadName . "/" . $prefix . "]:" . " " . $message . TextFormat::RESET);
-		//$message = TextFormat::toANSI(TextFormat::AQUA . "[GenisysPro]->[" . date("H:i:s", $now) . "] " . TextFormat::RESET . $color . "[$prefix]:" . " " . $message . TextFormat::RESET);
+		$message = TextFormat::toANSI(TextFormat::AQUA . "[" . $time->format("H:i:s") . "] " . TextFormat::RESET . $color . "[" . $threadName . "/" . $prefix . "]:" . " " . $message . TextFormat::RESET);
+		//$message = TextFormat::toANSI(TextFormat::AQUA . "[GenisysPro]->[" . $time->format("H:i:s") . "] " . TextFormat::RESET . $color . "[$prefix]:" . " " . $message . TextFormat::RESET);
 		//$message = TextFormat::toANSI(TextFormat::AQUA . "[" . date("H:i:s") . "] ". TextFormat::RESET . $color ."<".$prefix . ">" . " " . $message . TextFormat::RESET);
 		$cleanMessage = TextFormat::clean($message);
 
@@ -296,11 +306,13 @@ class MainLogger extends \AttachableThreadedLogger {
 			call_user_func($this->consoleCallback);
 		}
 
-		if($this->attachment instanceof \ThreadedLoggerAttachment){
-			$this->attachment->call($level, $message);
+		foreach($this->attachments as $attachment){
+			if($attachment instanceof \ThreadedLoggerAttachment){
+				$attachment->call($level, $message);
+			}
 		}
 
-		$this->logStream[] = date("Y-m-d", $now) . " " . $cleanMessage . PHP_EOL;
+		$this->logStream[] = $time->format("Y-m-d") . " " . $cleanMessage . PHP_EOL;
 	}
 
 	/*public function run(){

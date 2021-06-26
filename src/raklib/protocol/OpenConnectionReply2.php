@@ -15,7 +15,7 @@
 
 namespace raklib\protocol;
 
-#include <rules/BinaryIO.h>
+#include <rules/RakLibPacket.h>
 
 class OpenConnectionReply2 extends OfflineMessage{
 	public static $ID = MessageIdentifiers::ID_OPEN_CONNECTION_REPLY_2;

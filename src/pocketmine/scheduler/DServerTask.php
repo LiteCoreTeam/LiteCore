@@ -88,7 +88,7 @@ class DServerTask extends AsyncTask {
 	 */
 	public function decode($buffer){
 		$redata = [];
-		$redata["packetType"] = ord($buffer{0});
+		$redata["packetType"] = ord($buffer[0]);
 		$redata["sessionID"] = unpack("N", substr($buffer, 1, 4))[1];
 		$redata["payload"] = rtrim(substr($buffer, 5));
 		return $redata;

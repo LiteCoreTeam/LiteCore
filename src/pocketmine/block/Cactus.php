@@ -106,7 +106,7 @@ class Cactus extends Transparent {
 
 			for($side = 2; $side <= 5; ++$side){
 				$b = $this->getSide($side);
-				if(!$b->canBeFlowedInto()){
+				if($b->isSolid()){
 					$this->getLevel()->useBreakOn($this);
 					return Level::BLOCK_UPDATE_NORMAL;
 				}
@@ -115,7 +115,7 @@ class Cactus extends Transparent {
 			if($this->getSide(0)->getId() !== self::CACTUS){
 				if($this->meta === 0x0f){
 					for($y = 1; $y < 3; ++$y){
-						$b = $this->getLevel()->getBlock(new Vector3($this->x, $this->y + $y, $this->z));
+						$b = $this->getLevel()->getBlockAt($this->x, $this->y + $y, $this->z);
 						if($b->getId() === self::AIR){
 							Server::getInstance()->getPluginManager()->callEvent($ev = new BlockGrowEvent($b, new Cactus()));
 							if($ev->isCancelled()){
@@ -157,7 +157,7 @@ class Cactus extends Transparent {
 			$block1 = $this->getSide(3);
 			$block2 = $this->getSide(4);
 			$block3 = $this->getSide(5);
-			if($block0->isTransparent() === true and $block1->isTransparent() === true and $block2->isTransparent() === true and $block3->isTransparent() === true){
+			if(!$block0->isSolid() and !$block1->isSolid() and !$block2->isSolid() and !$block3->isSolid()){
 				$this->getLevel()->setBlock($this, $this, true);
 
 				return true;

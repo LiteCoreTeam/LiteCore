@@ -61,4 +61,7 @@ class PurpurStairs extends Stair {
 		return "Purpur Stairs";
 	}
 
+	public function getResistance(){
+		return 30;
+	}
 } 

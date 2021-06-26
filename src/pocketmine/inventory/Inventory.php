@@ -160,6 +160,15 @@ interface Inventory {
 	public function firstEmpty();
 
 	/**
+	 * Returns whether the given slot is empty.
+	 *
+	 * @param int $index
+	 *
+	 * @return bool
+	 */
+	public function isSlotEmpty(int $index) : bool;
+
+	/**
 	 * Will remove all the Items that has the same id and metadata (if not null)
 	 *
 	 * @param Item $item

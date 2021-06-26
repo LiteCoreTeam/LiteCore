@@ -60,9 +60,9 @@ class StatusCommand extends VanillaCommand {
 		$server = $sender->getServer();
 		$sender->sendMessage(TextFormat::GREEN . "---- " . TextFormat::WHITE . "%pocketmine.command.status.title" . TextFormat::GREEN . " ----");
 
-		$time = microtime(true) - \pocketmine\START_TIME;
+		$time = (int) (microtime(true) - \pocketmine\START_TIME);
 
-		$seconds = floor($time % 60);
+		$seconds = $time % 60;
 		$minutes = null;
 		$hours = null;
 		$days = null;
@@ -108,14 +108,13 @@ class StatusCommand extends VanillaCommand {
 		$sender->sendMessage(TextFormat::GOLD . "%pocketmine.command.status.Networkupload " . TextFormat::RED . \round($server->getNetwork()->getUpload() / 1024, 2) . " kB/s");
 		$sender->sendMessage(TextFormat::GOLD . "%pocketmine.command.status.Networkdownload " . TextFormat::RED . \round($server->getNetwork()->getDownload() / 1024, 2) . " kB/s");
 		$sender->sendMessage(TextFormat::GOLD . "%pocketmine.command.status.Threadcount " . TextFormat::RED . Utils::getThreadCount());
-		$sender->sendMessage(TextFormat::GOLD . "%pocketmine.command.status.Mainmemory " . TextFormat::RED . number_format(round(($mUsage[0] / 1024) / 1024, 2)) . " MB.");
-		$sender->sendMessage(TextFormat::GOLD . "%pocketmine.command.status.Totalmemory " . TextFormat::RED . number_format(round(($mUsage[1] / 1024) / 1024, 2)) . " MB.");
-		$sender->sendMessage(TextFormat::GOLD . "%pocketmine.command.status.Totalvirtualmemory " . TextFormat::RED . number_format(round(($mUsage[2] / 1024) / 1024, 2)) . " MB.");
-		$sender->sendMessage(TextFormat::GOLD . "%pocketmine.command.status.Heapmemory " . TextFormat::RED . number_format(round(($rUsage[0] / 1024) / 1024, 2)) . " MB.");
-		$sender->sendMessage(TextFormat::GOLD . "%pocketmine.command.status.Maxmemorysystem " . TextFormat::RED . number_format(round(($mUsage[2] / 1024) / 1024, 2)) . " MB.");
+		$sender->sendMessage(TextFormat::GOLD . "%pocketmine.command.status.Mainmemory " . TextFormat::RED . number_format(round(($mUsage[0] / 1024) / 1024, 2), 2) . " MB.");
+		$sender->sendMessage(TextFormat::GOLD . "%pocketmine.command.status.Totalmemory " . TextFormat::RED . number_format(round(($mUsage[1] / 1024) / 1024, 2), 2) . " MB.");
+		$sender->sendMessage(TextFormat::GOLD . "%pocketmine.command.status.Totalvirtualmemory " . TextFormat::RED . number_format(round(($mUsage[2] / 1024) / 1024, 2), 2) . " MB.");
+		$sender->sendMessage(TextFormat::GOLD . "%pocketmine.command.status.Heapmemory " . TextFormat::RED . number_format(round(($rUsage[0] / 1024) / 1024, 2), 2) . " MB.");
 
 		if($server->getProperty("memory.global-limit") > 0){
-			$sender->sendMessage(TextFormat::GOLD . "%pocketmine.command.status.Maxmemorymanager " . TextFormat::RED . number_format(round($server->getProperty("memory.global-limit"), 2)) . " MB.");
+			$sender->sendMessage(TextFormat::GOLD . "%pocketmine.command.status.Maxmemorymanager " . TextFormat::RED . number_format(round($server->getProperty("memory.global-limit"), 2), 2) . " MB.");
 		}
 
 		foreach($server->getLevels() as $level){

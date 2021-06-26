@@ -18,15 +18,15 @@
  *
 */
 
-namespace pocketmine\level;
+namespace pocketmine\level\light;
 
-class BlockLightUpdate extends LightUpdate{
-
-	public function getLight(int $x, int $y, int $z) : int{
-		return $this->level->getBlockLightAt($x, $y, $z);
-	}
+class SkyLightUpdate extends LightUpdate{
 	
-	public function setLight(int $x, int $y, int $z, int $level){
-		$this->level->setBlockLightAt($x, $y, $z, $level);
-	}
+    public function getLight(int $x, int $y, int $z): int{
+        return $this->subChunkHandler->currentSubChunk->getBlockSkyLight($x & 0x0f, $y & 0x0f, $z & 0x0f);
+    }
+
+    public function setLight(int $x, int $y, int $z, int $level){
+        $this->subChunkHandler->currentSubChunk->setBlockSkyLight($x & 0x0f, $y & 0x0f, $z & 0x0f, $level);
+    }
 }

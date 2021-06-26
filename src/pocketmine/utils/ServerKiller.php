@@ -22,8 +22,10 @@
 namespace pocketmine\utils;
 
 use pocketmine\Thread;
+use function getmypid;
+use function time;
 
-class ServerKiller extends Thread {
+class ServerKiller extends Thread{
 
 	public $time;
 
@@ -40,7 +42,8 @@ class ServerKiller extends Thread {
 	}
 
 	public function run(){
-		$start = time() + 1;
+		$this->registerClassLoader();
+		$start = time();
 		$this->synchronized(function(){
 			if(!$this->stopped){
 			    $this->wait($this->time * 1000000);

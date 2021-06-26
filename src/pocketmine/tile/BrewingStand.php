@@ -76,7 +76,7 @@ class BrewingStand extends Spawnable implements InventoryHolder, Container, Name
 			$this->namedtag->Items->setTagType(NBT::TAG_Compound);
 		}
 		for($i = 0; $i < $this->getSize(); ++$i){
-			$this->inventory->setItem($i, $this->getItem($i));
+			$this->inventory->setItem($i, $this->getItem($i), false);
 		}
 		/*if($this->namedtag["CookTime"] < self::MAX_BREW_TIME){
 			$this->scheduleUpdate();
@@ -114,6 +114,9 @@ class BrewingStand extends Spawnable implements InventoryHolder, Container, Name
 			foreach($this->getInventory()->getViewers() as $player){
 				$player->removeWindow($this->getInventory());
 			}
+
+			$this->inventory = null;
+			
 			parent::close();
 		}
 	}

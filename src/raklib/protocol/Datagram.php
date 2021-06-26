@@ -21,7 +21,10 @@
 
 namespace raklib\protocol;
 
-#include <rules/BinaryIO.h>
+#include <rules/RakLibPacket.h>
+
+use function strlen;
+use function substr;
 
 class Datagram extends Packet{
 	const BITFLAG_VALID = 0x80;
@@ -75,7 +78,7 @@ class Datagram extends Packet{
 		while(!$this->feof()){
 			$offset = 0;
 			$data = substr($this->buffer, $this->offset);
-			$packet = EncapsulatedPacket::fromBinary($data, false, $offset);
+			$packet = EncapsulatedPacket::fromBinary($data, $offset);
 			$this->offset += $offset;
 			if($packet->buffer === ''){
 				break;

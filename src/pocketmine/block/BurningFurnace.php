@@ -128,17 +128,6 @@ class BurningFurnace extends Solid {
 	}
 
 	/**
-	 * @param Item $item
-	 *
-	 * @return bool
-	 */
-	public function onBreak(Item $item){
-		$this->getLevel()->setBlock($this, new Air(), true, true);
-
-		return true;
-	}
-
-	/**
 	 * @param Item        $item
 	 * @param Player|null $player
 	 *

@@ -99,6 +99,27 @@ interface ChunkManager {
 	public function setBlockLightAt(int $x, int $y, int $z, int $level);
 
 	/**
+	 * Returns the highest amount of sky light can reach the specified coordinates.
+	 *
+	 * @param int $x
+	 * @param int $y
+	 * @param int $z
+	 *
+	 * @return int
+	 */
+	public function getBlockSkyLightAt(int $x, int $y, int $z) : int;
+
+	/**
+	 * Sets the raw block sky light level.
+	 *
+	 * @param int $x
+	 * @param int $y
+	 * @param int $z
+	 * @param int $level
+	 */
+	public function setBlockSkyLightAt(int $x, int $y, int $z, int $level);
+
+	/**
 	 * @param int $chunkX
 	 * @param int $chunkZ
 	 *
@@ -119,6 +140,12 @@ interface ChunkManager {
 	 * @return int|string
 	 */
 	public function getSeed();
+
+	/**
+	 * Returns the height of the world
+	 * @return int
+	 */
+	public function getWorldHeight() : int;
 
 	/**
 	 * Returns whether the specified coordinates are within the valid world boundaries, taking world format limitations

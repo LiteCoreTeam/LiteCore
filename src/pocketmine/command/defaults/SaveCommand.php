@@ -24,9 +24,10 @@ namespace pocketmine\command\defaults;
 use pocketmine\command\Command;
 use pocketmine\command\CommandSender;
 use pocketmine\event\TranslationContainer;
+use function microtime;
+use function round;
 
-
-class SaveCommand extends VanillaCommand {
+class SaveCommand extends VanillaCommand{
 
 	/**
 	 * SaveCommand constructor.
@@ -55,6 +56,7 @@ class SaveCommand extends VanillaCommand {
 		}
 
 		Command::broadcastCommandMessage($sender, new TranslationContainer("commands.save.start"));
+		$start = microtime(true);
 
 		foreach($sender->getServer()->getOnlinePlayers() as $player){
 			$player->save();
@@ -64,7 +66,7 @@ class SaveCommand extends VanillaCommand {
 			$level->save(true);
 		}
 
-		Command::broadcastCommandMessage($sender, new TranslationContainer("commands.save.success"));
+		Command::broadcastCommandMessage($sender, new TranslationContainer("commands.save.success", [round(microtime(true) - $start, 3)]));
 
 		return true;
 	}

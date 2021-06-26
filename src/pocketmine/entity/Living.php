@@ -110,7 +110,7 @@ abstract class Living extends Entity implements Damageable {
 	 * @return float
 	 */
 	public function getJumpVelocity() : float{
-		return $this->jumpVelocity + ($this->hasEffect(Effect::JUMP) ? (($this->getEffect(Effect::JUMP)->getAmplifier() + 1) / 10) : 0);
+		return $this->jumpVelocity + ($this->hasEffect(Effect::JUMP) ? (($this->getEffect(Effect::JUMP)->getEffectLevel()) / 10) : 0);
 	}
 
 	/**
@@ -129,7 +129,9 @@ abstract class Living extends Entity implements Damageable {
 	 * @return bool|void
 	 */
 	public function attack($damage, EntityDamageEvent $source){
-		if($this->attackTime > 0 or $this->noDamageTicks > 0){
+		if($this->noDamageTicks > 0){
+			$source->setCancelled();
+		}elseif($this->attackTime > 0){
 			$lastCause = $this->getLastDamageCause();
 			if($lastCause !== null and $lastCause->getDamage() >= $damage){
 				$source->setCancelled();
@@ -142,20 +144,15 @@ abstract class Living extends Entity implements Damageable {
 			return;
 		}
 
-		if($source instanceof EntityDamageByEntityEvent){
-			$e = $source->getDamager();
-			if($source instanceof EntityDamageByChildEntityEvent){
-				$e = $source->getChild();
-			}
-
+		if($source instanceof EntityDamageByChildEntityEvent){
+			$e = $source->getChild();
 			if($e !== null){
-				if((
-					$source->getCause() === EntityDamageEvent::CAUSE_PROJECTILE or
-					$source->getCause() === EntityDamageEvent::CAUSE_ENTITY_ATTACK
-				) and $e->isOnFire()){
-					$this->setOnFire(2 * $this->server->getDifficulty());
-				}
-
+				$motion = $e->getMotion();
+				$this->knockBack($e, $damage, $motion->x, $motion->z, $source->getKnockBack());
+			}
+		}elseif($source instanceof EntityDamageByEntityEvent){
+			$e = $source->getDamager();
+			if($e !== null){
 			    $deltaX = $this->x - $e->x;
 				$deltaZ = $this->z - $e->z;
 				$this->knockBack($e, $damage, $deltaX, $deltaZ, $source->getKnockBack());
@@ -348,13 +345,9 @@ abstract class Living extends Entity implements Damageable {
 	 * @return Block
 	 */
 	public function getTargetBlock($maxDistance, array $transparent = []){
-		try{
-			$block = $this->getLineOfSight($maxDistance, 1, $transparent)[0];
-			if($block instanceof Block){
-				return $block;
-			}
-		}catch(\ArrayOutOfBoundsException $e){
-
+		$line = $this->getLineOfSight($maxDistance, 1, $transparent);
+		if(!empty($line)){
+			return array_shift($line);
 		}
 
 		return null;

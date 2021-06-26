@@ -15,6 +15,12 @@
 
 namespace raklib;
 
+use function extension_loaded;
+use function phpversion;
+use function substr_count;
+use function version_compare;
+use const PHP_EOL;
+use const PHP_VERSION;
 
 //Dependencies check
 $errors = 0;
@@ -49,8 +55,13 @@ if($errors > 0){
 unset($errors);
 
 abstract class RakLib{
-	const VERSION = "0.9.0";
-	const PROTOCOL = 6;
+	const VERSION = "0.12.0";
+
+	/**
+	 * Default vanilla Raknet protocol version that this library implements. Things using RakNet can override this
+	 * protocol version with something different.
+	 */
+	const DEFAULT_PROTOCOL_VERSION = 8;
 	const MAGIC = "\x00\xff\xff\x00\xfe\xfe\xfe\xfe\xfd\xfd\xfd\xfd\x12\x34\x56\x78";
 
 	const PRIORITY_NORMAL = 0;

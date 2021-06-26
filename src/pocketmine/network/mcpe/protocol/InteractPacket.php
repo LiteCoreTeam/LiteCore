@@ -33,9 +33,11 @@ class InteractPacket extends DataPacket {
 	const ACTION_LEAVE_VEHICLE = 3;
 	const ACTION_MOUSEOVER = 4;
 
+	/** @var int */
 	public $action;
-	public $eid;
+	/** @var int */
 	public $target;
+	public $eid;
 
 	/**
 	 *
@@ -55,7 +57,7 @@ class InteractPacket extends DataPacket {
 	}
 
 	/**
-	 * @return PacketName|string
+	 * @return string Current packet name
 	 */
 	public function getName(){
 		return "InteractPacket";

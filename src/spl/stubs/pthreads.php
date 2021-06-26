@@ -207,7 +207,7 @@ class Threaded implements Traversable, Collectable{
 	 * @link http://www.php.net/manual/en/threaded.wait.php
 	 * @return bool A boolean indication of success
 	 */
-	public function wait($timeout){}
+	public function wait($timeout = -1){}
 
 	/**
 	 * @return int
@@ -222,6 +222,19 @@ class Threaded implements Traversable, Collectable{
 	 * @return bool
 	 */
 	public function isGarbage(){}
+}
+
+/**
+ * Volatile class
+ *
+ * The Volatile class is new to pthreads v3. Its introduction is a consequence of the new immutability semantics of
+ * Threaded members of Threaded classes. The Volatile class enables for mutability of its Threaded members, and is also
+ * used to store PHP arrays in Threaded contexts.
+ *
+ * @link http://php.net/manual/en/class.volatile.php
+ * @since 3.0.0
+ */
+class Volatile extends Threaded{
 }
 
 /**

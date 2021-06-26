@@ -437,7 +437,7 @@ class Utils {
 	public static function javaStringHash($string){
 		$hash = 0;
 		for($i = 0; $i < strlen($string); $i++){
-			$ord = ord($string{$i});
+			$ord = ord($string[$i]);
 			if($ord & 0x80){
 				$ord -= 0x100;
 			}
@@ -454,18 +454,13 @@ class Utils {
 	}
 
 	/**
-	 * @param int    $severity
-	 * @param string $message
-	 * @param string $file
-	 * @param int    $line
-	 *
-	 * @return bool
 	 * @throws \ErrorException
 	 */
 	public static function errorExceptionHandler(int $severity, string $message, string $file, int $line) : bool{
 		if(error_reporting() & $severity){
 			throw new \ErrorException($message, 0, $severity, $file, $line);
 		}
+		
 		return true; //stfu operator
 	}
 

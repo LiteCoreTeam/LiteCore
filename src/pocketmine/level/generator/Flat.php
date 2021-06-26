@@ -46,7 +46,14 @@ class Flat extends Generator {
 	private $random;
 	/** @var Populator[] */
 	private $populators = [];
-	private $structure, $chunks, $options, $floorLevel, $preset;
+	/** @var int[][] */
+	private $structure;
+	/** @var int */
+	private $floorLevel;
+	/** @var mixed[] */
+	private $options;
+	/** @var string */
+	private $preset;
 
 	/**
 	 * @return array
@@ -116,8 +123,6 @@ class Flat extends Generator {
 		$biome = (int) ($preset[2] ?? 1);
 		$options = (string) ($preset[3] ?? "");
 		$this->structure = self::parseLayers($blocks);
-
-		$this->chunks = [];
 
 		$this->floorLevel = $y = count($this->structure);
 

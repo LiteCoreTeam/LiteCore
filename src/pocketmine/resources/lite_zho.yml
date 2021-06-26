@@ -140,4 +140,4 @@ dserver:
 
 inventory:
  #如果無法使用鐵砧或附魔台請啟用本項. 將會對背包進行驗證.
- allow-cheats: false
+ allow-cheats: true

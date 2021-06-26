@@ -19,7 +19,7 @@
  *
 */
 
-namespace pocketmine\level\generator;
+namespace pocketmine\level\light;
 
 use pocketmine\block\Block;
 use pocketmine\level\format\Chunk;
@@ -27,17 +27,11 @@ use pocketmine\level\Level;
 use pocketmine\scheduler\AsyncTask;
 use pocketmine\Server;
 
-class LightPopulationTask extends AsyncTask {
+class LightPopulationTask extends AsyncTask{
 
 	public $levelId;
 	public $chunk;
 
-	/**
-	 * LightPopulationTask constructor.
-	 *
-	 * @param Level $level
-	 * @param Chunk $chunk
-	 */
 	public function __construct(Level $level, Chunk $chunk){
 		$this->levelId = $level->getId();
 		$this->chunk = $chunk->fastSerialize();

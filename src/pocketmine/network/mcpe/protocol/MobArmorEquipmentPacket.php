@@ -23,12 +23,15 @@ namespace pocketmine\network\mcpe\protocol;
 
 #include <rules/DataPacket.h>
 
+use pocketmine\item\Item;
 
-class MobArmorEquipmentPacket extends DataPacket {
+class MobArmorEquipmentPacket extends DataPacket{
 
 	const NETWORK_ID = ProtocolInfo::MOB_ARMOR_EQUIPMENT_PACKET;
 
 	public $eid;
+
+	/** @var Item[] */
 	public $slots = [];
 
 	/**

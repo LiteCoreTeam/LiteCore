@@ -22,12 +22,15 @@
 namespace pocketmine\utils;
 
 #include <rules/BinaryIO.h>
-#ifndef COMPILE
-#endif
 
 use pocketmine\item\Item;
+use stdClass;
+use function chr;
+use function ord;
+use function strlen;
+use function substr;
 
-class BinaryStream extends \stdClass {
+class BinaryStream extends stdClass{
 
 	/** @var int */
 	public $offset;
@@ -55,7 +58,7 @@ class BinaryStream extends \stdClass {
 		$this->offset = $offset;
 	}
 
-	public function setBuffer(string $buffer = "", int $offset = 0) : void{
+	public function setBuffer(string $buffer = "", int $offset = 0){
 		$this->buffer = $buffer;
 		$this->offset = $offset;
 	}
@@ -69,30 +72,34 @@ class BinaryStream extends \stdClass {
 	}
 
 	/**
-	 * @param int $len
-	 *
-	 * @return string
+	 * @param int|true $len
 	 *
 	 * @throws BinaryDataException if there are not enough bytes left in the buffer
 	 */
-	public function get(int $len) : string{
+	public function get($len) : string{
 		if($len === 0){
 			return "";
 		}
-		if($len < 0){
-			throw new \InvalidArgumentException("Length must be positive");
-		}
 
-		$remaining = strlen($this->buffer) - $this->offset;
+		$buflen = strlen($this->buffer);
+		if($len === true){
+			$str = substr($this->buffer, $this->offset);
+			$this->offset = $buflen;
+			return $str;
+		}
+		if($len < 0){
+			$this->offset = $buflen - 1;
+			return "";
+		}
+		$remaining = $buflen - $this->offset;
 		if($remaining < $len){
 			throw new BinaryDataException("Not enough bytes left in buffer: need $len, have $remaining");
 		}
 
-		return $len === 1 ? $this->buffer{$this->offset++} : substr($this->buffer, ($this->offset += $len) - $len, $len);
+		return $len === 1 ? $this->buffer[$this->offset++] : substr($this->buffer, ($this->offset += $len) - $len, $len);
 	}
 
 	/**
-	 * @return string
 	 * @throws BinaryDataException
 	 */
 	public function getRemaining() : string{
@@ -139,10 +146,7 @@ class BinaryStream extends \stdClass {
 		$this->buffer .= Binary::writeLong($v);
 	}
 
-	/**
-	 * @return int
-	 */
-	public function getInt(){
+	public function getInt() : int{
 		return Binary::readInt($this->get(4));
 	}
 
@@ -209,13 +213,12 @@ class BinaryStream extends \stdClass {
 		$this->buffer .= Binary::writeShort($v);
 	}
 
-	/**
-	 * @param int $accuracy
-	 *
-	 * @return float
-	 */
-	public function getFloat(int $accuracy = -1){
-		return Binary::readFloat($this->get(4), $accuracy);
+	public function getFloat(){
+		return Binary::readFloat($this->get(4));
+	}
+
+	public function getRoundedFloat(int $accuracy){
+		return Binary::readRoundedFloat($this->get(4), $accuracy);
 	}
 
 	/**
@@ -241,13 +244,12 @@ class BinaryStream extends \stdClass {
 		$this->buffer .= Binary::writeLShort($v);
 	}
 
-	/**
-	 * @param int $accuracy
-	 *
-	 * @return float
-	 */
-	public function getLFloat(int $accuracy = -1){
-		return Binary::readLFloat($this->get(4), $accuracy);
+	public function getLFloat(){
+		return Binary::readLFloat($this->get(4));
+	}
+
+	public function getRoundedLFloat(int $accuracy){
+		return Binary::readRoundedLFloat($this->get(4), $accuracy);
 	}
 
 	/**
@@ -332,14 +334,14 @@ class BinaryStream extends \stdClass {
 
 		$canPlaceOn = $this->getVarInt();
 		if($canPlaceOn > 0){
-			for($i = 0; $i < $canPlaceOn; ++$i){
+			for($i = 0; $i < $canPlaceOn && !$this->feof(); ++$i){
 				$this->getString();
 			}
 		}
 
 		$canDestroy = $this->getVarInt();
 		if($canDestroy > 0){
-			for($i = 0; $i < $canDestroy; ++$i){
+			for($i = 0; $i < $canDestroy && !$this->feof(); ++$i){
 				$this->getString();
 			}
 		}
@@ -384,13 +386,11 @@ class BinaryStream extends \stdClass {
 		$this->put($v);
 	}
 
-	//TODO: varint64
-
 	/**
 	 * Reads an unsigned varint32 from the stream.
 	 */
 	public function getUnsignedVarInt(){
-		return Binary::readUnsignedVarInt($this);
+		return Binary::readUnsignedVarInt($this->buffer, $this->offset);
 	}
 
 	/**
@@ -406,7 +406,39 @@ class BinaryStream extends \stdClass {
 	 * Reads a signed varint32 from the stream.
 	 */
 	public function getVarInt(){
-		return Binary::readVarInt($this);
+		return Binary::readVarInt($this->buffer, $this->offset);
+	}
+
+	/**
+	 * Reads a 64-bit zigzag-encoded variable-length integer from the buffer and returns it.
+	 * @return int|string int, or the string representation of an int64 on 32-bit platforms
+	 */
+	public function getVarLong(){
+		return Binary::readVarLong($this->buffer, $this->offset);
+	}
+
+	/**
+	 * Writes a 64-bit variable-length integer to the end of the buffer.
+	 * @param int|string $v int, or the string representation of an int64 on 32-bit platforms
+	 */
+	public function putUnsignedVarLong($v){
+		$this->buffer .= Binary::writeUnsignedVarLong($v);
+	}
+
+	/**
+	 * Reads a 64-bit variable-length integer from the buffer and returns it.
+	 * @return int|string int, or the string representation of an int64 on 32-bit platforms
+	 */
+	public function getUnsignedVarLong(){
+		return Binary::readUnsignedVarLong($this->buffer, $this->offset);
+	}
+
+	/**
+	 * Writes a 64-bit zigzag-encoded variable-length integer to the end of the buffer.
+	 * @param int|string $v int, or the string representation of an int64 on 32-bit platforms
+	 */
+	public function putVarLong($v){
+		$this->buffer .= Binary::writeVarLong($v);
 	}
 
 	/**
@@ -460,9 +492,9 @@ class BinaryStream extends \stdClass {
 	 * @param $z
 	 */
 	public function getVector3f(&$x, &$y, &$z){
-		$x = $this->getLFloat(4);
-		$y = $this->getLFloat(4);
-		$z = $this->getLFloat(4);
+		$x = $this->getRoundedLFloat(4);
+		$y = $this->getRoundedLFloat(4);
+		$z = $this->getRoundedLFloat(4);
 	}
 
 	/**
@@ -481,6 +513,6 @@ class BinaryStream extends \stdClass {
 	 * @return bool
 	 */
 	public function feof() : bool{
-		return !isset($this->buffer{$this->offset});
+		return !isset($this->buffer[$this->offset]);
 	}
 }

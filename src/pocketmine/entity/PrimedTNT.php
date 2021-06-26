@@ -26,6 +26,7 @@ use pocketmine\event\entity\EntityDamageEvent;
 use pocketmine\event\entity\ExplosionPrimeEvent;
 use pocketmine\level\Explosion;
 use pocketmine\level\Level;
+use pocketmine\level\Position;
 use pocketmine\nbt\tag\ByteTag;
 use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\network\mcpe\protocol\AddEntityPacket;
@@ -37,6 +38,8 @@ class PrimedTNT extends Entity implements Explosive {
 	public $width = 0.98;
 	public $length = 0.98;
 	public $height = 0.98;
+
+	protected $baseOffset = 0.49;
 
 	protected $gravity = 0.04;
 	protected $drag = 0.02;
@@ -106,7 +109,6 @@ class PrimedTNT extends Entity implements Explosive {
 	 * @return bool
 	 */
 	public function onUpdate($currentTick){
-
 		if($this->closed){
 			return false;
 		}
@@ -163,7 +165,7 @@ class PrimedTNT extends Entity implements Explosive {
 		$this->server->getPluginManager()->callEvent($ev = new ExplosionPrimeEvent($this, 4, $this->dropItem));
 
 		if(!$ev->isCancelled()){
-			$explosion = new Explosion($this, $ev->getForce(), $this, $ev->dropItem());
+			$explosion = new Explosion(Position::fromObject($this->add(0, $this->height / 2, 0), $this->level), $ev->getForce(), $this, $ev->dropItem());
 			if($ev->isBlockBreaking()){
 				$explosion->explodeA();
 			}

@@ -22,8 +22,15 @@
 namespace pocketmine\math;
 
 use pocketmine\utils\Random;
+use function abs;
+use function ceil;
+use function floor;
+use function max;
+use function round;
+use function sqrt;
+use const PHP_ROUND_HALF_UP;
 
-class Vector3 {
+class Vector3{
 
 	const SIDE_DOWN = 0;
 	const SIDE_UP = 1;
@@ -207,7 +214,7 @@ class Vector3 {
 	 *
 	 * @return $this|Vector3
 	 */
-	public function getSide($side, $step = 1){
+	public function getSide(int $side, int $step = 1){
 		switch((int) $side){
 			case Vector3::SIDE_DOWN:
 				return new Vector3($this->x, $this->y - $step, $this->z);
@@ -224,6 +231,60 @@ class Vector3 {
 			default:
 				return $this;
 		}
+	}
+
+	/**
+	 * @param int $step
+	 *
+	 * @return Vector3
+	 */
+	public function down(int $step = 1){
+		return $this->getSide(self::SIDE_DOWN, $step);
+	}
+
+	/**
+	 * @param int $step
+	 *
+	 * @return Vector3
+	 */
+	public function up(int $step = 1){
+		return $this->getSide(self::SIDE_UP, $step);
+	}
+
+	/**
+	 * @param int $step
+	 *
+	 * @return Vector3
+	 */
+	public function north(int $step = 1){
+		return $this->getSide(self::SIDE_NORTH, $step);
+	}
+
+	/**
+	 * @param int $step
+	 *
+	 * @return Vector3
+	 */
+	public function south(int $step = 1){
+		return $this->getSide(self::SIDE_SOUTH, $step);
+	}
+
+	/**
+	 * @param int $step
+	 *
+	 * @return Vector3
+	 */
+	public function west(int $step = 1){
+		return $this->getSide(self::SIDE_WEST, $step);
+	}
+
+	/**
+	 * @param int $step
+	 *
+	 * @return Vector3
+	 */
+	public function east(int $step = 1){
+		return $this->getSide(self::SIDE_EAST, $step);
 	}
 
 	/**
@@ -323,12 +384,7 @@ class Vector3 {
 		return new Vector3(0, 0, 0);
 	}
 
-	/**
-	 * @param Vector3 $v
-	 *
-	 * @return int
-	 */
-	public function dot(Vector3 $v){
+	public function dot(Vector3 $v) : float{
 		return $this->x * $v->x + $this->y * $v->y + $this->z * $v->z;
 	}
 

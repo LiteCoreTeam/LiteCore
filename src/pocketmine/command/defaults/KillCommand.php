@@ -64,14 +64,14 @@ class KillCommand extends VanillaCommand {
 		}
 
 		if(count($args) >= 2){
-			$sender->sendMessage(new TranslationContainer("commands.generic.usage", [$this->usageMessage]));
+			$sender->sendMessage($sender->getServer()->getLanguage()->translateString("commands.generic.usage", [$this->usageMessage]));
 
 			return false;
 		}
 
 		if(count($args) === 1){
 			if(!$sender->hasPermission("pocketmine.command.kill.other")){
-				$sender->sendMessage(new TranslationContainer(TextFormat::RED . "%commands.generic.permission"));
+				$sender->sendMessage($sender->getServer()->getLanguage()->translateString(TextFormat::RED . "%commands.generic.permission"));
 
 				return true;
 			}
@@ -88,9 +88,9 @@ class KillCommand extends VanillaCommand {
 				$player->setLastDamageCause($ev);
 				$player->setHealth(0);
 
-				Command::broadcastCommandMessage($sender, new TranslationContainer("commands.kill.successful", [$player->getName()]));
+				Command::broadcastCommandMessage($sender, $sender->getServer()->getLanguage()->translateString("commands.kill.successful", [$player->getName()]));
 			}else{
-				$sender->sendMessage(new TranslationContainer(TextFormat::RED . "%commands.generic.player.notFound"));
+				$sender->sendMessage($sender->getServer()->getLanguage()->translateString(TextFormat::RED . "%commands.generic.player.notFound"));
 			}
 
 			return true;
@@ -98,7 +98,7 @@ class KillCommand extends VanillaCommand {
 
 		if($sender instanceof Player){
 			if(!$sender->hasPermission("pocketmine.command.kill.self")){
-				$sender->sendMessage(new TranslationContainer(TextFormat::RED . "%commands.generic.permission"));
+				$sender->sendMessage($sender->getServer()->getLanguage()->translateString(TextFormat::RED . "%commands.generic.permission"));
 
 				return true;
 			}
@@ -111,9 +111,9 @@ class KillCommand extends VanillaCommand {
 
 			$sender->setLastDamageCause($ev);
 			$sender->setHealth(0);
-			$sender->sendMessage(new TranslationContainer("commands.kill.successful", [$sender->getName()]));
+			$sender->sendMessage($sender->getServer()->getLanguage()->translateString("commands.kill.successful", [$sender->getName()]));
 		}else{
-			$sender->sendMessage(new TranslationContainer("commands.generic.usage", [$this->usageMessage]));
+			$sender->sendMessage($sender->getServer()->getLanguage()->translateString("commands.generic.usage", [$this->usageMessage]));
 
 			return false;
 		}

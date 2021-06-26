@@ -53,12 +53,12 @@ class CraftingEventPacket extends DataPacket {
 		$this->id = $this->getUUID();
 
 		$size = $this->getUnsignedVarInt();
-		for($i = 0; $i < $size and $i < 128; ++$i){
+		for($i = 0; $i < $size && $i < 128 && !$this->feof(); ++$i){
 			$this->input[] = $this->getSlot();
 		}
 
 		$size = $this->getUnsignedVarInt();
-		for($i = 0; $i < $size and $i < 128; ++$i){
+		for($i = 0; $i < $size && $i < 128 && !$this->feof(); ++$i){
 			$this->output[] = $this->getSlot();
 		}
 	}
@@ -71,7 +71,7 @@ class CraftingEventPacket extends DataPacket {
 	}
 
 	/**
-	 * @return PacketName|string
+	 * @return string Current packet name
 	 */
 	public function getName(){
 		return "CraftingEventPacket";

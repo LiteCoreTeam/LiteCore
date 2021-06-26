@@ -69,7 +69,12 @@ class UUID {
 	 * @return UUID
 	 */
 	public static function fromString($uuid, $version = null){
-		return self::fromBinary(hex2bin(str_replace("-", "", trim($uuid))), $version);
+		//TODO: should we be stricter about the notation (8-4-4-4-12)?
+		$binary = @hex2bin(str_replace("-", "", trim($uuid)));
+		if($binary === false){
+			throw new \InvalidArgumentException("Invalid hex string UUID representation");
+		}
+		return self::fromBinary($binary, $version);
 	}
 
 	/**
@@ -119,7 +124,7 @@ class UUID {
 	 * @return string
 	 */
 	public function toString(){
-		$hex = bin2hex(self::toBinary());
+		$hex = bin2hex($this->toBinary());
 
 		//xxxxxxxx-xxxx-Mxxx-Nxxx-xxxxxxxxxxxx 8-4-4-12
 		return substr($hex, 0, 8) . "-" . substr($hex, 8, 4) . "-" . substr($hex, 12, 4) . "-" . substr($hex, 16, 4) . "-" . substr($hex, 20, 12);
@@ -133,11 +138,9 @@ class UUID {
 	}
 
 	/**
-	 * @param int $partNumber
-	 *
-	 * @return mixed
+	 * @throws \InvalidArgumentException
 	 */
-	public function getPart(int $partNumber){
+	public function getPart(int $partNumber) : int{
 		if($partNumber < 0 or $partNumber > 3){
 			throw new \InvalidArgumentException("Invalid UUID part index $partNumber");
 		}
@@ -145,7 +148,7 @@ class UUID {
 	}
 
 	/**
-	 * @return array
+	 * @return int[]
 	 */
 	public function getParts() : array{
 		return $this->parts;

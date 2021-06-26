@@ -142,8 +142,8 @@ class Attribute {
 	 * @return $this
 	 */
 	public function setMinValue($minValue){
-		if($minValue > $this->getMaxValue()){
-			throw new \InvalidArgumentException("Value $minValue is bigger than the maxValue!");
+		if($minValue > ($max = $this->getMaxValue())){
+			throw new \InvalidArgumentException("Minimum $minValue is greater than the maximum $max");
 		}
 
 		if($this->minValue != $minValue){
@@ -166,8 +166,8 @@ class Attribute {
 	 * @return $this
 	 */
 	public function setMaxValue($maxValue){
-		if($maxValue < $this->getMinValue()){
-			throw new \InvalidArgumentException("Value $maxValue is bigger than the minValue!");
+		if($maxValue < ($min = $this->getMinValue())){
+			throw new \InvalidArgumentException("Maximum $maxValue is less than the minimum $min");
 		}
 
 		if($this->maxValue != $maxValue){
@@ -191,7 +191,7 @@ class Attribute {
 	 */
 	public function setDefaultValue($defaultValue){
 		if($defaultValue > $this->getMaxValue() or $defaultValue < $this->getMinValue()){
-			throw new \InvalidArgumentException("Value $defaultValue exceeds the range!");
+			throw new \InvalidArgumentException("Default $defaultValue is outside the range " . $this->getMinValue() . " - " . $this->getMaxValue());
 		}
 
 		if($this->defaultValue !== $defaultValue){
@@ -222,7 +222,7 @@ class Attribute {
 	public function setValue($value, bool $fit = false, bool $shouldSend = false){
 		if($value > $this->getMaxValue() or $value < $this->getMinValue()){
 			if(!$fit){
-				Server::getInstance()->getLogger()->error("[Attribute / {$this->getName()}] Value $value exceeds the range!");
+				throw new \InvalidArgumentException("Value $value is outside the range " . $this->getMinValue() . " - " . $this->getMaxValue());
 			}
 			$value = min(max($value, $this->getMinValue()), $this->getMaxValue());
 		}

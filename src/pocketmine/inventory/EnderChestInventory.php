@@ -95,7 +95,7 @@ class EnderChestInventory extends ContainerInventory {
 			$pk->case1 = 1;
 			$pk->case2 = 2;
 			if(($level = $this->getHolder()->getLevel()) instanceof Level){
-				$level->addChunkPacket($this->getHolder()->getX() >> 4, $this->getHolder()->getZ() >> 4, $pk);
+				$level->addChunkPacket($this->getHolder()->getFloorX() >> 4, $this->getHolder()->getFloorZ() >> 4, $pk);
 			}
 		}
 	}
@@ -112,7 +112,7 @@ class EnderChestInventory extends ContainerInventory {
 			$pk->case1 = 1;
 			$pk->case2 = 0;
 			if(($level = $this->getHolder()->getLevel()) instanceof Level){
-				$level->addChunkPacket($this->getHolder()->getX() >> 4, $this->getHolder()->getZ() >> 4, $pk);
+				$level->addChunkPacket($this->getHolder()->getFloorX() >> 4, $this->getHolder()->getFloorZ() >> 4, $pk);
 			}
 		}
 

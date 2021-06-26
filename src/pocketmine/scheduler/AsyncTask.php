@@ -105,7 +105,7 @@ abstract class AsyncTask extends \Threaded implements \Collectable{
 	 * @return bool
 	 */
 	public function isCrashed(){
-		return $this->crashed;
+		return $this->crashed or $this->isTerminated();
 	}
 
 	/**
@@ -155,30 +155,30 @@ abstract class AsyncTask extends \Threaded implements \Collectable{
 	}
 
 	/**
-	 * Gets something into the local thread store.
-	 * You have to initialize this in some way from the task on run
+	 * @see AsyncWorker::getFromThreadStore()
 	 *
 	 * @param string $identifier
 	 *
 	 * @return mixed
 	 */
 	public function getFromThreadStore($identifier){
-		global $store;
-		return ($this->isGarbage() or !isset($store[$identifier])) ? null : $store[$identifier];
+		if($this->worker === null or $this->isGarbage()){
+			throw new \BadMethodCallException("Objects stored in AsyncWorker thread-local storage can only be retrieved during task execution");
+		}
+		return $this->worker->getFromThreadStore($identifier);
 	}
 
 	/**
-	 * Saves something into the local thread store.
-	 * This might get deleted at any moment.
+	 * @see AsyncWorker::saveToThreadStore()
 	 *
 	 * @param string $identifier
 	 * @param mixed  $value
 	 */
 	public function saveToThreadStore($identifier, $value){
-		global $store;
-		if(!$this->isGarbage()){
-			$store[$identifier] = $value;
+		if($this->worker === null or $this->isGarbage()){
+			throw new \BadMethodCallException("Objects can only be added to AsyncWorker thread-local storage during task execution");
 		}
+		$this->worker->saveToThreadStore($identifier, $value);
 	}
 
 	/**
@@ -353,15 +353,5 @@ abstract class AsyncTask extends \Threaded implements \Collectable{
 		}
 
 		return false;
-	}
-
-	public function cleanObject(){
-		foreach($this as $p => $v){
-			if(!($v instanceof \Threaded) and !in_array($p, ["isFinished", "isGarbage", "cancelRun"])){
-				$this->{$p} = null;
-			}
-		}
-
-		$this->setGarbage();
 	}
 }

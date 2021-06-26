@@ -42,6 +42,8 @@ use pocketmine\event\TimingsHandler;
 use pocketmine\permission\Permissible;
 use pocketmine\permission\Permission;
 use pocketmine\Server;
+use pocketmine\utils\TextFormat;
+use function mb_strtoupper;
 
 /**
  * Manages all the plugins, Permissions and Permissibles
@@ -93,9 +95,6 @@ class PluginManager {
 	 * @var PluginLoader[]
 	 */
 	protected $fileAssociations = [];
-
-	/** @var TimingsHandler */
-	public static $pluginParentTimer;
 
 	public static $useTimings = false;
 
@@ -228,7 +227,7 @@ class PluginManager {
 									$pluginApi = array_pad(explode("-", $version), 2, ""); //0 = version, 1 = suffix (optional)
 									$serverApi = array_pad(explode("-", $this->server->getApiVersion()), 2, "");
 
-									if(strtoupper($pluginApi[1]) !== strtoupper($serverApi[1])){ //Different release phase (alpha vs. beta) or phase build (alpha.1 vs alpha.2)
+									if(mb_strtoupper($pluginApi[1]) !== mb_strtoupper($serverApi[1])){ //Different release phase (alpha vs. beta) or phase build (alpha.1 vs alpha.2)
 										continue;
 									}
 
@@ -319,7 +318,8 @@ class PluginManager {
 								unset($dependencies[$name][$key]);
 							}elseif(!isset($plugins[$dependency])){
 								$this->server->getLogger()->critical($this->server->getLanguage()->translateString("pocketmine.plugin.loadError", [$name, "%pocketmine.plugin.unknownDependency"]));
-								break;
+								unset($plugins[$name]);
+								continue 2;
 							}
 						}
 
@@ -494,6 +494,18 @@ class PluginManager {
 		if(isset($this->permSubs[$permission])){
 			unset($this->permSubs[$permission][spl_object_hash($permissible)]);
 			if(count($this->permSubs[$permission]) === 0){
+				unset($this->permSubs[$permission]);
+			}
+		}
+	}
+
+	/**
+	 * @param Permissible $permissible
+	 */
+	public function unsubscribeFromAllPermissions(Permissible $permissible) : void{
+		foreach($this->permSubs as $permission => &$subs){
+			unset($subs[spl_object_hash($permissible)]);
+			if(empty($subs)){
 				unset($this->permSubs[$permission]);
 			}
 		}
@@ -704,6 +716,17 @@ class PluginManager {
 	}
 
 	/**
+	 * Extracts one-line tags from the doc-comment
+	 *
+	 * @param string $docComment
+	 * @return string[] an array of tagName => tag value. If the tag has no value, an empty string is used as the value.
+	 */
+	public static function parseDocComment(string $docComment) : array{
+		preg_match_all('/^[\t ]*\* @([a-zA-Z]+)(?:[\t ]+(.+))?[\t ]*$/m', $docComment, $matches);
+		return array_combine($matches[1], array_map("trim", $matches[2]));
+	}
+
+	/**
 	 * Calls an event
 	 *
 	 * @param Event $event
@@ -744,37 +767,60 @@ class PluginManager {
 
 		$reflection = new \ReflectionClass(get_class($listener));
 		foreach($reflection->getMethods(\ReflectionMethod::IS_PUBLIC) as $method){
-			if(!$method->isStatic()){
-				$priority = EventPriority::NORMAL;
-				$ignoreCancelled = false;
-				if(preg_match("/^[\t ]*\\* @priority[\t ]{1,}([a-zA-Z]{1,})/m", (string) $method->getDocComment(), $matches) > 0){
-					$matches[1] = strtoupper($matches[1]);
-					if(defined(EventPriority::class . "::" . $matches[1])){
-						$priority = constant(EventPriority::class . "::" . $matches[1]);
-					}
-				}
-				if(preg_match("/^[\t ]*\\* @ignoreCancelled[\t ]{1,}([a-zA-Z]{1,})/m", (string) $method->getDocComment(), $matches) > 0){
-					$matches[1] = strtolower($matches[1]);
-					if($matches[1] === "false"){
-						$ignoreCancelled = false;
-					}elseif($matches[1] === "true"){
-						$ignoreCancelled = true;
-					}
+			if(!$method->isStatic() and $method->getDeclaringClass()->implementsInterface(Listener::class)){
+				$tags = self::parseDocComment((string) $method->getDocComment());
+				if(isset($tags["notHandler"])){
+					continue;
 				}
 
 				$parameters = $method->getParameters();
-				if(count($parameters) === 1 and $parameters[0]->getClass() instanceof \ReflectionClass and is_subclass_of($parameters[0]->getClass()->getName(), Event::class)){
-					$class = $parameters[0]->getClass()->getName();
-					$reflection = new \ReflectionClass($class);
-					if(strpos((string) $reflection->getDocComment(), "@deprecated") !== false and $this->server->getProperty("settings.deprecated-verbose", true)){
-						$this->server->getLogger()->warning($this->server->getLanguage()->translateString("pocketmine.plugin.deprecatedEvent", [
-							$plugin->getName(),
-							$class,
-							get_class($listener) . "->" . $method->getName() . "()"
-						]));
-					}
-					$this->registerEvent($class, $listener, $priority, new MethodEventExecutor($method->getName()), $plugin, $ignoreCancelled);
+				if(count($parameters) !== 1){
+					continue;
 				}
+				try{
+					$paramType = $parameters[0]->getType();
+					//isBuiltin() returns false for builtin classes ..................
+					if($paramType instanceof \ReflectionNamedType && !$paramType->isBuiltin()){
+						/** @phpstan-var class-string $paramClass */
+						$paramClass = $paramType->getName();
+						$eventClass = new \ReflectionClass($paramClass);
+					}else{
+						$eventClass = null;
+					}
+				}catch(\ReflectionException $e){ //class doesn't exist
+					if(isset($tags["softDepend"]) && !isset($this->plugins[$tags["softDepend"]])){
+						$this->server->getLogger()->debug("Not registering @softDepend listener " . get_class($listener) . "::" . $method->getName() . "(" . $parameters[0]->getType()->getName() . ") because plugin \"" . $tags["softDepend"] . "\" not found");
+						continue;
+					}
+
+					throw $e;
+				}
+				if($eventClass === null or !$eventClass->isSubclassOf(Event::class)){
+					continue;
+				}
+
+				try{
+					$priority = isset($tags["priority"]) ? EventPriority::fromString($tags["priority"]) : EventPriority::NORMAL;
+				}catch(\InvalidArgumentException $e){
+					throw new PluginException("Event handler " . get_class($listener) . "->" . $method->getName() . "() declares invalid/unknown priority \"" . $tags["priority"] . "\"");
+				}
+
+				$ignoreCancelled = false;
+				if(isset($tags["ignoreCancelled"])){
+					switch(strtolower($tags["ignoreCancelled"])){
+						case "true":
+						case "":
+							$ignoreCancelled = true;
+							break;
+						case "false":
+							$ignoreCancelled = false;
+							break;
+						default:
+							throw new PluginException("Event handler " . get_class($listener) . "->" . $method->getName() . "() declares invalid @ignoreCancelled value \"" . $tags["ignoreCancelled"] . "\"");
+					}
+				}
+
+				$this->registerEvent($eventClass->getName(), $listener, $priority, new MethodEventExecutor($method->getName()), $plugin, $ignoreCancelled);
 			}
 		}
 	}
@@ -805,7 +851,7 @@ class PluginManager {
 			throw new PluginException("Plugin attempted to register " . $event . " while not enabled");
 		}
 
-		$timings = new TimingsHandler("Plugin: " . $plugin->getDescription()->getFullName() . " Event: " . get_class($listener) . "::" . ($executor instanceof MethodEventExecutor ? $executor->getMethod() : "???") . "(" . (new \ReflectionClass($event))->getShortName() . ")", self::$pluginParentTimer);
+		$timings = new TimingsHandler("Plugin: " . $plugin->getDescription()->getFullName() . " Event: " . get_class($listener) . "::" . ($executor instanceof MethodEventExecutor ? $executor->getMethod() : "???") . "(" . (new \ReflectionClass($event))->getShortName() . ")");
 
 		$this->getEventListeners($event)->register(new RegisteredListener($listener, $executor, $priority, $plugin, $ignoreCancelled, $timings));
 	}

@@ -29,6 +29,8 @@ use pocketmine\event\entity\EntityDamageEvent;
 use pocketmine\item\Item;
 use pocketmine\Player;
 use pocketmine\Server;
+use pocketmine\block\Block;
+use pocketmine\network\mcpe\protocol\LevelSoundEventPacket;
 
 class Lava extends Liquid {
 
@@ -55,6 +57,57 @@ class Lava extends Liquid {
 	 */
 	public function getName() : string{
 		return "Lava";
+	}
+
+	public function tickRate() : int{
+		return 30;
+	}
+
+	public function getFlowDecayPerBlock() : int{
+		return 2; //TODO: this is 1 in the nether
+	}
+
+	protected function checkForHarden(){
+		$colliding = null;
+		for($side = 1; $side <= 5; ++$side){ //don't check downwards side
+			$blockSide = $this->getSide($side);
+			if($blockSide instanceof Water){
+				$colliding = $blockSide;
+				break;
+			}
+		}
+
+		if($colliding !== null){
+			if($this->getDamage() === 0){
+				$this->liquidCollide($colliding, Block::get(Block::OBSIDIAN));
+			}elseif($this->getDamage() <= 4){
+				$this->liquidCollide($colliding, Block::get(Block::COBBLESTONE));
+			}
+		}
+	}
+
+	protected function flowIntoBlock(Block $block, int $newFlowDecay) : void{
+		if($block instanceof Water){
+			$block->liquidCollide($this, Block::get(Block::STONE));
+		}else{
+			parent::flowIntoBlock($block, $newFlowDecay);
+		}
+	}
+
+	public function getStillForm() : Block{
+		return Block::get(Block::STILL_LAVA, $this->meta);
+	}
+
+	public function getFlowingForm() : Block{
+		return Block::get(Block::LAVA, $this->meta);
+	}
+
+	public function getBucketFillSound() : int{
+		return LevelSoundEventPacket::SOUND_BUCKET_FILL_LAVA;
+	}
+
+	public function getBucketEmptySound() : int{
+		return LevelSoundEventPacket::SOUND_BUCKET_EMPTY_LAVA;
 	}
 
 	/**

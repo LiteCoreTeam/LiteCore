@@ -234,6 +234,10 @@ class MemoryManager {
 		Timings::$garbageCollectorTimer->startTiming();
 
 		if($this->garbageCollectionAsync){
+			/*$servScheduler = $this->server->getScheduler();
+			if(($w = $servScheduler->downUnusedWorkers()) > 0){
+				$this->server->getLogger()->debug("Shut down $w idle async pool workers");
+			}*/
 			$size = $this->server->getScheduler()->getAsyncTaskPoolSize();
 			for($i = 0; $i < $size; ++$i){
 				$this->server->getScheduler()->scheduleAsyncTaskToWorker(new GarbageCollectionTask(), $i);
@@ -241,10 +245,7 @@ class MemoryManager {
 		}
 
 		$cycles = gc_collect_cycles();
-
-		foreach($this->server->getLevels() as $level){
-			$level->doChunkGarbageCollection();
-		}
+		gc_mem_caches();
 
 		Timings::$garbageCollectorTimer->stopTiming();
 
@@ -352,12 +353,14 @@ class MemoryManager {
 	 * @param $maxStringSize
 	 */
 	public function dumpServerMemory($outputFolder, $maxNesting, $maxStringSize){
+		$hardLimit = ini_get('memory_limit');
+		if($hardLimit === false) throw new \Error("memory_limit INI directive should always exist");
+		ini_set('memory_limit', '-1');
 		gc_disable();
-		ini_set("memory_limit", '-1');
+
 		if(!file_exists($outputFolder)){
 			mkdir($outputFolder, 0777, true);
 		}
-		$this->server->getLogger()->notice("[Dump] After the memory dump is done, the server will shut down");
 
 		$obData = fopen($outputFolder . "/objects.js", "wb+");
 
@@ -411,7 +414,7 @@ class MemoryManager {
 
 				fwrite($obData, "$hash@$className: " . json_encode($info, JSON_UNESCAPED_SLASHES) . "\n");
 
-				if(!isset($objects["staticProperties"][$className])){
+				if(!isset($staticProperties[$className])){
 					$staticProperties[$className] = [];
 					foreach($reflection->getProperties() as $property){
 						if(!$property->isStatic() or $property->getDeclaringClass()->getName() !== $className){
@@ -437,6 +440,7 @@ class MemoryManager {
 
 		echo "[Dump] Finished!\n";
 
+		ini_set('memory_limit', $hardLimit);
 		gc_enable();
 	}
 

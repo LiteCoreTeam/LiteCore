@@ -12,7 +12,7 @@ settings:
  #當伺服器關閉時，下列提示訊息將在玩家客戶端上顯示。
  shutdown-message: "伺服器已關閉"
  #允許通過 Query 查詢插件列表
- query-plugins: true
+ query-plugins: false
  #當有插件使用已棄用的 API 方法時，在控制台顯示訊息
  deprecated-verbose: true
  #預設啟用插件和核心性能分析
@@ -84,15 +84,20 @@ network:
  #設定為 0 可壓縮所有數據包，設定為 -1 可停用。
  batch-threshold: 256
  #批次處理數據包時的壓縮級別。更高級別 = 更多 CPU 占用，更低級別 = 更多流量占用
- compression-level: 7
+ compression-level: 6
  #使用異步處理進行壓縮。將會導致額外 0.5~1 刻的延遲，降低主線程的 CPU 占用
  async-compression: false
  #實驗性功能，僅適用於 Windows。嘗試使用 UPnP 進行自動端口轉發
  upnp-forwarding: false
+ #Maximum size in bytes of packets sent over the network (default 1492 bytes). Packets larger than this will be
+ #fragmented or split into smaller parts. Clients can request MTU sizes up to but not more than this number.
+ max-mtu-size: 1492
 
 debug:
  #當設定的值大於 1 時，將會在控制台顯示調試訊息
  level: 1
+ #Если true, будет записывать логи.
+ logs: false
 
 player:
  #選擇是否儲存玩家數據。

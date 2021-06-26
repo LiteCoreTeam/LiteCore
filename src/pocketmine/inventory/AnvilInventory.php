@@ -146,11 +146,7 @@ class AnvilInventory extends TemporaryInventory {
 	public function onClose(Player $who){
 		parent::onClose($who);
 
-		$this->getHolder()->getLevel()->dropItem($this->getHolder()->add(0.5, 0.5, 0.5), $this->getItem(0));
-		$this->getHolder()->getLevel()->dropItem($this->getHolder()->add(0.5, 0.5, 0.5), $this->getItem(1));
-		$this->clear(0);
-		$this->clear(1);
-		$this->clear(2);
+		$this->dropContents($this->holder->getLevel(), $this->holder->add(0.5, 0.5, 0.5));
 	}
 
 }

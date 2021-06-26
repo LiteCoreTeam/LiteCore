@@ -31,44 +31,20 @@ abstract class Tag extends \stdClass {
 
 	protected $value;
 
-	/**
-	 * @return mixed
-	 */
 	public function &getValue(){
 		return $this->value;
 	}
 
-	/**
-	 * @return mixed
-	 */
-	public abstract function getType();
+	abstract public function getType();
 
-	/**
-	 * @param $value
-	 */
 	public function setValue($value){
 		$this->value = $value;
 	}
 
-	/**
-	 * @param NBT  $nbt
-	 * @param bool $network
-	 *
-	 * @return mixed
-	 */
 	abstract public function write(NBT $nbt, bool $network = false);
 
-	/**
-	 * @param NBT  $nbt
-	 * @param bool $network
-	 *
-	 * @return mixed
-	 */
 	abstract public function read(NBT $nbt, bool $network = false);
 
-	/**
-	 * @return string
-	 */
 	public function __toString(){
 		return (string) $this->value;
 	}

@@ -46,7 +46,7 @@ class EmptySubChunk extends SubChunk {
 	/**
 	 * @return bool
 	 */
-	public function isEmpty() : bool{
+	public function isEmpty(bool $checkLight = true) : bool{
 		return true;
 	}
 
@@ -116,7 +116,7 @@ class EmptySubChunk extends SubChunk {
 	 *
 	 * @return bool
 	 */
-	public function setBlock(int $x, int $y, int $z, $id = null, $data = null) : bool{
+	public function setBlock(int $x, int $y, int $z, ?int $id = null, ?int $data = null) : bool{
 		return false;
 	}
 
@@ -227,6 +227,10 @@ class EmptySubChunk extends SubChunk {
 		return str_repeat("\x00", 2048);
 	}
 
+	public function setBlockLightArray(string $data){
+
+	}
+
 	/**
 	 * @return string
 	 */
@@ -234,17 +238,14 @@ class EmptySubChunk extends SubChunk {
 		return str_repeat("\xff", 2048);
 	}
 
-	/**
-	 * @return string
-	 */
-	public function networkSerialize() : string{
-		return "\x00" . str_repeat("\x00", 10240);
+	public function setBlockSkyLightArray(string $data){
+
 	}
 
 	/**
 	 * @return string
 	 */
-	public function fastSerialize() : string{
-		throw new \BadMethodCallException("Should not try to serialize empty subchunks");
+	public function networkSerialize() : string{
+		return "\x00" . str_repeat("\x00", 10240);
 	}
 }

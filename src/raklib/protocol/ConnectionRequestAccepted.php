@@ -15,9 +15,10 @@
 
 namespace raklib\protocol;
 
-#include <rules/BinaryIO.h>
+#include <rules/RakLibPacket.h>
 
 use raklib\RakLib;
+//use function strlen;
 
 class ConnectionRequestAccepted extends Packet{
 	public static $ID = MessageIdentifiers::ID_CONNECTION_REQUEST_ACCEPTED;
@@ -51,6 +52,16 @@ class ConnectionRequestAccepted extends Packet{
 	}
 
 	protected function decodePayload(){
-		//TODO, not needed yet
+		/*$this->address = $this->getAddress();
+		$this->getShort(); //TODO: check this
+
+		$len = strlen($this->buffer);
+
+		for($i = 0; $i < RakLib::$SYSTEM_ADDRESS_COUNT; ++$i){
+			$this->systemAddresses[$i] = $this->offset + 16 < $len ? $this->getAddress() : ["0.0.0.0", 0, 4]; //HACK: avoids trying to read too many addresses on bad data
+		}
+
+		$this->sendPingTime = $this->getLong();
+		$this->sendPongTime = $this->getLong();*/
 	}
 }

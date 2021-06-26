@@ -72,19 +72,30 @@ namespace {
 
 namespace pocketmine {
 
-	use pocketmine\utils\Binary;
 	use pocketmine\utils\MainLogger;
 	use pocketmine\utils\ServerKiller;
 	use pocketmine\utils\Terminal;
 	use pocketmine\utils\Timezone;
 	use pocketmine\utils\Utils;
 	use pocketmine\wizard\Installer;
+	use raklib\RakLib;
 
+	const NAME = "LiteCore";
 	const VERSION = "1.1.X";
 	const API_VERSION = "3.0.1";
 	const CODENAME = "vk.com/litecore_team";
 	const GENISYS_API_VERSION = '2.0.0';
-	const CORE_VERSION = '1.0.1-public';
+	const CORE_VERSION = '1.0.5-release';
+
+	const MIN_PHP_VERSION = "7.3.0";
+
+	/**
+	 * @param string $message
+	 * @return void
+	 */
+	function critical_error($message){
+		echo "[ERROR] $message" . PHP_EOL;
+	}
 
 	/*
 	 * Startup code. Do not look at it, it may harm you.
@@ -93,10 +104,10 @@ namespace pocketmine {
 	 * Enjoy it as much as I did writing it. I don't want to do it again.
 	 */
 
-	if(\Phar::running(true) !== ""){
-		@define('pocketmine\PATH', \Phar::running(true) . "/");
-	}else{
-		@define('pocketmine\PATH', \getcwd() . DIRECTORY_SEPARATOR);
+	if(version_compare(MIN_PHP_VERSION, PHP_VERSION) > 0){
+		echo "[CRITICAL] " . \pocketmine\NAME . " requires PHP " . MIN_PHP_VERSION . ", but you have PHP " . PHP_VERSION . "." . PHP_EOL;
+		echo "[CRITICAL] Please use the installer provided on the homepage." . PHP_EOL;
+		exit(1);
 	}
 
 	if(!extension_loaded("pthreads")){
@@ -105,7 +116,24 @@ namespace pocketmine {
 		exit(1);
 	}
 
+	if(!extension_loaded("phar")){
+		echo "[CRITICAL] Unable to find the Phar extension." . PHP_EOL;
+		echo "[CRITICAL] Please use the installer provided on the homepage, or update to a newer PHP version." . PHP_EOL;
+		exit(1);
+	}
+
+	if(\Phar::running(true) !== ""){
+		define('pocketmine\PATH', \Phar::running(true) . "/");
+	}else{
+		define('pocketmine\PATH', dirname(__FILE__, 3) . DIRECTORY_SEPARATOR);
+	}
+
 	if(!class_exists("ClassLoader", false)){
+		if(!is_file(\pocketmine\PATH . "src/spl/ClassLoader.php")){
+			echo "[CRITICAL] Unable to find the PocketMine-SPL library." . PHP_EOL;
+			echo "[CRITICAL] Please use provided builds or clone the repository recursively." . PHP_EOL;
+			exit(1);
+		}
 		require_once(\pocketmine\PATH . "src/spl/ClassLoader.php");
 		require_once(\pocketmine\PATH . "src/spl/BaseClassLoader.php");
 	}
@@ -119,6 +147,18 @@ namespace pocketmine {
 
 	set_error_handler([Utils::class, 'errorExceptionHandler']);
 
+	if(!class_exists(RakLib::class)){
+		echo "[CRITICAL] Unable to find the RakLib library." . PHP_EOL;
+		echo "[CRITICAL] Please use provided builds or clone the repository recursively." . PHP_EOL;
+		exit(1);
+	}
+
+	if(version_compare(RakLib::VERSION, "0.9.0") < 0){
+		echo "[CRITICAL] RakLib version 0.9.0 is required, while you have version " . RakLib::VERSION . "." . PHP_EOL;
+		echo "[CRITICAL] Please update your submodules or use provided builds." . PHP_EOL;
+		exit(1);
+	}
+
 	ini_set("allow_url_fopen", '1');
 	ini_set("display_errors", '1');
 	ini_set("display_startup_errors", '1');
@@ -126,10 +166,12 @@ namespace pocketmine {
 
 	ini_set("memory_limit", '-1');
 
-	$opts = getopt("", ["data:", "plugins:", "no-wizard", "enable-profiler"]);
+	define('pocketmine\RESOURCE_PATH', \pocketmine\PATH . 'src' . DIRECTORY_SEPARATOR . 'pocketmine' . DIRECTORY_SEPARATOR . 'resources' . DIRECTORY_SEPARATOR);
 
-	define('pocketmine\DATA', isset($opts["data"]) ? $opts["data"] . DIRECTORY_SEPARATOR : \realpath(\getcwd()) . DIRECTORY_SEPARATOR);
-	define('pocketmine\PLUGIN_PATH', isset($opts["plugins"]) ? $opts["plugins"] . DIRECTORY_SEPARATOR : \realpath(\getcwd()) . DIRECTORY_SEPARATOR . "plugins" . DIRECTORY_SEPARATOR);
+	$opts = getopt("", ["data:", "plugins:", "no-wizard"]);
+
+	define('pocketmine\DATA', isset($opts["data"]) ? $opts["data"] . DIRECTORY_SEPARATOR : realpath(getcwd()) . DIRECTORY_SEPARATOR);
+	define('pocketmine\PLUGIN_PATH', isset($opts["plugins"]) ? $opts["plugins"] . DIRECTORY_SEPARATOR : realpath(getcwd()) . DIRECTORY_SEPARATOR . "plugins" . DIRECTORY_SEPARATOR);
 
 	Terminal::init();
 
@@ -138,6 +180,27 @@ namespace pocketmine {
 	if(!file_exists(\pocketmine\DATA)){
 		mkdir(\pocketmine\DATA, 0777, true);
 	}
+
+	$lockFile = fopen(\pocketmine\DATA . 'server.lock', "a+b");
+	if($lockFile === false){
+		critical_error("Unable to open server.lock file. Please check that the current user has read/write permissions to it.");
+		exit(1);
+	}
+	define('pocketmine\LOCK_FILE', $lockFile);
+	if(!flock(\pocketmine\LOCK_FILE, LOCK_EX | LOCK_NB)){
+		//wait for a shared lock to avoid race conditions if two servers started at the same time - this makes sure the
+		//other server wrote its PID and released exclusive lock before we get our lock
+		flock(\pocketmine\LOCK_FILE, LOCK_SH);
+		$pid = stream_get_contents(\pocketmine\LOCK_FILE);
+
+		echo "[CRITICAL] Another LiteCore instance (PID $pid) is already using this folder (" . realpath(\pocketmine\DATA) . ")." . PHP_EOL;
+		echo "[CRITICAL] Please stop the other server first before running a new one." . PHP_EOL;
+		exit(1);
+	}
+	ftruncate(\pocketmine\LOCK_FILE, 0);
+	fwrite(\pocketmine\LOCK_FILE, (string) getmypid());
+	fflush(\pocketmine\LOCK_FILE);
+	flock(\pocketmine\LOCK_FILE, LOCK_SH); //prevent acquiring an exclusive lock from another process, but allow reading
 
 	//Logger has a dependency on timezone
 	$tzError = Timezone::init();
@@ -150,19 +213,16 @@ namespace pocketmine {
 	}
 	unset($tzError);
 
-	if(isset($opts["enable-profiler"])){
-		if(function_exists("profiler_enable")){
-			\profiler_enable();
-			$logger->notice("Execution is being profiled");
-		}else{
-			$logger->notice("No profiler found. Please install https://github.com/krakjoe/profiler");
-		}
-	}
-
 	$errors = 0;
 
+	if(PHP_INT_SIZE < 8){
+		critical_error("Running " . \pocketmine\NAME . " with 32-bit systems/PHP is no longer supported.");
+		critical_error("Please upgrade to a 64-bit system, or use a 64-bit PHP binary if this is a 64-bit system.");
+		exit(1);
+	}
+
 	if(php_sapi_name() !== "cli"){
-		$logger->critical("You must run LiteCore using the CLI.");
+		$logger->critical("You must run " . \pocketmine\NAME . " using the CLI.");
 		++$errors;
 	}
 
@@ -175,8 +235,8 @@ namespace pocketmine {
 	if(substr_count($pthreads_version, ".") < 2){
 		$pthreads_version = "0.$pthreads_version";
 	}
-	if(version_compare($pthreads_version, "3.1.5") < 0){
-		$logger->critical("pthreads >= 3.1.5 is required, while you have $pthreads_version.");
+	if(version_compare($pthreads_version, "3.1.6") < 0){
+		$logger->critical("pthreads >= 3.1.6 is required, while you have $pthreads_version.");
 		++$errors;
 	}
 
@@ -185,17 +245,16 @@ namespace pocketmine {
 	}
 
 	if(extension_loaded("pocketmine")){
-		if(version_compare(phpversion("pocketmine"), "0.0.1") < 0){
-			$logger->critical("You have the native LiteCore extension, but your version is lower than 0.0.1.");
-			++$errors;
-		}elseif(version_compare(phpversion("pocketmine"), "0.0.4") > 0){
-			$logger->critical("You have the native LiteCore extension, but your version is higher than 0.0.4.");
-			++$errors;
-		}
+		$logger->critical("The native PocketMine extension is no longer supported.");
+		++$errors;
 	}
 
 	if(extension_loaded("xdebug")){
-		$logger->warning("You are running LiteCore with Xdebug enabled. This has a major impact on performance.");
+		$logger->warning("You are running " . \pocketmine\NAME . " with xdebug enabled. This has a major impact on performance.");
+	}
+
+	if(!extension_loaded("pocketmine_chunkutils")){
+		$logger->warning("ChunkUtils extension is missing. Anvil-format worlds will experience degraded performance.");
 	}
 
 	if(!extension_loaded("curl")){
@@ -235,7 +294,6 @@ namespace pocketmine {
 		define('pocketmine\GIT_COMMIT', "0000000000000000000000000000000000000000");
 	}
 
-	@define("ENDIANNESS", (pack("d", 1) === "\77\360\0\0\0\0\0\0" ? Binary::BIG_ENDIAN : Binary::LITTLE_ENDIAN));
 	@define("INT32_MASK", is_int(0xffffffff) ? 0xffffffff : -1);
 	@ini_set("opcache.mmap_base", bin2hex(random_bytes(8))); //Fix OPCache address errors
 
@@ -248,10 +306,14 @@ namespace pocketmine {
 		}
 	}
 
+	if(\Phar::running(true) === ""){
+		$logger->warning("Non-packaged " . \pocketmine\NAME . " installation detected. Consider using a phar in production for better performance.");
+	}
+
 	//TODO: move this to a Server field
 	define('pocketmine\START_TIME', microtime(true));
 	ThreadManager::init();
-	new Server($autoloader, $logger, \pocketmine\PATH, \pocketmine\DATA, \pocketmine\PLUGIN_PATH);
+	new Server($autoloader, $logger, \pocketmine\DATA, \pocketmine\PLUGIN_PATH);
 
 	$logger->info("Stopping other threads");
 
@@ -263,6 +325,14 @@ namespace pocketmine {
 	$logger->join();
 
 	echo Terminal::$FORMAT_RESET . PHP_EOL;
+
+	if(!flock(\pocketmine\LOCK_FILE, LOCK_UN)){
+		echo "[CRITICAL] Failed to release the server.lock file.";
+	}
+
+	if(!fclose(\pocketmine\LOCK_FILE)){
+		echo "[CRITICAL] Could not close server.lock resource.";
+	}
 
 	if(ThreadManager::getInstance()->stopAll() > 0){
 		$logger->debug("Some threads could not be stopped, performing a force-kill");

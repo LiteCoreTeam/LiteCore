@@ -30,7 +30,7 @@ class Snowball extends Item {
 	 * @param int $count
 	 */
 	public function __construct($meta = 0, $count = 1){
-		parent::__construct(self::SNOWBALL, 0, $count, "Snowball");
+		parent::__construct(self::SNOWBALL, $meta, $count, "Snowball");
 	}
 
 	/**

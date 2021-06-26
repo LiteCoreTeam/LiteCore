@@ -74,7 +74,7 @@ class BaseLang {
 		if(file_exists($path) and strlen($content = file_get_contents($path)) > 0){
 			foreach(explode("\n", $content) as $line){
 				$line = trim($line);
-				if($line === "" or $line{0} === "#"){
+				if($line === "" or $line[0] === "#"){
 					continue;
 				}
 
@@ -176,7 +176,7 @@ class BaseLang {
 
 		$len = strlen($text);
 		for($i = 0; $i < $len; ++$i){
-			$c = $text{$i};
+			$c = $text[$i];
 			if($replaceString !== null){
 				$ord = ord($c);
 				if(

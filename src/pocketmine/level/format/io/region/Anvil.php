@@ -27,6 +27,7 @@ namespace pocketmine\level\format\io\region;
 use pocketmine\level\format\Chunk;
 use pocketmine\level\format\io\ChunkException;
 use pocketmine\level\format\io\ChunkUtils;
+use pocketmine\level\format\io\exception\CorruptedChunkException;
 use pocketmine\level\format\SubChunk;
 use pocketmine\nbt\NBT;
 use pocketmine\nbt\tag\{
@@ -34,6 +35,7 @@ use pocketmine\nbt\tag\{
 };
 use pocketmine\Player;
 use pocketmine\utils\MainLogger;
+use function zlib_decode;
 
 
 class Anvil extends McRegion {
@@ -45,7 +47,7 @@ class Anvil extends McRegion {
 	 *
 	 * @return string
 	 */
-	public function nbtSerialize(Chunk $chunk) : string{
+	protected function nbtSerialize(Chunk $chunk) : string{
 		$nbt = new CompoundTag("Level", []);
 		$nbt->xPos = new IntTag("xPos", $chunk->getX());
 		$nbt->zPos = new IntTag("zPos", $chunk->getZ());
@@ -108,10 +110,14 @@ class Anvil extends McRegion {
 	 *
 	 * @return null|Chunk
 	 */
-	public function nbtDeserialize(string $data){
+	protected function nbtDeserialize(string $data){
+		$data = @zlib_decode($data);
+		if($data === false){
+			throw new CorruptedChunkException("Failed to decompress chunk data");
+		}
 		$nbt = new NBT(NBT::BIG_ENDIAN);
 		try{
-			$nbt->readCompressed($data, ZLIB_ENCODING_DEFLATE);
+			$nbt->read($data);
 
 			$chunk = $nbt->getData();
 
@@ -167,6 +173,10 @@ class Anvil extends McRegion {
 	 */
 	public static function getProviderName() : string{
 		return "anvil";
+	}
+
+	public static function getPcWorldFormatVersion() : int{
+		return 19133; //anvil
 	}
 
 	/**

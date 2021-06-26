@@ -36,13 +36,18 @@ class PlayStatusPacket extends DataPacket {
 	const LOGIN_FAILED_VANILLA_EDU = 5;
 	const LOGIN_FAILED_EDU_VANILLA = 6;
 
+    /** @var int */
 	public $status;
 
 	/**
 	 *
 	 */
 	public function decode(){
+		$this->status = $this->getInt();
+	}
 
+	public function canBeSentBeforeLogin() : bool{
+		return true;
 	}
 
 	/**

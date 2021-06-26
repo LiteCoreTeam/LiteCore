@@ -30,7 +30,7 @@ class Apple extends Food {
 	 * @param int $count
 	 */
 	public function __construct($meta = 0, $count = 1){
-		parent::__construct(self::APPLE, 0, $count, "Apple");
+		parent::__construct(self::APPLE, $meta, $count, "Apple");
 	}
 
 	/**

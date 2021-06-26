@@ -24,6 +24,7 @@ namespace pocketmine\entity;
 use pocketmine\block\Anvil;
 use pocketmine\block\Block;
 use pocketmine\block\Liquid;
+use pocketmine\block\Flowable;
 use pocketmine\block\SnowLayer;
 use pocketmine\event\entity\EntityBlockChangeEvent;
 use pocketmine\event\entity\EntityDamageByEntityEvent;
@@ -42,6 +43,8 @@ class FallingSand extends Entity {
 	public $width = 0.98;
 	public $length = 0.98;
 	public $height = 0.98;
+
+	protected $baseOffset = 0.49;
 
 	protected $gravity = 0.04;
 	protected $drag = 0.02;
@@ -77,6 +80,10 @@ class FallingSand extends Entity {
 	 * @return bool
 	 */
 	public function canCollideWith(Entity $entity){
+		return false;
+	}
+
+	public function canBeMovedByCurrents() : bool{
 		return false;
 	}
 
@@ -117,16 +124,6 @@ class FallingSand extends Entity {
 		$hasUpdate = $this->entityBaseTick($tickDiff);
 
 		if($this->isAlive()){
-			$pos = (new Vector3($this->x - 0.5, $this->y, $this->z - 0.5))->round();
-
-			if($this->ticksLived === 1){
-				$block = $this->level->getBlock($pos);
-				if($block->getId() !== $this->blockId){
-					return true;
-				}
-				$this->level->setBlock($pos, Block::get(0), true);
-			}
-
 			$this->motionY -= $this->gravity;
 
 			$this->move($this->motionX, $this->motionY, $this->motionZ);
@@ -137,13 +134,13 @@ class FallingSand extends Entity {
 			$this->motionY *= 1 - $this->drag;
 			$this->motionZ *= $friction;
 
-			$pos = (new Vector3($this->x - 0.5, $this->y, $this->z - 0.5))->round();
+			$pos = (new Vector3($this->x - $this->width / 2, $this->y, $this->z - $this->width / 2))->floor();
 
 			if($this->onGround){
 				$this->kill();
 				$block = $this->level->getBlock($pos);
-				if($block->getId() > 0 and $block->isTransparent() and !$block->canBeReplaced()){
-					//FIXME: falling blocks are supposed to be destroyed by glass blocks, and anvils are supposed to destroy torches
+				if(!$block->canBeReplaced() or ($this->onGround and abs($this->y - $this->getFloorY()) > 0.001)){
+					//FIXME: anvils are supposed to destroy torches
 					$this->getLevel()->dropItem($this, ItemItem::get($this->getBlock(), $this->getDamage(), 1));
 				}else{
 					if($block instanceof SnowLayer){

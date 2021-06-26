@@ -21,8 +21,12 @@
 
 namespace pocketmine\math;
 
+use function assert;
+use function implode;
+use function max;
+use function substr;
 
-class Matrix implements \ArrayAccess {
+class Matrix implements \ArrayAccess{
 	private $matrix = [];
 	private $rows = 0;
 	private $columns = 0;
@@ -116,10 +120,10 @@ class Matrix implements \ArrayAccess {
 	}
 
 	/**
-	 * @param $row
-	 * @param $column
+	 * @param int $row
+	 * @param int $column
 	 *
-	 * @return bool
+	 * @return float|false
 	 */
 	public function getElement($row, $column){
 		if($row > $this->rows or $row < 0 or $column > $this->columns or $column < 0){
@@ -137,9 +141,7 @@ class Matrix implements \ArrayAccess {
 	}
 
 	/**
-	 * @param Matrix $matrix
-	 *
-	 * @return bool|Matrix
+	 * @return Matrix|false
 	 */
 	public function add(Matrix $matrix){
 		if($this->rows !== $matrix->getRows() or $this->columns !== $matrix->getColumns()){
@@ -148,7 +150,9 @@ class Matrix implements \ArrayAccess {
 		$result = new Matrix($this->rows, $this->columns);
 		for($r = 0; $r < $this->rows; ++$r){
 			for($c = 0; $c < $this->columns; ++$c){
-				$result->setElement($r, $c, $this->matrix[$r][$c] + $matrix->getElement($r, $c));
+				$element = $matrix->getElement($r, $c);
+				assert($element !== false, "Element should never be false when height and width are the same");
+				$result->setElement($r, $c, $this->matrix[$r][$c] + $element);
 			}
 		}
 
@@ -156,9 +160,7 @@ class Matrix implements \ArrayAccess {
 	}
 
 	/**
-	 * @param Matrix $matrix
-	 *
-	 * @return bool|Matrix
+	 * @return Matrix|false
 	 */
 	public function substract(Matrix $matrix){
 		if($this->rows !== $matrix->getRows() or $this->columns !== $matrix->getColumns()){
@@ -167,7 +169,9 @@ class Matrix implements \ArrayAccess {
 		$result = clone $this;
 		for($r = 0; $r < $this->rows; ++$r){
 			for($c = 0; $c < $this->columns; ++$c){
-				$result->setElement($r, $c, $this->matrix[$r][$c] - $matrix->getElement($r, $c));
+				$element = $matrix->getElement($r, $c);
+				assert($element !== false, "Element should never be false when height and width are the same");
+				$result->setElement($r, $c, $this->matrix[$r][$c] - $element);
 			}
 		}
 
@@ -221,12 +225,10 @@ class Matrix implements \ArrayAccess {
 		return $result;
 	}
 
-	//Naive Matrix product, O(n^3)
-
 	/**
-	 * @param Matrix $matrix
+	 * Naive Matrix product, O(n^3)
 	 *
-	 * @return bool|Matrix
+	 * @return Matrix|false
 	 */
 	public function product(Matrix $matrix){
 		if($this->columns !== $matrix->getRows()){
@@ -238,7 +240,9 @@ class Matrix implements \ArrayAccess {
 			for($j = 0; $j < $c; ++$j){
 				$sum = 0;
 				for($k = 0; $k < $this->columns; ++$k){
-					$sum += $this->matrix[$i][$k] * $matrix->getElement($k, $j);
+					$element = $matrix->getElement($k, $j);
+					assert($element !== false, "Element should definitely exist here");
+					$sum += $this->matrix[$i][$k] * $element;
 				}
 				$result->setElement($i, $j, $sum);
 			}
@@ -247,8 +251,11 @@ class Matrix implements \ArrayAccess {
 		return $result;
 	}
 
-
-	//Computation of the determinant of 1x1, 2x2 and 3x3 matrices
+	/**
+	 * Computation of the determinant of 1x1, 2x2 and 3x3 matrices
+	 *
+	 * @return float|false
+	 */
 	public function determinant(){
 		if($this->isSquare() !== true){
 			return false;

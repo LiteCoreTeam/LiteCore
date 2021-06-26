@@ -15,7 +15,7 @@
  * (at your option) any later version.
  *
  * @author genisyspromcpe
- * @link https://github.com/genisyspromcpe/LiteCore-public
+ * @link https://github.com/LiteCoreTeam/LiteCore
  *
  *
 */
@@ -75,7 +75,16 @@ class ShulkerBox extends Spawnable implements InventoryHolder, Container, Nameab
         }
     }
 
+    public function close(){
+        if(!$this->closed){
+            $this->inventory->removeAllViewers();
+
+            parent::close();
+        }
+    }
+
     public function saveNBT(){
+    	parent::saveNBT();
         $this->namedtag->Items->setValue([]);
         $this->namedtag->Items->setTagType(NBT::TAG_Compound);
         for ($index = 0; $index < $this->getSize(); ++$index) {
@@ -83,26 +92,10 @@ class ShulkerBox extends Spawnable implements InventoryHolder, Container, Nameab
         }
     }
 
-    public function close(){
-        if($this->closed === false){
-            foreach($this->getInventory()->getViewers() as $player){
-                $player->removeWindow($this->getInventory());
-            }
-
-            foreach($this->getRealInventory()->getViewers() as $player){
-                $player->removeWindow($this->getRealInventory());
-            }
-
-            $this->inventory = null;
-
-            parent::close();
-        }
-    }
-
     /**
      * @return int
      */
-    public function getSize(): int{
+    public function getSize(){
         return 27;
     }
 

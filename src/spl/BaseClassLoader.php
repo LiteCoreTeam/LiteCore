@@ -21,7 +21,7 @@ class BaseClassLoader extends \Threaded implements ClassLoader{
 	private $parent;
 	/** @var \Threaded|string[] */
 	private $lookup;
-	/** @var string[] */
+	/** @var \Threaded|string[] */
 	private $classes;
 
 	public function __construct(ClassLoader $parent = null){
@@ -47,7 +47,7 @@ class BaseClassLoader extends \Threaded implements ClassLoader{
 		}
 
 		if($prepend){
-			$this->synchronized(function($path){
+			$this->lookup->synchronized(function($path){
 				$entries = $this->getAndRemoveLookupEntries();
 				$this->lookup[] = $path;
 				foreach($entries as $entry){
@@ -64,8 +64,8 @@ class BaseClassLoader extends \Threaded implements ClassLoader{
 	 */
 	protected function getAndRemoveLookupEntries(){
 		$entries = [];
-		while($this->count() > 0){
-			$entries[] = $this->shift();
+		while($this->lookup->count() > 0){
+			$entries[] = $this->lookup->shift();
 		}
 		return $entries;
 	}
@@ -113,7 +113,9 @@ class BaseClassLoader extends \Threaded implements ClassLoader{
 	 * @return bool
 	 */
 	public function register($prepend = false){
-		spl_autoload_register([$this, "loadClass"], true, $prepend);
+		return spl_autoload_register(function(string $name) : void{
+			$this->loadClass($name);
+		}, true, $prepend);
 	}
 
 	/**

@@ -32,7 +32,7 @@ class MobEquipmentPacket extends DataPacket {
 	public $item;
 	public $slot;
 	public $selectedSlot;
-	public $windowId;
+	public $windowId = 0;
 
 	/**
 	 *

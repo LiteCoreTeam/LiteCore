@@ -56,7 +56,7 @@ class WhitelistCommand extends VanillaCommand {
 		}
 
 		if(count($args) === 0 or count($args) > 2){
-			$sender->sendMessage(new TranslationContainer("commands.generic.usage", [$this->usageMessage]));
+			$sender->sendMessage($sender->getServer()->getLanguage()->translateString("commands.generic.usage", [$this->usageMessage]));
 			return true;
 		}
 
@@ -67,17 +67,17 @@ class WhitelistCommand extends VanillaCommand {
 			switch(strtolower($args[0])){
 				case "reload":
 					$sender->getServer()->reloadWhitelist();
-					Command::broadcastCommandMessage($sender, new TranslationContainer("commands.whitelist.reloaded"));
+					Command::broadcastCommandMessage($sender, $sender->getServer()->getLanguage()->translateString("commands.whitelist.reloaded"));
 
 					return true;
 				case "on":
 					$sender->getServer()->setConfigBool("white-list", true);
-					Command::broadcastCommandMessage($sender, new TranslationContainer("commands.whitelist.enabled"));
+					Command::broadcastCommandMessage($sender, $sender->getServer()->getLanguage()->translateString("commands.whitelist.enabled"));
 
 					return true;
 				case "off":
 					$sender->getServer()->setConfigBool("white-list", false);
-					Command::broadcastCommandMessage($sender, new TranslationContainer("commands.whitelist.disabled"));
+					Command::broadcastCommandMessage($sender, $sender->getServer()->getLanguage()->translateString("commands.whitelist.disabled"));
 
 					return true;
 				case "list":
@@ -87,17 +87,17 @@ class WhitelistCommand extends VanillaCommand {
 						$result .= $player . ", ";
 						++$count;
 					}
-					$sender->sendMessage(new TranslationContainer("commands.whitelist.list", [$count, $count]));
+					$sender->sendMessage($sender->getServer()->getLanguage()->translateString("commands.whitelist.list", [$count, $count]));
 					$sender->sendMessage(substr($result, 0, -2));
 
 					return true;
 
 				case "add":
-					$sender->sendMessage(new TranslationContainer("commands.generic.usage", ["%commands.whitelist.add.usage"]));
+					$sender->sendMessage($sender->getServer()->getLanguage()->translateString("commands.generic.usage", ["%commands.whitelist.add.usage"]));
 					return true;
 
 				case "remove":
-					$sender->sendMessage(new TranslationContainer("commands.generic.usage", ["%commands.whitelist.remove.usage"]));
+					$sender->sendMessage($sender->getServer()->getLanguage()->translateString("commands.generic.usage", ["%commands.whitelist.remove.usage"]));
 					return true;
 			}
 		}elseif(count($args) === 2){
@@ -107,12 +107,12 @@ class WhitelistCommand extends VanillaCommand {
 			switch(strtolower($args[0])){
 				case "add":
 					$sender->getServer()->getOfflinePlayer($args[1])->setWhitelisted(true);
-					Command::broadcastCommandMessage($sender, new TranslationContainer("commands.whitelist.add.success", [$args[1]]));
+					Command::broadcastCommandMessage($sender, $sender->getServer()->getLanguage()->translateString("commands.whitelist.add.success", [$args[1]]));
 
 					return true;
 				case "remove":
 					$sender->getServer()->getOfflinePlayer($args[1])->setWhitelisted(false);
-					Command::broadcastCommandMessage($sender, new TranslationContainer("commands.whitelist.remove.success", [$args[1]]));
+					Command::broadcastCommandMessage($sender, $sender->getServer()->getLanguage()->translateString("commands.whitelist.remove.success", [$args[1]]));
 
 					return true;
 			}
@@ -129,7 +129,7 @@ class WhitelistCommand extends VanillaCommand {
 	 */
 	private function badPerm(CommandSender $sender, $perm){
 		if(!$sender->hasPermission("pocketmine.command.whitelist.$perm")){
-			$sender->sendMessage(new TranslationContainer(TextFormat::RED . "%commands.generic.permission"));
+			$sender->sendMessage($sender->getServer()->getLanguage()->translateString(TextFormat::RED . "%commands.generic.permission"));
 
 			return true;
 		}

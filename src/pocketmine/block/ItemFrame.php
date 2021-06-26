@@ -116,7 +116,7 @@ class ItemFrame extends Flowable {
 				2 => 2,
 				3 => 3
 			];
-			if(!$this->getSide($sides[$this->meta])->isSolid()){
+		    if(isset($sides[$this->meta]) and !$this->getSide($sides[$this->meta])->isSolid()){
 				$this->level->useBreakOn($this);
 				return Level::BLOCK_UPDATE_NORMAL;
 			}

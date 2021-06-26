@@ -25,13 +25,14 @@
 
 namespace pocketmine\math;
 
+use function sqrt;
+use function max;
+use function min;
 
-abstract class Math {
+abstract class Math{
 
 	/**
 	 * @param float $n
-	 *
-	 * @return int
 	 */
 	public static function floorFloat($n) : int{
 		$i = (int) $n;
@@ -40,8 +41,6 @@ abstract class Math {
 
 	/**
 	 * @param float $n
-	 *
-	 * @return int
 	 */
 	public static function ceilFloat($n) : int{
 		$i = (int) $n;
@@ -61,10 +60,6 @@ abstract class Math {
 
 	/**
 	 * Solves a quadratic equation with the given coefficients and returns an array of up to two solutions.
-	 *
-	 * @param float $a
-	 * @param float $b
-	 * @param float $c
 	 *
 	 * @return float[]
 	 */

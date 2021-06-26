@@ -21,18 +21,21 @@
 
 namespace pocketmine\nbt\tag;
 
+use ArrayAccess;
 use pocketmine\nbt\NBT;
+use RuntimeException;
 
 #include <rules/NBT.h>
 
-class CompoundTag extends NamedTag implements \ArrayAccess {
+class CompoundTag extends NamedTag implements ArrayAccess {
 
 	/**
 	 * @param string     $name
 	 * @param NamedTag[] $value
 	 */
 	public function __construct($name = "", $value = []){
-		$this->__name = $name;
+		parent::__construct($name);
+
 		foreach($value as $tag){
 			$this->{$tag->__name} = $tag;
 		}
@@ -43,6 +46,16 @@ class CompoundTag extends NamedTag implements \ArrayAccess {
 	 */
 	public function getCount(){
 		return count($this->getValue());
+	}
+
+	public function setValue($value){
+		if(is_array($value)){
+			foreach($value as $name => $tag){
+				if($tag instanceof NamedTag){
+					$this->{$name} = $tag;
+				}
+			}
+		}
 	}
 
 	/**
@@ -75,7 +88,7 @@ class CompoundTag extends NamedTag implements \ArrayAccess {
 	 */
 	public function offsetGet($offset){
 		if(isset($this->{$offset}) and $this->{$offset} instanceof Tag){
-			if($this->{$offset} instanceof \ArrayAccess){
+			if($this->{$offset} instanceof ArrayAccess){
 				return $this->{$offset};
 			}else{
 				return $this->{$offset}->getValue();
@@ -124,7 +137,7 @@ class CompoundTag extends NamedTag implements \ArrayAccess {
 			if($tag instanceof NamedTag and $tag->__name !== ""){
 				$this->{$tag->__name} = $tag;
 			}
-		}while(!($tag instanceof EndTag) and !$nbt->feof());
+		}while(!($tag instanceof EndTag) && !$nbt->feof());
 	}
 
 	/**
@@ -138,7 +151,7 @@ class CompoundTag extends NamedTag implements \ArrayAccess {
 		if(!$force){
 			$existing = $this->value[$tag->__name] ?? null;
 			if($existing !== null and !($tag instanceof $existing)){
-				throw new \RuntimeException("Cannot set tag at \"$tag->__name\": tried to overwrite " . get_class($existing) . " with " . get_class($tag));
+				throw new RuntimeException("Cannot set tag at \"$tag->__name\": tried to overwrite " . get_class($existing) . " with " . get_class($tag));
 			}
 		}
 		$this->value[$tag->__name] = $tag;
@@ -188,4 +201,12 @@ class CompoundTag extends NamedTag implements \ArrayAccess {
 
         return $result;
     }
+
+    public function __clone(){
+		foreach($this as $key => $tag){
+			if($tag instanceof Tag){
+				$this->{$key} = clone $tag;
+			}
+		}
+	}
 }

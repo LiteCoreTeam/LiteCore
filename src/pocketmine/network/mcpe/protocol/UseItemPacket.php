@@ -24,6 +24,8 @@ namespace pocketmine\network\mcpe\protocol;
 #include <rules/DataPacket.h>
 
 
+use pocketmine\item\Item;
+
 class UseItemPacket extends DataPacket {
 
 	const NETWORK_ID = ProtocolInfo::USE_ITEM_PACKET;
@@ -63,7 +65,7 @@ class UseItemPacket extends DataPacket {
 	}
 
 	/**
-	 * @return PacketName|string
+	 * @return string Current packet name
 	 */
 	public function getName(){
 		return "UseItemPacket";

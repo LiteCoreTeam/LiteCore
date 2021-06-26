@@ -1,34 +1,34 @@
-﻿param (
-	[switch]$Loop = $false
+﻿[CmdletBinding(PositionalBinding=$false)]
+param (
+    [string]$php = "",
+	[switch]$Loop = $false,
+	[string]$file = "",
+	[string][Parameter(ValueFromRemainingArguments)]$extraPocketMineArgs
 )
 
-if(Test-Path "bin\php\php.exe"){
+if($php -ne ""){
+	$binary = $php
+}elseif(Test-Path "bin\php\php.exe"){
 	$env:PHPRC = ""
 	$binary = "bin\php\php.exe"
 }else{
 	$binary = "php"
 }
 
-if(Test-Path "LiteCore*.phar"){
-    foreach($filename in Get-ChildItem LiteCore*.phar -Name){
-        $file = "'$filename'"
-        break
-    }
-}elseif(Test-Path "LiteCore.phar"){
-	$file = "LiteCore.phar"
-}elseif(Test-Path "PocketMine-MP.phar"){
-	$file = "PocketMine-MP.phar"
-}elseif(Test-Path "src\pocketmine\PocketMine.php"){
-	$file = "src\pocketmine\PocketMine.php"
-}else{
-	echo "Не удалось найти правильную установку LiteCore."
-	pause
-	exit 1
+if($file -eq ""){
+	if(Test-Path "PocketMine-MP.phar"){
+	    $file = "PocketMine-MP.phar"
+	}elseif(Test-Path "src\pocketmine\PocketMine.php"){
+	    $file = "src\pocketmine\PocketMine.php"
+	}else{
+	    echo "Ядро установлено некорректно!"
+	    pause
+	    exit 1
+	}
 }
 
 function StartServer{
-	$command = $binary + " " + $file + " --enable-ansi"
-	chcp 65001
+	$command = "powershell -NoProfile " + $binary + " " + $file + " " + $extraPocketMineArgs
 	iex $command
 }
 

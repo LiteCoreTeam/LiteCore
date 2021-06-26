@@ -26,5 +26,6 @@ class GarbageCollectionTask extends AsyncTask {
 	public function onRun(){
 		gc_enable();
 		gc_collect_cycles();
+		gc_mem_caches();
 	}
 }

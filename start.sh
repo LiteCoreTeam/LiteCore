@@ -29,7 +29,7 @@ if [ "$PHP_BINARY" == "" ]; then
 	elif [[ ! -z $(type php) ]]; then
 		PHP_BINARY=$(type -p php)
 	else
-		echo "Не удалось найти работающий бинарник PHP7"
+		echo "Не удалось найти работающий бинарник PHP"
 		exit 1
 	fi
 fi
@@ -42,7 +42,7 @@ if [ "$POCKETMINE_FILE" == "" ]; then
 	elif [ -f ./src/pocketmine/PocketMine.php ]; then
 		POCKETMINE_FILE="./src/pocketmine/PocketMine.php"
 	else
-		echo "Не удалось найти правильную установку"
+		echo "Ядро установлено некорректно!"
 		exit 1
 	fi
 fi
@@ -59,8 +59,8 @@ while [ "$LOOPS" -eq 0 ] || [ "$DO_LOOP" == "yes" ]; do
 	if [ "$DO_LOOP" == "yes" ]; then
 		if [ ${LOOPS} -gt 0 ]; then
 			echo "Restarted $LOOPS times"
-		fi 
-		echo "Чтобы выйти из цикла, нажмите CTRL + C сейчас. В ином случае подождите 2 секунды, чтобы сервер перезагрузился."
+		fi
+		echo "Чтобы выйти из цикла, нажмите CTRL + C сейчас. В ином случае подождите 2 секунды, сервер перезапустится."
 		sleep 2
 		((LOOPS++))
 	fi

@@ -129,7 +129,15 @@ class TimingsCommand extends VanillaCommand {
 					"Content-Type: application/x-www-form-urlencoded"
 				]);
 				curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-				$data = curl_exec($ch);
+				try{
+					$data = curl_exec($ch);
+					if($data === false){
+						throw new \Exception(curl_error($ch));
+					}
+				}catch(\Exception $e){
+					$sender->getServer()->getLogger()->logException($e);
+				}
+
 				$data = substr($data, curl_getinfo($ch, CURLINFO_HEADER_SIZE));
 				curl_close($ch);
 				if(!is_array($response = json_decode($data, true)) or !isset($response["id"])){

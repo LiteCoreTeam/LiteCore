@@ -60,7 +60,7 @@ class Installer {
 	 * @return bool
 	 */
 	public function run(){
-		echo "[*] GenisysPro set-up wizard\n";
+		echo "[*] LiteCore set-up wizard\n";
 		echo "[*] Please select a language:\n";
 		foreach(InstallerLang::$languages as $short => $native){
 			echo " $native => $short\n";

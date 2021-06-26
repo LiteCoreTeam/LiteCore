@@ -23,8 +23,9 @@ declare(strict_types=1);
 
 namespace pocketmine\level\format\io;
 
+use pocketmine\event\LevelTimings;
+use pocketmine\level\format\Chunk;
 use pocketmine\level\generator\Generator;
-use pocketmine\level\Level;
 use pocketmine\level\LevelException;
 use pocketmine\math\Vector3;
 use pocketmine\nbt\NBT;
@@ -34,15 +35,15 @@ use pocketmine\nbt\tag\LongTag;
 use pocketmine\nbt\tag\StringTag;
 
 abstract class BaseLevelProvider implements LevelProvider {
-	/** @var Level */
-	protected $level;
+
 	/** @var string */
 	protected $path;
 	/** @var CompoundTag */
 	protected $levelData;
+    /** @var LevelTimings|null */
+    protected $timings;
 
-	public function __construct(Level $level, string $path){
-		$this->level = $level;
+    public function __construct(string $path, LevelTimings $timings = null){
 		$this->path = $path;
 		if(!file_exists($this->path)){
 			mkdir($this->path, 0777, true);
@@ -63,27 +64,14 @@ abstract class BaseLevelProvider implements LevelProvider {
 		if(!isset($this->levelData->generatorOptions)){
 			$this->levelData->generatorOptions = new StringTag("generatorOptions", "");
 		}
-	}
+        $this->timings = $timings;
+    }
 
 	/**
 	 * @return string
 	 */
 	public function getPath() : string{
 		return $this->path;
-	}
-
-	/**
-	 * @return \pocketmine\Server
-	 */
-	public function getServer(){
-		return $this->level->getServer();
-	}
-
-	/**
-	 * @return Level
-	 */
-	public function getLevel(){
-		return $this->level;
 	}
 
 	/**
@@ -153,4 +141,24 @@ abstract class BaseLevelProvider implements LevelProvider {
 		$buffer = $nbt->writeCompressed();
 		file_put_contents($this->getPath() . "level.dat", $buffer);
 	}
+
+	public function loadChunk(int $chunkX, int $chunkZ, bool $create = false) : ?Chunk{
+		$chunk = $this->readChunk($chunkX, $chunkZ);
+		if($chunk === null and $create){
+			$chunk = new Chunk($chunkX, $chunkZ);
+		}
+
+		return $chunk;
+	}
+
+	public function saveChunk(Chunk $chunk) : void{
+		if(!$chunk->isGenerated()){
+			throw new \InvalidStateException("Cannot save un-generated chunk");
+		}
+		$this->writeChunk($chunk);
+	}
+
+	abstract protected function readChunk(int $chunkX, int $chunkZ) : ?Chunk;
+
+	abstract protected function writeChunk(Chunk $chunk) : void;
 }

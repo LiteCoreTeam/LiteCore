@@ -34,7 +34,7 @@ use pocketmine\network\mcpe\protocol\MobEquipmentPacket;
 use pocketmine\Player;
 use pocketmine\Server;
 
-class PlayerInventory extends BaseInventory {
+class PlayerInventory extends BaseInventory{
 
 	protected $itemInHandIndex = 0;
 	/** @var int[] */
@@ -44,7 +44,7 @@ class PlayerInventory extends BaseInventory {
 	 * PlayerInventory constructor.
 	 *
 	 * @param Human $player
-	 * @param null  $contents
+	 * @param null $contents
 	 */
 	public function __construct(Human $player, $contents = null){
 		$this->hotbar = range(0, $this->getHotbarSize() - 1, 1);
@@ -105,12 +105,12 @@ class PlayerInventory extends BaseInventory {
 	}
 
 	/**
+	 * @param int $index
+	 * @param int $slot
 	 * @deprecated
 	 *
 	 * Changes the linkage of the specified hotbar slot. This should never be done unless it is requested by the client.
 	 *
-	 * @param int $index
-	 * @param int $slot
 	 */
 	public function setHotbarSlotIndex($index, $slot){
 		if($this->getHolder()->getServer()->getProperty("settings.deprecated-verbose") !== false){
@@ -128,9 +128,9 @@ class PlayerInventory extends BaseInventory {
 	}
 
 	/**
-	 * @param int  $hotbarSlotIndex
+	 * @param int $hotbarSlotIndex
 	 * @param bool $sendToHolder
-	 * @param int  $slotMapping
+	 * @param int $slotMapping
 	 *
 	 * Sets which hotbar slot the player is currently holding.
 	 * Allows slot remapping as specified by a MobEquipmentPacket. DO NOT CHANGE SLOT MAPPING IN PLUGINS!
@@ -224,9 +224,9 @@ class PlayerInventory extends BaseInventory {
 	}
 
 	/**
+	 * @param int $slot
 	 * @deprecated
 	 *
-	 * @param int $slot
 	 */
 	public function setHeldItemSlot($slot){
 	}
@@ -258,7 +258,7 @@ class PlayerInventory extends BaseInventory {
 	}
 
 	/**
-	 * @param int  $index
+	 * @param int $index
 	 * @param Item $before
 	 * @param bool $send
 	 */
@@ -314,10 +314,13 @@ class PlayerInventory extends BaseInventory {
 	 * @param $cost
 	 */
 	public function damageArmor($index, $cost){
-		$this->slots[$this->getSize() + $index]->useOn($this->slots[$this->getSize() + $index], $cost);
-		if($this->slots[$this->getSize() + $index]->getDamage() >= $this->slots[$this->getSize() + $index]->getMaxDurability()){
-			$this->setItem($this->getSize() + $index, Item::get(Item::AIR, 0, 0));
+		$itemIndex = $this->getSize() + $index;
+
+		$this->slots[$itemIndex]->useOn($this->slots[$itemIndex]);
+		if($this->slots[$itemIndex]->getDamage() >= $this->slots[$itemIndex]->getMaxDurability()){
+			$this->setItem($itemIndex, Item::get(Item::AIR, 0, 0));
 		}
+
 		$this->sendArmorContents($this->getViewers());
 	}
 
@@ -386,7 +389,7 @@ class PlayerInventory extends BaseInventory {
 	}
 
 	/**
-	 * @param int  $index
+	 * @param int $index
 	 * @param Item $item
 	 * @param bool $send
 	 *
@@ -424,7 +427,7 @@ class PlayerInventory extends BaseInventory {
 	}
 
 	/**
-	 * @param int  $index
+	 * @param int $index
 	 * @param bool $send
 	 *
 	 * @return bool
@@ -538,7 +541,7 @@ class PlayerInventory extends BaseInventory {
 
 
 	/**
-	 * @param int             $index
+	 * @param int $index
 	 * @param Player|Player[] $target
 	 */
 	public function sendArmorSlot($index, $target){
@@ -606,7 +609,7 @@ class PlayerInventory extends BaseInventory {
 	}
 
 	/**
-	 * @param int             $index
+	 * @param int $index
 	 * @param Player|Player[] $target
 	 */
 	public function sendSlot($index, $target){

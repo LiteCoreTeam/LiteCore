@@ -29,13 +29,17 @@ class MoveEntityPacket extends DataPacket {
 	const NETWORK_ID = ProtocolInfo::MOVE_ENTITY_PACKET;
 
 	public $eid;
+
 	public $x;
 	public $y;
 	public $z;
+
 	public $yaw;
 	public $headYaw;
 	public $pitch;
-	public $byte1;
+
+	public $onGround;
+	public $teleported;
 
 	/**
 	 *
@@ -46,7 +50,8 @@ class MoveEntityPacket extends DataPacket {
 		$this->pitch = $this->getByte() * (360.0 / 256);
 		$this->yaw = $this->getByte() * (360.0 / 256);
 		$this->headYaw = $this->getByte() * (360.0 / 256);
-		$this->byte1 = $this->getByte();
+		$this->onGround = $this->getBool();
+		$this->teleported = $this->getBool();
 	}
 
 	/**
@@ -59,7 +64,8 @@ class MoveEntityPacket extends DataPacket {
 		$this->putByte($this->pitch / (360.0 / 256));
 		$this->putByte($this->yaw / (360.0 / 256));
 		$this->putByte($this->headYaw / (360.0 / 256));
-		$this->putByte($this->byte1);
+		$this->putBool($this->onGround);
+		$this->putBool($this->teleported);
 	}
 
 }

@@ -42,7 +42,6 @@ class Arrow extends Projectile {
 
 	protected $damage = 2.0;
 
-	protected $isCritical;
 	protected $potionId;
 
 	/**
@@ -53,8 +52,7 @@ class Arrow extends Projectile {
 	 * @param Entity|null $shootingEntity
 	 * @param bool        $critical
 	 */
-	public function __construct(Level $level, CompoundTag $nbt, Entity $shootingEntity = null, $critical = false){
-		$this->isCritical = (bool) $critical;
+	public function __construct(Level $level, CompoundTag $nbt, Entity $shootingEntity = null, bool $critical = false){
 		if(!isset($nbt->Potion)){
 			$nbt->Potion = new ShortTag("Potion", 0);
 		}
@@ -67,7 +65,7 @@ class Arrow extends Projectile {
 	 * @return bool
 	 */
 	public function isCritical() : bool{
-		return $this->isCritical;
+		return $this->getDataFlag(self::DATA_FLAGS, self::DATA_FLAG_CRITICAL);
 	}
 
 	/**

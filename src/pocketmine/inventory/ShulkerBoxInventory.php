@@ -15,7 +15,7 @@
  * (at your option) any later version.
  *
  * @author genisyspromcpe
- * @link https://github.com/genisyspromcpe/LiteCore-public
+ * @link https://github.com/LiteCoreTeam/LiteCore
  *
  *
 */
@@ -70,7 +70,6 @@ class ShulkerBoxInventory extends ContainerInventory{
 
     public function onOpen(Player $who){
         parent::onOpen($who);
-        
         if(count($this->getViewers()) === 1){
             $pk = new BlockEventPacket();
             $pk->x = $this->getHolder()->getX();
@@ -98,12 +97,12 @@ class ShulkerBoxInventory extends ContainerInventory{
                 $level->addChunkPacket($this->getHolder()->getX() >> 4, $this->getHolder()->getZ() >> 4, $pk);
             }
         }
+        $this->getHolder()->saveNBT();
         parent::onClose($who);
     }
 
     protected function broadcastBlockEventPacket(bool $isOpen){
         $holder = $this->getHolder();
-        
         $pk = new BlockEventPacket();
         $pk->x = (int)$holder->x;
         $pk->y = (int)$holder->y;

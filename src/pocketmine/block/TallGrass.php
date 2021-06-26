@@ -89,8 +89,8 @@ class TallGrass extends Flowable {
 	 * @return bool
 	 */
 	public function place(Item $item, Block $block, Block $target, $face, $fx, $fy, $fz, Player $player = null){
-		$down = $this->getSide(0);
-		if($down->getId() === self::GRASS){
+		$down = $this->getSide(0)->getId();
+		if($down === self::GRASS or $down === self::DIRT){
 			$this->getLevel()->setBlock($block, $this, true);
 
 			return true;

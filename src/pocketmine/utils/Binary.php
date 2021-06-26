@@ -25,8 +25,11 @@
 
 namespace pocketmine\utils;
 
+if(!defined("ENDIANNESS")){
+	define("ENDIANNESS", (pack("s", 1) === "\0\1" ? Binary::BIG_ENDIAN : Binary::LITTLE_ENDIAN));
+}
 
-class Binary {
+class Binary{
 	const BIG_ENDIAN = 0x00;
 	const LITTLE_ENDIAN = 0x01;
 
@@ -101,65 +104,54 @@ class Binary {
 	/**
 	 * Reads a byte boolean
 	 *
-	 * @param $b
+	 * @param string $b
 	 *
 	 * @return bool
 	 */
-	public static function readBool($b){
-		return self::readByte($b, false) === 0 ? false : true;
+	public static function readBool(string $b) : bool{
+		return $b !== "\x00";
 	}
 
 	/**
 	 * Writes a byte boolean
 	 *
-	 * @param $b
+	 * @param bool $b
 	 *
-	 * @return bool|string
+	 * @return string
 	 */
-	public static function writeBool($b){
-		return self::writeByte($b === true ? 1 : 0);
+	public static function writeBool(bool $b) : string{
+		return $b ? "\x01" : "\x00";
 	}
 
 	/**
-	 * Reads an unsigned/signed byte
+	 * Reads an unsigned byte (0 - 255)
 	 *
 	 * @param string $c
-	 * @param bool   $signed
 	 *
 	 * @return int
 	 */
-	public static function readByte($c, $signed = true){
-		$b = ord($c{0});
-
-		if($signed){
-			if(PHP_INT_SIZE === 8){
-				return $b << 56 >> 56;
-			}else{
-				return $b << 24 >> 24;
-			}
-		}else{
-			return $b;
-		}
+	public static function readByte(string $c){
+		return ord($c[0]);
 	}
 
 	/**
 	 * Reads a signed byte (-128 - 127)
-	 *
 	 * @param string $c
+	 *
 	 * @return int
 	 */
 	public static function readSignedByte(string $c) : int{
-		return self::signByte(ord($c{0}));
+		return PHP_INT_SIZE === 8 ? (ord($c[0]) << 56 >> 56) : (ord($c[0]) << 24 >> 24);
 	}
 
 	/**
 	 * Writes an unsigned/signed byte
 	 *
-	 * @param $c
+	 * @param int $c
 	 *
 	 * @return string
 	 */
-	public static function writeByte($c){
+	public static function writeByte(int $c) : string{
 		return chr($c);
 	}
 
@@ -238,11 +230,9 @@ class Binary {
 	}
 
 	/**
-	 * @param $str
-	 *
-	 * @return int
+	 * Reads a 4-byte signed integer
 	 */
-	public static function readInt($str){
+	public static function readInt(string $str) : int{
 		if(PHP_INT_SIZE === 8){
 			return self::signInt(unpack("N", $str)[1]);
 		}else{
@@ -251,11 +241,9 @@ class Binary {
 	}
 
 	/**
-	 * @param $value
-	 *
-	 * @return string
+	 * Writes a 4-byte integer
 	 */
-	public static function writeInt($value){
+	public static function writeInt(int $value) : string{
 		return pack("N", $value);
 	}
 
@@ -287,13 +275,12 @@ class Binary {
 	 *
 	 * @return float
 	 */
-	public static function readFloat($str, int $accuracy = -1){
-		$value = ENDIANNESS === self::BIG_ENDIAN ? unpack("f", $str)[1] : unpack("f", strrev($str))[1];
-		if($accuracy > -1){
-			return round($value, $accuracy);
-		}else{
-			return $value;
-		}
+	public static function readFloat($str){
+		return (ENDIANNESS === self::BIG_ENDIAN ? unpack("f", $str)[1] : unpack("f", strrev($str))[1]);
+	}
+
+	public static function readRoundedFloat(string $str, int $accuracy) : float{
+		return round(self::readFloat($str), $accuracy);
 	}
 
 	/**
@@ -311,13 +298,12 @@ class Binary {
 	 *
 	 * @return float
 	 */
-	public static function readLFloat($str, int $accuracy = -1){
-		$value = ENDIANNESS === self::BIG_ENDIAN ? unpack("f", strrev($str))[1] : unpack("f", $str)[1];
-		if($accuracy > -1){
-			return round($value, $accuracy);
-		}else{
-			return $value;
-		}
+	public static function readLFloat($str){
+		return (ENDIANNESS === self::BIG_ENDIAN ? unpack("f", strrev($str))[1] : unpack("f", $str)[1]);
+	}
+
+	public static function readRoundedLFloat(string $str, int $accuracy) : float{
+		return round(self::readLFloat($str), $accuracy);
 	}
 
 	/**
@@ -334,7 +320,7 @@ class Binary {
 	 *
 	 * @return mixed
 	 */
-	public static function printFloat($value){
+	public static function printFloat($value) : string{
 		return preg_replace("/(\\.\\d+?)0+$/", "$1", sprintf("%F", $value));
 	}
 
@@ -448,12 +434,10 @@ class Binary {
 	 *
 	 * @return int
 	 */
-	public static function readVarInt($stream){
-		$shift = PHP_INT_SIZE === 8 ? 63 : 31;
-		$raw = self::readUnsignedVarInt($stream);
-		$temp = ((($raw << $shift) >> $shift) ^ $raw) >> 1;
-
-		return $temp ^ ($raw & (1 << $shift));
+	public static function readVarInt(string $buffer, int &$offset) : int{
+		$raw = self::readUnsignedVarInt($buffer, $offset);
+		$temp = ((($raw << 63) >> 63) ^ $raw) >> 1;
+		return $temp ^ ($raw & (1 << 63));
 	}
 
 	/**
@@ -461,18 +445,21 @@ class Binary {
 	 *
 	 * @return int
 	 */
-	public static function readUnsignedVarInt($stream){
+	public static function readUnsignedVarInt(string $buffer, int &$offset) : int{
 		$value = 0;
-		$i = 0;
-		do{
-			if($i > 63){
-				throw new \InvalidArgumentException("Varint did not terminate after 10 bytes!");
+		for($i = 0; $i <= 28; $i += 7){ //35
+			if(!isset($buffer[$offset])){
+				throw new BinaryDataException("No bytes left in buffer");
 			}
-			$value |= ((($b = $stream->getByte()) & 0x7f) << $i);
-			$i += 7;
-		}while($b & 0x80);
+			$b = ord($buffer[$offset++]);
+			$value |= (($b & 0x7f) << $i);
 
-		return $value;
+			if(($b & 0x80) === 0){
+				return $value;
+			}
+		}
+
+		throw new BinaryDataException("VarInt did not terminate after 5 bytes!");
 	}
 
 	/**
@@ -481,7 +468,8 @@ class Binary {
 	 * @return string
 	 */
 	public static function writeVarInt($v){
-		return self::writeUnsignedVarInt(($v << 1) ^ ($v >> (PHP_INT_SIZE === 8 ? 63 : 31)));
+		$v = ($v << 32 >> 32);
+		return self::writeUnsignedVarInt(($v << 1) ^ ($v >> 31));
 	}
 
 	/**
@@ -490,6 +478,215 @@ class Binary {
 	 * @return string
 	 */
 	public static function writeUnsignedVarInt($value){
+		$buf = "";
+		$value &= 0xffffffff;
+		for($i = 0; $i < 5; ++$i){
+			if(($value >> 7) !== 0){
+				$buf .= chr($value | 0x80);
+			}else{
+				$buf .= chr($value & 0x7f);
+
+				return $buf;
+			}
+			$value = (($value >> 7) & (PHP_INT_MAX >> 6)); //PHP really needs a logical right-shift operator
+		}
+		throw new \InvalidArgumentException("Value too large to be encoded as a VarInt");
+	}
+
+
+
+	/**
+	 * Reads a 64-bit zigzag-encoded variable-length integer from the supplied stream.
+	 * @param \pocketmine\nbt\NBT|BinaryStream $stream
+	 *
+	 * @return int
+	 */
+	public static function readVarLong(string $buffer, int &$offset){
+		if(PHP_INT_SIZE === 8){
+			return self::readVarLong_64($buffer, $offset);
+		}else{
+			return self::readVarLong_32($buffer, $offset);
+		}
+	}
+
+	/**
+	 * Legacy BC Math zigzag VarLong reader. Will work on 32-bit or 64-bit, but will be slower than the regular 64-bit method.
+	 * @param \pocketmine\nbt\NBT|BinaryStream $stream
+	 *
+	 * @return string
+	 */
+	public static function readVarLong_32(string $buffer, int &$offset){
+		/** @var string $raw */
+		$raw = self::readUnsignedVarLong_32($buffer, $offset);
+		$result = bcdiv($raw, "2");
+		if(bcmod($raw, "2") === "1"){
+			$result = bcsub(bcmul($result, "-1"), "1");
+		}
+
+		return $result;
+	}
+
+	/**
+	 * 64-bit zizgag VarLong reader.
+	 * @param \pocketmine\nbt\NBT|BinaryStream $stream
+	 *
+	 * @return int
+	 */
+	public static function readVarLong_64(string $buffer, int &$offset){
+		$raw = self::readUnsignedVarLong_64($buffer, $offset);
+		$temp = ((($raw << 63) >> 63) ^ $raw) >> 1;
+		return $temp ^ ($raw & (1 << 63));
+	}
+
+	/**
+	 * Reads an unsigned VarLong from the supplied stream.
+	 * @param \pocketmine\nbt\NBT|BinaryStream $stream
+	 *
+	 * @return int|string
+	 */
+	public static function readUnsignedVarLong(string $buffer, int &$offset){
+		if(PHP_INT_SIZE === 8){
+			return self::readUnsignedVarLong_64($buffer, $offset);
+		}else{
+			return self::readUnsignedVarLong_32($buffer, $offset);
+		}
+	}
+
+	/**
+	 * Legacy BC Math unsigned VarLong reader.
+	 * @param \pocketmine\nbt\NBT|BinaryStream $stream
+	 *
+	 * @return string
+	 */
+	public static function readUnsignedVarLong_32(string $buffer, int &$offset){
+		$value = "0";
+		for($i = 0; $i <= 63; $i += 7){
+			if(!isset($buffer[$offset])){
+				throw new BinaryDataException("No bytes left in buffer");
+			}
+			$b = ord($buffer[$offset++]);
+			$value = bcadd($value, bcmul($b & 0x7f, bcpow("2", "$i")));
+
+			if(($b & 0x80) === 0){
+				return $value;
+			}
+		}
+
+		throw new BinaryDataException("VarLong did not terminate after 10 bytes!");
+	}
+
+	/**
+	 * 64-bit unsigned VarLong reader.
+	 * @param \pocketmine\nbt\NBT|BinaryStream $stream
+	 *
+	 * @return int
+	 */
+	public static function readUnsignedVarLong_64(string $buffer, int &$offset){
+		$value = 0;
+		for($i = 0; $i <= 63; $i += 7){
+			if(!isset($buffer[$offset])){
+				throw new BinaryDataException("No bytes left in buffer");
+			}
+			$b = ord($buffer[$offset++]);
+			$value |= (($b & 0x7f) << $i);
+
+			if(($b & 0x80) === 0){
+				return $value;
+			}
+		}
+
+		throw new BinaryDataException("VarLong did not terminate after 10 bytes!");
+	}
+
+
+
+	/**
+	 * Writes a 64-bit integer as a variable-length long.
+	 * @param int|string $v
+	 *
+	 * @return string up to 10 bytes
+	 */
+	public static function writeVarLong($v){
+		if(PHP_INT_SIZE === 8){
+			return self::writeVarLong_64($v);
+		}else{
+			return self::writeVarLong_32($v);
+		}
+	}
+
+	/**
+	 * Legacy BC Math zigzag VarLong encoder.
+	 * @param string $v
+	 *
+	 * @return string
+	 */
+	public static function writeVarLong_32($v){
+		$v = bcmod(bcmul($v, "2"), "18446744073709551616");
+		if(bccomp($v, "0") == -1){
+			$v = bcsub(bcmul($v, "-1"), "1");
+		}
+
+		return self::writeUnsignedVarLong_32($v);
+	}
+
+	/**
+	 * 64-bit VarLong encoder.
+	 * @param int $v
+	 *
+	 * @return string
+	 */
+	public static function writeVarLong_64($v){
+		return self::writeUnsignedVarLong_64(($v << 1) ^ ($v >> 63));
+	}
+
+	/**
+	 * Writes a 64-bit integer as a variable-length long
+	 * @param int|string $v
+	 *
+	 * @return string up to 10 bytes
+	 */
+	public static function writeUnsignedVarLong($v){
+		if(PHP_INT_SIZE === 8){
+			return self::writeUnsignedVarLong_64($v);
+		}else{
+			return self::writeUnsignedVarLong_32($v);
+		}
+	}
+
+	/**
+	 * Legacy BC Math unsigned VarLong encoder.
+	 * @param string $value
+	 *
+	 * @return string
+	 */
+	public static function writeUnsignedVarLong_32($value){
+		$buf = "";
+
+		if(bccomp($value, "0") == -1){
+			$value = bcadd($value, "18446744073709551616");
+		}
+
+		for($i = 0; $i < 10; ++$i){
+			$byte = (int) bcmod($value, "128");
+			$value = bcdiv($value, "128");
+			if($value !== "0"){
+				$buf .= chr($byte | 0x80);
+			}else{
+				$buf .= chr($byte);
+				return $buf;
+			}
+		}
+
+		throw new \InvalidArgumentException("Value too large to be encoded as a VarLong");
+	}
+
+	/**
+	 * 64-bit unsigned VarLong encoder.
+	 * @param int $value
+	 *
+	 * @return string
+	 */
+	public static function writeUnsignedVarLong_64($value){
 		$buf = "";
 		for($i = 0; $i < 10; ++$i){
 			if(($value >> 7) !== 0){
@@ -501,6 +698,6 @@ class Binary {
 			}
 			$value = (($value >> 7) & (PHP_INT_MAX >> 6)); //PHP really needs a logical right-shift operator
 		}
-		throw new \InvalidArgumentException("Value too large to be encoded as a varint");
+		throw new \InvalidArgumentException("Value too large to be encoded as a VarLong");
 	}
 }

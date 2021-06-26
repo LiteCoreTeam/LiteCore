@@ -29,7 +29,7 @@ class Camera extends Item {
 	 * @param int $count
 	 */
 	public function __construct($meta = 0, $count = 1){
-		parent::__construct(self::CAMERA, 0, $count, "Camera");
+		parent::__construct(self::CAMERA, $meta, $count, "Camera");
 	}
 
 	/**

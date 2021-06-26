@@ -47,6 +47,10 @@ class Purpur extends Solid {
 		return 1.5;
 	}
 
+	public function getResistance(){
+		return 30;
+	}
+
 	/**
 	 * @return int
 	 */

@@ -31,7 +31,12 @@ use pocketmine\Player;
 /**
  * Classes that implement this interface will be able to be attached to players
  */
-interface SourceInterface {
+interface SourceInterface{
+
+	/**
+	 * Performs actions needed to start the interface after it is registered.
+	 */
+	public function start();
 
 	/**
 	 * Sends a DataPacket to the interface, returns an unique identifier for the packet if $needACK is true
@@ -57,7 +62,7 @@ interface SourceInterface {
 	/**
 	 * @param string $name
 	 */
-	public function setName($name);
+	public function setName(string $name);
 
 	/**
 	 * Called every tick to process events on the interface.
@@ -66,6 +71,9 @@ interface SourceInterface {
 
 	public function shutdown();
 
+	/**
+	 * @deprecated
+	 */
 	public function emergencyShutdown();
 
 }

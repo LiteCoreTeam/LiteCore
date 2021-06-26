@@ -23,7 +23,7 @@ namespace pocketmine\math;
 
 use pocketmine\level\MovingObjectPosition;
 
-class AxisAlignedBB {
+class AxisAlignedBB{
 
 	/** @var float */
 	public $minX;
@@ -39,12 +39,7 @@ class AxisAlignedBB {
 	public $maxZ;
 
 	public function __construct(float $minX, float $minY, float $minZ, float $maxX, float $maxY, float $maxZ){
-		$this->minX = $minX;
-		$this->minY = $minY;
-		$this->minZ = $minZ;
-		$this->maxX = $maxX;
-		$this->maxY = $maxY;
-		$this->maxZ = $maxZ;
+		$this->setBounds($minX, $minY, $minZ, $maxX, $maxY, $maxZ);
 	}
 
 	/**
@@ -209,13 +204,7 @@ class AxisAlignedBB {
 	 * @return $this
 	 */
 	public function setBB(AxisAlignedBB $bb){
-		$this->minX = $bb->minX;
-		$this->minY = $bb->minY;
-		$this->minZ = $bb->minZ;
-		$this->maxX = $bb->maxX;
-		$this->maxY = $bb->maxY;
-		$this->maxZ = $bb->maxZ;
-		return $this;
+		return $this->setBounds($bb->minX, $bb->minY, $bb->minZ, $bb->maxX, $bb->maxY, $bb->maxZ);
 	}
 
 	/**
@@ -453,9 +442,6 @@ class AxisAlignedBB {
 		return MovingObjectPosition::fromBlock(0, 0, 0, $f, $vector);
 	}
 
-	/**
-	 * @return string
-	 */
 	public function __toString(){
 		return "AxisAlignedBB({$this->minX}, {$this->minY}, {$this->minZ}, {$this->maxX}, {$this->maxY}, {$this->maxZ})";
 	}

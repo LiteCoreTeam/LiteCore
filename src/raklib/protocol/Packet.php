@@ -15,12 +15,16 @@
 
 namespace raklib\protocol;
 
+use function explode;
+use function inet_ntop;
+use function inet_pton;
+use function strlen;
+use const AF_INET6;
 #ifndef COMPILE
 use pocketmine\utils\Binary;
-
 #endif
 
-#include <rules/BinaryIO.h>
+#include <rules/RakLibPacket.h>
 
 abstract class Packet{
 	public static $ID = -1;
@@ -43,7 +47,7 @@ abstract class Packet{
 			return substr($this->buffer, $this->offset);
 		}
 
-		return $len === 1 ? $this->buffer{$this->offset++} : substr($this->buffer, ($this->offset += $len) - $len, $len);
+		return $len === 1 ? $this->buffer[$this->offset++] : substr($this->buffer, ($this->offset += $len) - $len, $len);
 	}
 
 	protected function getLong(){
@@ -67,7 +71,7 @@ abstract class Packet{
 	}
 
 	protected function getByte(){
-		return ord($this->buffer{$this->offset++});
+		return ord($this->buffer[$this->offset++]);
 	}
 
 	protected function getString(){
@@ -92,7 +96,7 @@ abstract class Packet{
 	}
 
 	protected function feof(){
-		return !isset($this->buffer{$this->offset});
+		return !isset($this->buffer[$this->offset]);
 	}
 
 	protected function put($str){

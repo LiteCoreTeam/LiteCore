@@ -41,6 +41,21 @@ abstract class DataPacket extends BinaryStream {
 		return $this::NETWORK_ID;
 	}
 
+	public function canBeBatched() : bool{
+		return true;
+	}
+
+	public function canBeSentBeforeLogin() : bool{
+		return true;
+	}
+
+	/**
+	 * Returns whether the packet may legally have unread bytes left in the buffer.
+	 */
+	public function mayHaveUnreadBytes() : bool{
+		return false;
+	}
+
 	/**
 	 * @return mixed
 	 */
@@ -72,8 +87,8 @@ abstract class DataPacket extends BinaryStream {
 	 */
 	public function __debugInfo(){
 		$data = [];
-		foreach($this as $k => $v){
-			if($k === "buffer"){
+		foreach((array) $this as $k => $v){
+			if($k === "buffer" and is_string($v)){
 				$data[$k] = bin2hex($v);
 			}elseif(is_string($v) or (is_object($v) and method_exists($v, "__toString"))){
 				$data[$k] = Utils::printable((string) $v);
@@ -93,7 +108,7 @@ abstract class DataPacket extends BinaryStream {
 	public function getEntityMetadata(bool $types = true) : array{
 		$count = $this->getUnsignedVarInt();
 		$data = [];
-		for($i = 0; $i < $count; ++$i){
+		for($i = 0; $i < $count && !$this->feof(); ++$i){
 			$key = $this->getUnsignedVarInt();
 			$type = $this->getUnsignedVarInt();
 			$value = null;
@@ -128,7 +143,7 @@ abstract class DataPacket extends BinaryStream {
 					$value[2] = $this->getVarInt(); //z
 					break;
 				case Entity::DATA_TYPE_LONG:
-					$value = $this->getVarInt(); //TODO: varint64 proper support
+					$value = $this->getVarLong();
 					break;
 				case Entity::DATA_TYPE_VECTOR3F:
 					$value = [0.0, 0.0, 0.0];
@@ -138,7 +153,7 @@ abstract class DataPacket extends BinaryStream {
 					$value = [];
 			}
 			if($types === true){
-				$data[$key] = [$value, $type];
+				$data[$key] = [$type, $value];
 			}else{
 				$data[$key] = $value;
 			}
@@ -182,7 +197,7 @@ abstract class DataPacket extends BinaryStream {
 					$this->putVarInt($d[1][2]); //z
 					break;
 				case Entity::DATA_TYPE_LONG:
-					$this->putVarInt($d[1]); //TODO: varint64 support
+					$this->putVarLong($d[1]);
 					break;
 				case Entity::DATA_TYPE_VECTOR3F:
 					//TODO: change this implementation (use objects)
@@ -192,7 +207,7 @@ abstract class DataPacket extends BinaryStream {
 	}
 
 	/**
-	 * @return PacketName|string
+	 * @return string
 	 */
 	public function getName(){
 		return "DataPacket";

@@ -155,9 +155,9 @@ class Normal extends Generator {
 					return Biome::BIRCH_FOREST;
 				}
 			}else{
-				if($temperature < 0.25){
+				if($temperature < 0.20){
 					return Biome::MOUNTAINS;
-				}elseif($temperature < 0.70){
+				}elseif($temperature < 0.40){
 					return Biome::SMALL_MOUNTAINS;
 				}else{
 					return Biome::RIVER;

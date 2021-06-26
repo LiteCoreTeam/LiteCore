@@ -43,6 +43,8 @@ class Item extends Entity {
 	public $width = 0.25;
 	public $length = 0.25;
 	public $height = 0.25;
+	protected $baseOffset = 0.125;
+	
 	protected $gravity = 0.04;
 	protected $drag = 0.02;
 
@@ -52,7 +54,7 @@ class Item extends Entity {
 		parent::initEntity();
 
 		$this->setMaxHealth(5);
-		$this->setHealth($this->namedtag["Health"]);
+		$this->setHealth((int) $this->namedtag["Health"]);
 		if(isset($this->namedtag->Age)){
 			$this->age = $this->namedtag["Age"];
 		}
@@ -73,6 +75,9 @@ class Item extends Entity {
 		assert($this->namedtag->Item instanceof CompoundTag);
 
 		$this->item = ItemItem::nbtDeserialize($this->namedtag->Item);
+		if($this->item->isNull()){
+			throw new \UnexpectedValueException("Item for " . get_class($this) . " is invalid");
+		}
 
 		$this->server->getPluginManager()->callEvent(new ItemSpawnEvent($this));
 	}
@@ -172,7 +177,7 @@ class Item extends Entity {
 	public function saveNBT(){
 		parent::saveNBT();
 		$this->namedtag->Item = $this->item->nbtSerialize(-1, "Item");
-		$this->namedtag->Health = new ShortTag("Health", $this->getHealth());
+		$this->namedtag->Health = new ShortTag("Health", (int) $this->getHealth());
 		$this->namedtag->Age = new ShortTag("Age", $this->age);
 		$this->namedtag->PickupDelay = new ShortTag("PickupDelay", $this->pickupDelay);
 		if($this->owner !== null){
@@ -196,6 +201,10 @@ class Item extends Entity {
 	 * @return bool
 	 */
 	public function canCollideWith(Entity $entity){
+		return false;
+	}
+
+	public function canBeCollidedWith() : bool{
 		return false;
 	}
 

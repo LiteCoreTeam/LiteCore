@@ -21,7 +21,7 @@
 
 namespace raklib\protocol;
 
-#include <rules/BinaryIO.h>
+#include <rules/RakLibPacket.h>
 
 use raklib\RakLib;
 

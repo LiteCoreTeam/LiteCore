@@ -110,7 +110,7 @@ class FishingHook extends Projectile {
             $this->coughtTimer = mt_rand(5, 10) * 20; // random delay to catch fish
             $this->attractTimer = mt_rand(30, 100) * 20; // reset timer
             $this->attractFish();
-            if($this->shootingEntity instanceof Player) $this->shootingEntity->sendTip("A fish bites!");
+            if($this->getOwningEntity() instanceof Player) $this->getOwningEntity()->sendTip("A fish bites!");
         }elseif($this->attractTimer > 0){
             $this->attractTimer--;
         }
@@ -125,20 +125,20 @@ class FishingHook extends Projectile {
     }
 
     public function fishBites(){
-        if($this->shootingEntity instanceof Player){
+        if($this->getOwningEntity() instanceof Player){
             $pk = new EntityEventPacket();
-            $pk->eid = $this->shootingEntity->getId();//$this or $this->shootingEntity
+            $pk->eid = $this->getOwningEntity()->getId();//$this or $this->getOwningEntity()
             $pk->event = EntityEventPacket::FISH_HOOK_HOOK;
-            $this->server->broadcastPacket($this->shootingEntity->hasSpawned, $pk);
+            $this->server->broadcastPacket($this->getOwningEntity()->hasSpawned, $pk);
         }
     }
 
     public function attractFish(){
-        if($this->shootingEntity instanceof Player){
+        if($this->getOwningEntity() instanceof Player){
             $pk = new EntityEventPacket();
-            $pk->eid = $this->shootingEntity->getId();//$this or $this->shootingEntity
+            $pk->eid = $this->getOwningEntity()->getId();//$this or $this->getOwningEntity()
             $pk->event = EntityEventPacket::FISH_HOOK_BUBBLE;
-            $this->server->broadcastPacket($this->shootingEntity->hasSpawned, $pk);
+            $this->server->broadcastPacket($this->getOwningEntity()->hasSpawned, $pk);
         }
     }
 
@@ -152,20 +152,20 @@ class FishingHook extends Projectile {
     public function reelLine(){
         $this->damageRod = false;
 
-        if($this->shootingEntity instanceof Player && $this->coughtTimer > 0){
+        if($this->getOwningEntity() instanceof Player && $this->coughtTimer > 0){
             $fishes = [ItemItem::RAW_FISH, ItemItem::RAW_SALMON, ItemItem::CLOWN_FISH, ItemItem::PUFFER_FISH];
             $fish = array_rand($fishes, 1);
             $item = ItemItem::get($fishes[$fish]);
-            $this->getLevel()->getServer()->getPluginManager()->callEvent($ev = new PlayerFishEvent($this->shootingEntity, $item, $this));
+            $this->getLevel()->getServer()->getPluginManager()->callEvent($ev = new PlayerFishEvent($this->getOwningEntity(), $item, $this));
             if(!$ev->isCancelled()){
-                $this->shootingEntity->getInventory()->addItem($item);
-                $this->shootingEntity->addXp(mt_rand(1, 6));
+                $this->getOwningEntity()->getInventory()->addItem($item);
+                $this->getOwningEntity()->addXp(mt_rand(1, 6));
                 $this->damageRod = true;
             }
         }
 
-        if($this->shootingEntity instanceof Player){
-            $this->shootingEntity->unlinkHookFromPlayer();
+        if($this->getOwningEntity() instanceof Player){
+            $this->getOwningEntity()->unlinkHookFromPlayer();
         }
 
         if(!$this->closed){

@@ -44,6 +44,10 @@ class WoodStairs extends Stair {
 		return "Wood Stairs";
 	}
 
+	public function getResistance(){
+		return 15;
+	}
+
 	/**
 	 * @return int
 	 */

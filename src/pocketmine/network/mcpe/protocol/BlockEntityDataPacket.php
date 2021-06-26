@@ -51,7 +51,7 @@ class BlockEntityDataPacket extends DataPacket {
 	}
 
 	/**
-	 * @return PacketName|string
+	 * @return string Current packet name
 	 */
 	public function getName(){
 		return "BlockEntityDataPacket";

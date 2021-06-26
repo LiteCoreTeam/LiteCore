@@ -29,6 +29,6 @@ class NetherQuartz extends Item {
 	 * @param int $count
 	 */
 	public function __construct($meta = 0, $count = 1){
-		parent::__construct(self::NETHER_QUARTZ, 0, $count, "Nether Quartz");
+		parent::__construct(self::NETHER_QUARTZ, $meta, $count, "Nether Quartz");
 	}
 } 

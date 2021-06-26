@@ -21,6 +21,9 @@
 
 namespace pocketmine\entity;
 
+use InvalidArgumentException;
+use InvalidStateException;
+use pocketmine\event\entity\EntityConsumeTotemEvent;
 use pocketmine\event\entity\EntityDamageEvent;
 use pocketmine\event\entity\EntityRegainHealthEvent;
 use pocketmine\event\player\PlayerExhaustEvent;
@@ -28,10 +31,12 @@ use pocketmine\event\player\PlayerExperienceChangeEvent;
 use pocketmine\inventory\FloatingInventory;
 use pocketmine\inventory\EnderChestInventory;
 use pocketmine\inventory\InventoryHolder;
+use pocketmine\inventory\OffhandInventory;
 use pocketmine\inventory\PlayerInventory;
 use pocketmine\inventory\SimpleTransactionQueue;
 use pocketmine\item\enchantment\Enchantment;
 use pocketmine\item\Item as ItemItem;
+use pocketmine\item\ItemIds;
 use pocketmine\item\Totem;
 use pocketmine\math\Math;
 use pocketmine\nbt\NBT;
@@ -44,8 +49,10 @@ use pocketmine\nbt\tag\ListTag;
 use pocketmine\nbt\tag\StringTag;
 use pocketmine\network\mcpe\protocol\AddPlayerPacket;
 use pocketmine\network\mcpe\protocol\EntityEventPacket;
+use pocketmine\network\mcpe\protocol\LevelEventPacket;
 use pocketmine\Player;
 use pocketmine\utils\UUID;
+use ReflectionClass;
 
 class Human extends Creature implements ProjectileSource, InventoryHolder {
 
@@ -64,6 +71,9 @@ class Human extends Creature implements ProjectileSource, InventoryHolder {
 
 	/** @var FloatingInventory */
 	protected $floatingInventory;
+
+	/** @var OffhandInventory */
+	protected $offhandInventory;
 
 	/** @var SimpleTransactionQueue */
 	protected $transactionQueue = null;
@@ -85,6 +95,8 @@ class Human extends Creature implements ProjectileSource, InventoryHolder {
 	protected $totalXp = 0;
 	protected $xpSeed;
 	protected $xpCooldown = 0;
+
+	protected $baseOffset = 1.62;
 
 	/**
 	 * @return mixed
@@ -145,7 +157,7 @@ class Human extends Creature implements ProjectileSource, InventoryHolder {
 	 *
 	 * @param float $new
 	 *
-	 * @throws \InvalidArgumentException
+	 * @throws InvalidArgumentException
 	 */
 	public function setFood(float $new){
 		$attr = $this->attributeMap->getAttribute(Attribute::HUNGER);
@@ -181,6 +193,13 @@ class Human extends Creature implements ProjectileSource, InventoryHolder {
 	}
 
 	/**
+	 * Returns whether this Human may consume objects requiring hunger.
+	 */
+	public function isHungry() : bool{
+		return $this->getFood() < $this->getMaxFood();
+	}
+
+	/**
 	 * @return float
 	 */
 	public function getSaturation() : float{
@@ -193,7 +212,7 @@ class Human extends Creature implements ProjectileSource, InventoryHolder {
 	 *
 	 * @param float $saturation
 	 *
-	 * @throws \InvalidArgumentException
+	 * @throws InvalidArgumentException
 	 */
 	public function setSaturation(float $saturation){
 		$this->attributeMap->getAttribute(Attribute::SATURATION)->setValue($saturation);
@@ -528,6 +547,13 @@ class Human extends Creature implements ProjectileSource, InventoryHolder {
 		return $this->floatingInventory;
 	}
 
+    /**
+     * @return OffhandInventory
+     */
+    public function getOffhandInventory() : OffhandInventory{
+        return $this->offhandInventory;
+    }
+
 	/**
 	 * @return SimpleTransactionQueue
 	 */
@@ -547,6 +573,7 @@ class Human extends Creature implements ProjectileSource, InventoryHolder {
 		$inventoryContents = ($this->namedtag->Inventory ?? null);
 		$this->inventory = new PlayerInventory($this, $inventoryContents);
 		$this->enderChestInventory = new EnderChestInventory($this, ($this->namedtag->EnderChestInventory ?? null));
+		$this->offhandInventory = new OffhandInventory($this);
 
 		//Virtual inventory for desktop GUI crafting and anti-cheat transaction processing
 		$this->floatingInventory = new FloatingInventory($this);
@@ -564,6 +591,13 @@ class Human extends Creature implements ProjectileSource, InventoryHolder {
 
 			$this->uuid = UUID::fromData((string) $this->getId(), $this->getSkinData(), $this->getNameTag());
 		}
+
+		if(isset($this->namedtag->OffHandItem) && $this->namedtag->OffHandItem instanceof CompoundTag){
+		    if($this->offhandInventory === null)
+		        $this->offhandInventory = new OffhandInventory($this);
+
+		    $this->offhandInventory->setItemInOffhand(ItemItem::nbtDeserialize($this->namedtag->OffHandItem));
+        }
 
 		parent::initEntity();
 
@@ -656,6 +690,54 @@ class Human extends Creature implements ProjectileSource, InventoryHolder {
 		return $hasUpdate;
 	}
 
+	public function attack($damage, EntityDamageEvent $source){
+		if($source->getCause() !== EntityDamageEvent::CAUSE_VOID){
+			$damage = round($source->getFinalDamage());
+			if($this->getAbsorption() > 0){
+				$damage -= $this->getAbsorption();
+			}
+
+			if($damage > 0 && ($this->getHealth() - $damage) <= 0){
+				$isOffHand = $this->getOffhandInventory()->getItemInOffhand() instanceof Totem;
+				if($isOffHand
+					|| $this->getInventory()->getItemInHand() instanceof Totem){
+					$event = new EntityConsumeTotemEvent($this);
+					$this->server->getPluginManager()->callEvent($event);
+
+					if(!$event->isCancelled()){
+						$pk = new EntityEventPacket();
+						$pk->eid = $this->id;
+						$pk->event = EntityEventPacket::CONSUME_TOTEM;
+
+						$viewers = $this->getViewers();
+						if($this instanceof Player){
+							$viewers = array_merge($viewers, [$this]);
+						}
+						$this->server->batchPackets($viewers, [$pk]);
+
+						$this->level->broadcastLevelEvent($this, LevelEventPacket::EVENT_SOUND_TOTEM);
+
+						$this->setHealth($this->getHealth() + 5);
+
+						$this->addEffect(Effect::getEffect(Effect::REGENERATION)->setDuration(20 * 45)->setAmplifier(1));
+						$this->addEffect(Effect::getEffect(Effect::ABSORPTION)->setDuration(20 * 5)->setAmplifier(1));
+						$this->addEffect(Effect::getEffect(Effect::FIRE_RESISTANCE)->setDuration(20 * 40));
+
+						if($isOffHand){
+							$this->getOffhandInventory()->setItemInOffhand(ItemItem::get(ItemIds::AIR));
+						}else{
+							$this->getInventory()->setItemInHand(ItemItem::get(ItemIds::AIR));
+						}
+
+						return;
+					}
+				}
+			}
+		}
+
+		parent::attack($damage, $source);
+	}
+
 	public function doFoodTick($tickDiff = 1){
 		if($this->isAlive()){
 			$food = $this->getFood();
@@ -666,6 +748,7 @@ class Human extends Creature implements ProjectileSource, InventoryHolder {
 			if($this->foodTickTimer >= 80){
 				$this->foodTickTimer = 0;
 			}
+
 			if($difficulty === 0 and $this->foodTickTimer % 10 === 0){ //Peaceful
 				if($food < $this->getMaxFood()){
 					$this->addFood(1.0);
@@ -675,6 +758,7 @@ class Human extends Creature implements ProjectileSource, InventoryHolder {
 					$this->heal(1, new EntityRegainHealthEvent($this, 1, EntityRegainHealthEvent::CAUSE_SATURATION));
 				}
 			}
+
 			if($this->foodTickTimer === 0){
 				if($food >= 18){
 					if($health < $this->getMaxHealth()){
@@ -687,10 +771,9 @@ class Human extends Creature implements ProjectileSource, InventoryHolder {
 					}
 				}
 			}
+
 			if($food <= 6){
-				if($this->isSprinting()){
-					$this->setSprinting(false);
-				}
+				$this->setSprinting(false);
 			}
 		}
 	}
@@ -718,6 +801,11 @@ class Human extends Creature implements ProjectileSource, InventoryHolder {
 
 	public function saveNBT(){
 		parent::saveNBT();
+
+		if($this->offhandInventory !== null){
+		    $this->namedtag->OffHandItem = $this->getOffhandInventory()->getItemInOffhand()->nbtSerialize(0, "OffHandItem");
+        }
+
 		$this->namedtag->Inventory = new ListTag("Inventory", []);
 		$this->namedtag->Inventory->setTagType(NBT::TAG_Compound);
 		if($this->inventory !== null){
@@ -785,7 +873,7 @@ class Human extends Creature implements ProjectileSource, InventoryHolder {
 	 */
 	public function spawnTo(Player $player){
 		if(strlen($this->skin) < 64 * 32 * 4){
-			$e = new \InvalidStateException((new \ReflectionClass($this))->getShortName() . " must have a valid skin set");
+			$e = new InvalidStateException((new ReflectionClass($this))->getShortName() . " must have a valid skin set");
 			$this->server->getLogger()->logException($e);
 			$this->close();
 		}elseif($player !== $this and !isset($this->hasSpawned[$player->getLoaderId()])){
@@ -814,6 +902,7 @@ class Human extends Creature implements ProjectileSource, InventoryHolder {
 			$this->sendLinkedData();
 
 			$this->inventory->sendArmorContents($player);
+			$this->offhandInventory->sendContents($player);
 
 			if(!($this instanceof Player)){
 				$this->server->removePlayerListData($this->getUniqueId(), [$player]);
@@ -830,12 +919,13 @@ class Human extends Creature implements ProjectileSource, InventoryHolder {
 			}else{
 				$this->server->getLogger()->debug("Attempted to drop a null crafting inventory\n");
 			}
-			if(!($this instanceof Player) or $this->loggedIn){
-				foreach($this->inventory->getViewers() as $viewer){
-					$viewer->removeWindow($this->inventory);
-				}
-
-				$this->inventory = null; //В случае продолжения нулевых инвентарей - убрать это!
+			if($this->inventory !== null){
+				$this->inventory->removeAllViewers();
+				$this->inventory = null;
+			}
+			if($this->enderChestInventory !== null){
+				$this->enderChestInventory->removeAllViewers();
+				$this->enderChestInventory = null;
 			}
 			parent::close();
 		}

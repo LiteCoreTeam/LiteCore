@@ -15,7 +15,7 @@
 
 namespace raklib\protocol;
 
-#include <rules/BinaryIO.h>
+#include <rules/RakLibPacket.h>
 
 class ConnectedPong extends Packet{
 	public static $ID = MessageIdentifiers::ID_CONNECTED_PONG;

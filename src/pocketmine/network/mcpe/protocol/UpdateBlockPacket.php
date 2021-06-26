@@ -48,7 +48,12 @@ class UpdateBlockPacket extends DataPacket {
 	 *
 	 */
 	public function decode(){
+		$this->getBlockCoords($this->x, $this->y, $this->z);
+		$this->blockId = $this->getUnsignedVarInt();
 
+		$mask = $this->getUnsignedVarInt();
+		$this->blockData = $mask & 0x0F;
+		$this->flags = $mask >> 4;
 	}
 
 	/**
@@ -62,7 +67,7 @@ class UpdateBlockPacket extends DataPacket {
 	}
 
 	/**
-	 * @return PacketName|string
+	 * @return string Current packet name
 	 */
 	public function getName(){
 		return "UpdateBlockPacket";

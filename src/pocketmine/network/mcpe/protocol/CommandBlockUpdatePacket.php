@@ -51,7 +51,7 @@ class CommandBlockUpdatePacket extends DataPacket {
 		$this->isBlock = $this->getBool();
 
 		if($this->isBlock){
-			$this->getBlockPosition($this->x, $this->y, $this->z);
+			$this->getBlockCoords($this->x, $this->y, $this->z);
 			$this->commandBlockMode = $this->getUnsignedVarInt();
 			$this->isRedstoneMode = $this->getBool();
 			$this->isConditional = $this->getBool();
@@ -75,7 +75,7 @@ class CommandBlockUpdatePacket extends DataPacket {
 		$this->putBool($this->isBlock);
 
 		if($this->isBlock){
-			$this->putBlockPosition($this->x, $this->y, $this->z);
+			$this->putBlockCoords($this->x, $this->y, $this->z);
 			$this->putUnsignedVarInt($this->commandBlockMode);
 			$this->putBool($this->isRedstoneMode);
 			$this->putBool($this->isConditional);

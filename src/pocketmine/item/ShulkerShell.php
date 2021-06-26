@@ -30,7 +30,7 @@ class ShulkerShell extends Item {
 	 * @param int $count
 	 */
 	public function __construct($meta = 0, $count = 1){
-		parent::__construct(self::SHULKER_SHELL, 0, $count, "Shulker Shell");
+		parent::__construct(self::SHULKER_SHELL, $meta, $count, "Shulker Shell");
 	}
 
 }

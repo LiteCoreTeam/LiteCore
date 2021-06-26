@@ -32,10 +32,12 @@ class AnimatePacket extends DataPacket {
 
 	const ACTION_STOP_SLEEP = 3;
 	const ACTION_CRITICAL_HIT = 4;
+	const ACTION_ROW_RIGHT = 128;
+	const ACTION_ROW_LEFT = 129;
 
 	public $action;
 	public $eid;
-	public $float;
+	public $float = 0.0; //TODO (Boat rowing time?)
 
 	/**
 	 *

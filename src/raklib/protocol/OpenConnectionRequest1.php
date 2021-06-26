@@ -15,14 +15,19 @@
 
 namespace raklib\protocol;
 
-#include <rules/BinaryIO.h>
+#include <rules/RakLibPacket.h>
+
 
 use raklib\RakLib;
+use function str_pad;
+use function strlen;
 
 class OpenConnectionRequest1 extends OfflineMessage{
 	public static $ID = MessageIdentifiers::ID_OPEN_CONNECTION_REQUEST_1;
 
-	public $protocol = RakLib::PROTOCOL;
+	/** @var int */
+	public $protocol = RakLib::DEFAULT_PROTOCOL_VERSION;
+	/** @var int */
 	public $mtuSize;
 
 	protected function encodePayload(){

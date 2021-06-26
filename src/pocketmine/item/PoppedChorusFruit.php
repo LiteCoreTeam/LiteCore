@@ -30,7 +30,7 @@ class PoppedChorusFruit extends Item {
 	 * @param int $count
 	 */
 	public function __construct($meta = 0, $count = 1){
-		parent::__construct(self::POPPED_CHORUS_FRUIT, 0, $count, "Popped Chorus Fruit");
+		parent::__construct(self::POPPED_CHORUS_FRUIT, $meta, $count, "Popped Chorus Fruit");
 	}
 
 }

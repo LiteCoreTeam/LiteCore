@@ -111,6 +111,8 @@ class Carpet extends Flowable {
 			$this->getLevel()->setBlock($block, $this, true, true);
 
 			return true;
+		}elseif ($down->getId() == self::CARPET) {
+			return false;
 		}
 
 		return false;

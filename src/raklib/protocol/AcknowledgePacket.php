@@ -15,14 +15,21 @@
 
 namespace raklib\protocol;
 
+use function chr;
+use function count;
+use function sort;
+use const SORT_NUMERIC;
+
 #ifndef COMPILE
 use pocketmine\utils\Binary;
-
 #endif
 
-#include <rules/BinaryIO.h>
+#include <rules/RakLibPacket.h>
 
 abstract class AcknowledgePacket extends Packet{
+	private const RECORD_TYPE_RANGE = 0;
+	private const RECORD_TYPE_SINGLE = 1;
+
 	/** @var int[] */
 	public $packets = [];
 
@@ -44,11 +51,11 @@ abstract class AcknowledgePacket extends Packet{
 					$last = $current;
 				}elseif($diff > 1){ //Forget about duplicated packets (bad queues?)
 					if($start === $last){
-						$payload .= "\x01";
+						$payload .= chr(self::RECORD_TYPE_SINGLE);
 						$payload .= Binary::writeLTriad($start);
 						$start = $last = $current;
 					}else{
-						$payload .= "\x00";
+						$payload .= chr(self::RECORD_TYPE_RANGE);
 						$payload .= Binary::writeLTriad($start);
 						$payload .= Binary::writeLTriad($last);
 						$start = $last = $current;
@@ -58,10 +65,10 @@ abstract class AcknowledgePacket extends Packet{
 			}
 
 			if($start === $last){
-				$payload .= "\x01";
+				$payload .= chr(self::RECORD_TYPE_SINGLE);
 				$payload .= Binary::writeLTriad($start);
 			}else{
-				$payload .= "\x00";
+				$payload .= chr(self::RECORD_TYPE_RANGE);
 				$payload .= Binary::writeLTriad($start);
 				$payload .= Binary::writeLTriad($last);
 			}
@@ -77,7 +84,7 @@ abstract class AcknowledgePacket extends Packet{
 		$this->packets = [];
 		$cnt = 0;
 		for($i = 0; $i < $count and !$this->feof() and $cnt < 4096; ++$i){
-			if($this->getByte() === 0){
+			if($this->getByte() === self::RECORD_TYPE_RANGE){
 				$start = $this->getLTriad();
 				$end = $this->getLTriad();
 				if(($end - $start) > 512){

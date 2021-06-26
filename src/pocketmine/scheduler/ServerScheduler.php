@@ -238,6 +238,10 @@ class ServerScheduler {
 		return $handler;
 	}
 
+	public function downUnusedWorkers(){
+		return $this->asyncPool->shutdownUnusedWorkers();
+	}
+
 	public function shutdown() : void{
 		$this->cancelAllTasks();
 		$this->asyncPool->shutdown();

@@ -27,15 +27,22 @@ use pocketmine\network\mcpe\protocol\BatchPacket;
 use pocketmine\network\mcpe\protocol\FullChunkDataPacket;
 use pocketmine\scheduler\AsyncTask;
 use pocketmine\Server;
+use function assert;
+use function strlen;
 
-class ChunkRequestTask extends AsyncTask {
+class ChunkRequestTask extends AsyncTask{
 
+	/** @var int */
 	protected $levelId;
 
+	/** @var string */
 	protected $chunk;
+	/** @var int */
 	protected $chunkX;
+	/** @var int */
 	protected $chunkZ;
 
+	/** @var int */
 	protected $compressionLevel;
 
 	public function __construct(Level $level, int $chunkX, int $chunkZ, Chunk $chunk){

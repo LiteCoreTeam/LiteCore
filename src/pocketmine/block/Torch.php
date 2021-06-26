@@ -22,6 +22,7 @@
 namespace pocketmine\block;
 
 use pocketmine\item\Item;
+use pocketmine\math\Vector3;
 use pocketmine\level\Level;
 use pocketmine\Player;
 
@@ -42,7 +43,7 @@ class Torch extends Flowable {
 	 * @return int
 	 */
 	public function getLightLevel(){
-		return 15;
+		return 14;
 	}
 
 	/**
@@ -61,19 +62,19 @@ class Torch extends Flowable {
 	public function onUpdate($type){
 		if($type === Level::BLOCK_UPDATE_NORMAL){
 			$below = $this->getSide(0);
-			$side = $this->getDamage();
-			$faces = [
-				1 => 4,
-				2 => 5,
-				3 => 2,
-				4 => 3,
-				5 => 0,
-				6 => 0,
-				0 => 0,
+			$meta = $this->getDamage();
+			static $faces = [
+				0 => Vector3::SIDE_DOWN,
+			    1 => Vector3::SIDE_WEST,
+			    2 => Vector3::SIDE_EAST,
+			    3 => Vector3::SIDE_NORTH,
+			    4 => Vector3::SIDE_SOUTH,
+			    5 => Vector3::SIDE_DOWN
 			];
+			$face = $faces[$meta] ?? Vector3::SIDE_DOWN;
 
-			if($this->getSide($faces[$side])->isTransparent() === true and
-				!($side === 0 and ($below->getId() === self::FENCE or
+			if($this->getSide($face)->isTransparent() === true and
+				!($face === 0 and ($below->getId() === self::FENCE or
 						$below->getId() === self::COBBLE_WALL or
 						$below->getId() == Block::REDSTONE_LAMP or
 						$below->getId() == Block::LIT_REDSTONE_LAMP)

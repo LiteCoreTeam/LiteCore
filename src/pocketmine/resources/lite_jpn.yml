@@ -10,7 +10,7 @@
 #
 #
 #
-#GenisysPro 詳細設定ファイル
+#LiteCore 詳細設定ファイル
 
 #true:有効
 #false:無効
@@ -139,4 +139,4 @@ dserver:
 
 inventory:
  #金床に問題がある場合は無効にすると、チートの検証をせずにインベントリを処理します
- allow-cheats: false
+ allow-cheats: true

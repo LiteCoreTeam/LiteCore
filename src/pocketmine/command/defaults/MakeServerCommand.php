@@ -90,7 +90,7 @@ class MakeServerCommand extends VanillaCommand {
 		}
 		foreach(new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($filePath . "src")) as $file){
 			$path = ltrim(str_replace(["\\", $filePath], ["/", ""], $file), "/");
-			if($path{0} === "." or strpos($path, "/.") !== false or substr($path, 0, 4) !== "src/"){
+			if($path[0] === "." or strpos($path, "/.") !== false or substr($path, 0, 4) !== "src/"){
 				continue;
 			}
 			$phar->addFile($file, $path);

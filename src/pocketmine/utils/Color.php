@@ -25,6 +25,8 @@
 
 namespace pocketmine\utils;
 
+use SplFixedArray;
+
 class Color {
 
 	const COLOR_DYE_BLACK = 0;//dye colors
@@ -44,16 +46,17 @@ class Color {
 	const COLOR_DYE_ORANGE = 14;
 	const COLOR_DYE_WHITE = 15;
 
-	private $red = 0;
-	private $green = 0;
-	private $blue = 0;
+	private $alpha;
+	private $red;
+	private $green;
+	private $blue;
 
-	/** @var \SplFixedArray */
+	/** @var SplFixedArray */
 	public static $dyeColors = null;
 
 	public static function init(){
 		if(self::$dyeColors === null){
-			self::$dyeColors = new \SplFixedArray(16); //What's the point of making a 256-long array for 16 objects?
+			self::$dyeColors = new SplFixedArray(16); //What's the point of making a 256-long array for 16 objects?
 			self::$dyeColors[self::COLOR_DYE_BLACK] = Color::getRGB(30, 27, 27);
 			self::$dyeColors[self::COLOR_DYE_RED] = Color::getRGB(179, 49, 44);
 			self::$dyeColors[self::COLOR_DYE_GREEN] = Color::getRGB(61, 81, 26);
@@ -73,6 +76,53 @@ class Color {
 		}
 	}
 
+    /**
+     * Returns a Color from the supplied ARGB colour code (32-bit)
+     * @param int $code
+     * @return Color
+     */
+    public static function fromARGB(int $code) : Color{
+        return new Color(($code >> 16) & 0xff, ($code >> 8) & 0xff, $code & 0xff, ($code >> 24) & 0xff);
+    }
+
+    /**
+     * Returns an ARGB 32-bit colour value.
+     */
+    public function toARGB() : int{
+        return ($this->alpha << 24) | ($this->red << 16) | ($this->green << 8) | $this->blue;
+    }
+
+    /**
+     * Returns a Color from the supplied RGBA colour code (32-bit)
+     * @param int $c
+     * @return Color
+     */
+    public static function fromRGBA(int $c) : Color{
+        return new Color(($c >> 24) & 0xff, ($c >> 16) & 0xff, ($c >> 8) & 0xff, $c & 0xff);
+    }
+
+    /**
+     * Returns an RGBA 32-bit colour value.
+     */
+    public function toRGBA() : int{
+        return ($this->red << 24) | ($this->green << 16) | ($this->blue << 8) | $this->alpha;
+    }
+
+    /**
+     * Returns a little-endian RGBA colour value.
+     */
+    public function toABGR() : int{
+        return ($this->alpha << 24) | ($this->blue << 16) | ($this->green << 8) | $this->red;
+    }
+
+    /**
+     * @param int $code
+     * @return Color
+     */
+    public static function fromABGR(int $code){
+        return new Color($code & 0xff, ($code >> 8) & 0xff, ($code >> 16) & 0xff, ($code >> 24) & 0xff);
+    }
+
 	/**
 	 * @param $r
 	 * @param $g
@@ -84,11 +134,11 @@ class Color {
 		return new Color((int) $r, (int) $g, (int) $b);
 	}
 
-	/**
-	 * @param Color[] ...$colors
-	 *
-	 * @return Color
-	 */
+    /**
+     * @param Color ...$colors
+     *
+     * @return Color
+     */
 	public static function averageColor(Color ...$colors){
 		$tr = 0;//total red
 		$tg = 0;//green
@@ -115,17 +165,19 @@ class Color {
 		return Color::getRGB(0, 0, 0);
 	}
 
-	/**
-	 * Color constructor.
-	 *
-	 * @param $r
-	 * @param $g
-	 * @param $b
-	 */
-	public function __construct($r, $g, $b){
+    /**
+     * Color constructor.
+     *
+     * @param $r
+     * @param $g
+     * @param $b
+     * @param int $a
+     */
+	public function __construct($r, $g, $b, $a = 0xFF){
 		$this->red = $r;
 		$this->green = $g;
 		$this->blue = $b;
+		$this->alpha = $a;
 	}
 
 	/**

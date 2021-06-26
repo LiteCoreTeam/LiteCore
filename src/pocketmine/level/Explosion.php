@@ -30,8 +30,8 @@ use pocketmine\event\entity\EntityDamageEvent;
 use pocketmine\event\entity\EntityExplodeEvent;
 use pocketmine\item\Item;
 use pocketmine\level\particle\HugeExplodeSeedParticle;
+use pocketmine\level\utils\SubChunkIteratorManager;
 use pocketmine\math\AxisAlignedBB;
-use pocketmine\math\Math;
 use pocketmine\math\Vector3;
 use pocketmine\nbt\tag\ByteTag;
 use pocketmine\nbt\tag\CompoundTag;
@@ -44,40 +44,54 @@ use pocketmine\utils\Random;
 use pocketmine\tile\Chest;
 use pocketmine\tile\Container;
 use pocketmine\tile\Tile;
+use function ceil;
+use function floor;
+use function mt_rand;
 
-class Explosion {
-
-	private $rays = 16; //Rays
+class Explosion{
+	/** @var int */
+	private $rays = 16;
+	/** @var Level */
 	public $level;
+	/** @var Position */
 	public $source;
+	/** @var float */
 	public $size;
-	/**
-	 * @var Block[]
-	 */
+
+	/** @var Block[] */
 	public $affectedBlocks = [];
+	/** @var float */
 	public $stepLen = 0.3;
-	/** @var Entity|Block */
+	/** @var Entity|Block|null */
 	private $what;
 	private $dropItem;
 
+	/** @var SubChunkIteratorManager */
+	private $subChunkHandler;
+
 	/**
-	 * Explosion constructor.
-	 *
-	 * @param Position $center
-	 * @param          $size
-	 * @param null     $what
-	 * @param bool     $dropItem
+	 * @param Entity|Block|null $what
 	 */
-	public function __construct(Position $center, $size, $what = null, bool $dropItem = true){
-		$this->level = $center->getLevel();
+	public function __construct(Position $center, float $size, $what = null, bool $dropItem = true){
+		if(!$center->isValid()){
+			throw new \InvalidArgumentException("Position does not have a valid world");
+		}
 		$this->source = $center;
-		$this->size = max($size, 0);
+		$this->level = $center->getLevel();
+
+		if($size <= 0){
+			throw new \InvalidArgumentException("Explosion radius must be greater than 0, got $size");
+		}
+		$this->size = $size;
+
 		$this->what = $what;
 		$this->dropItem = $dropItem;
+		$this->subChunkHandler = new SubChunkIteratorManager($this->level, false);
 	}
 
 	/**
-	 * @return bool
+	 * Calculates which blocks will be destroyed by this explosion. If explodeB() is called without calling this, no blocks
+	 * will be destroyed.
 	 */
 	public function explodeA() : bool{
 		if($this->size < 0.1){
@@ -85,7 +99,10 @@ class Explosion {
 		}
 
 		$vector = new Vector3(0, 0, 0);
-		$vBlock = new Vector3(0, 0, 0);
+		$vBlock = new Position(0, 0, 0, $this->level);
+
+		$currentChunk = null;
+		$currentSubChunk = null;
 
 		$mRays = intval($this->rays - 1);
 		for($i = 0; $i < $this->rays; ++$i){
@@ -110,17 +127,17 @@ class Explosion {
 							$pointerY += $vector->y;
 							$pointerZ += $vector->z;
 
-							if($vBlock->y < 0 or $vBlock->y >= Level::Y_MAX){
-								break;
+							if(!$this->subChunkHandler->moveTo($vBlock->x, $vBlock->y, $vBlock->z)){
+								continue;
 							}
 
-							$block = $this->level->getBlock($vBlock);
+							$blockId = $this->subChunkHandler->currentSubChunk->getBlockId($vBlock->x & 0x0f, $vBlock->y & 0x0f, $vBlock->z & 0x0f);
 
-							if($block->getId() !== 0){
-								$blastForce -= ($block->getResistance() / 5 + 0.3) * $this->stepLen;
+							if($blockId !== 0){
+								$blastForce -= (Block::$blastResistance[$blockId] / 5 + 0.3) * $this->stepLen;
 								if($blastForce > 0){
-									if(!isset($this->affectedBlocks[$index = Level::blockHash($block->x, $block->y, $block->z)])){
-										$this->affectedBlocks[$index] = $block;
+									if(!isset($this->affectedBlocks[$index = Level::blockHash($vBlock->x, $vBlock->y, $vBlock->z)])){
+										$this->affectedBlocks[$index] = Block::get($blockId, $this->subChunkHandler->currentSubChunk->getBlockData($vBlock->x & 0x0f, $vBlock->y & 0x0f, $vBlock->z & 0x0f), $vBlock);
 									}
 								}
 							}
@@ -129,6 +146,146 @@ class Explosion {
 				}
 			}
 		}
+
+		return true;
+	}
+
+	/**
+	 * Executes the explosion's effects on the world. This includes destroying blocks (if any), harming and knocking back entities,
+	 * and creating sounds and particles.
+	 */
+	public function explodeB() : bool{
+		$send = [];
+		$updateBlocks = [];
+
+		$source = (new Vector3($this->source->x, $this->source->y, $this->source->z))->floor();
+		$yield = (1 / $this->size) * 100;
+
+		if($this->what instanceof Entity){
+			$this->level->getServer()->getPluginManager()->callEvent($ev = new EntityExplodeEvent($this->what, $this->source, $this->affectedBlocks, $yield));
+			if($ev->isCancelled()){
+				return false;
+			}else{
+				$yield = $ev->getYield();
+				$this->affectedBlocks = $ev->getBlockList();
+			}
+		}
+
+		$explosionSize = $this->size * 2;
+		$minX = (int) floor($this->source->x - $explosionSize - 1);
+		$maxX = (int) ceil($this->source->x + $explosionSize + 1);
+		$minY = (int) floor($this->source->y - $explosionSize - 1);
+		$maxY = (int) ceil($this->source->y + $explosionSize + 1);
+		$minZ = (int) floor($this->source->z - $explosionSize - 1);
+		$maxZ = (int) ceil($this->source->z + $explosionSize + 1);
+
+		$explosionBB = new AxisAlignedBB($minX, $minY, $minZ, $maxX, $maxY, $maxZ);
+
+		$list = $this->level->getNearbyEntities($explosionBB, $this->what instanceof Entity ? $this->what : null);
+		foreach($list as $entity){
+			$distance = $entity->distance($this->source) / $explosionSize;
+
+			if($distance <= 1){
+				$motion = $entity->subtract($this->source)->normalize();
+
+				$impact = (1 - $distance) * ($exposure = 1);
+
+				$damage = (int) ((($impact * $impact + $impact) / 2) * 8 * $explosionSize + 1);
+
+				if($this->what instanceof Entity){
+					$ev = new EntityDamageByEntityEvent($this->what, $entity, EntityDamageEvent::CAUSE_ENTITY_EXPLOSION, $damage);
+				}elseif($this->what instanceof Block){
+					$ev = new EntityDamageByBlockEvent($this->what, $entity, EntityDamageEvent::CAUSE_BLOCK_EXPLOSION, $damage);
+				}else{
+					$ev = new EntityDamageEvent($entity, EntityDamageEvent::CAUSE_BLOCK_EXPLOSION, $damage);
+				}
+
+				if($entity->attack($ev->getFinalDamage(), $ev) === true){
+					$ev->useArmors();
+				}
+				$entity->setMotion($motion->multiply($impact));
+			}
+		}
+
+		$air = Item::get(Item::AIR);
+
+		foreach($this->affectedBlocks as $block){
+			$yieldDrops = false;
+
+			if($block->getId() === Block::TNT){
+				$mot = (new Random())->nextSignedFloat() * M_PI * 2;
+				$tnt = Entity::createEntity("PrimedTNT", $this->level, new CompoundTag("", [
+					"Pos" => new ListTag("Pos", [
+						new DoubleTag("", $block->x + 0.5),
+						new DoubleTag("", $block->y),
+						new DoubleTag("", $block->z + 0.5)
+					]),
+					"Motion" => new ListTag("Motion", [
+						new DoubleTag("", -sin($mot) * 0.02),
+						new DoubleTag("", 0.2),
+						new DoubleTag("", -cos($mot) * 0.02)
+					]),
+					"Rotation" => new ListTag("Rotation", [
+						new FloatTag("", 0),
+						new FloatTag("", 0)
+					]),
+					"Fuse" => new ByteTag("Fuse", mt_rand(10, 30))
+				]));
+				$tnt->spawnToAll();
+			}elseif($yieldDrops = (mt_rand(0, 100) < $yield)){
+				foreach($block->getDrops($air) as $drop){
+					$this->level->dropItem($block->add(0.5, 0.5, 0.5), Item::get(...$drop));
+				}
+			}
+
+			$this->level->setBlockIdAt($block->x, $block->y, $block->z, 0);
+			$this->level->setBlockDataAt($block->x, $block->y, $block->z, 0);
+
+			$t = $this->level->getTileAt($block->x, $block->y, $block->z);
+			if($t instanceof Tile){
+				if($t instanceof Chest){
+					$t->unpair();
+				}
+				if($yieldDrops and $t instanceof Container){
+					$t->getInventory()->dropContents($this->level, $t->add(0.5, 0.5, 0.5));
+				}
+
+				$t->close();
+			}
+		}
+
+		foreach($this->affectedBlocks as $block){
+			$pos = new Vector3($block->x, $block->y, $block->z);
+
+			for($side = 0; $side <= 5; $side++){
+				$sideBlock = $pos->getSide($side);
+				if(!$this->level->isInWorld($sideBlock->x, $sideBlock->y, $sideBlock->z)){
+					continue;
+				}
+				if(!isset($this->affectedBlocks[$index = Level::blockHash($sideBlock->x, $sideBlock->y, $sideBlock->z)]) and !isset($updateBlocks[$index])){
+					$this->level->getServer()->getPluginManager()->callEvent($ev = new BlockUpdateEvent($this->level->getBlockAt($sideBlock->x, $sideBlock->y, $sideBlock->z)));
+					if(!$ev->isCancelled()){
+						foreach($this->level->getNearbyEntities(new AxisAlignedBB($sideBlock->x - 1, $sideBlock->y - 1, $sideBlock->z - 1, $sideBlock->x + 2, $sideBlock->y + 2, $sideBlock->z + 2)) as $entity){
+							$entity->onNearbyBlockChange();
+						}
+						$ev->getBlock()->onUpdate(Level::BLOCK_UPDATE_NORMAL);
+					}
+					$updateBlocks[$index] = true;
+				}
+			}
+			$send[] = new Vector3($block->x - $source->x, $block->y - $source->y, $block->z - $source->z);
+		}
+
+		$pk = new ExplodePacket();
+		$pk->x = $this->source->x;
+		$pk->y = $this->source->y;
+		$pk->z = $this->source->z;
+		$pk->radius = $this->size;
+		$pk->records = $send;
+		$this->level->broadcastPacketToViewers($source, $pk);
+
+		$this->level->addParticle(new HugeExplodeSeedParticle($source));
+		$this->level->broadcastLevelSoundEvent($source, LevelSoundEventPacket::SOUND_EXPLODE);
 
 		return true;
 	}
@@ -177,146 +334,6 @@ class Explosion {
 				}
 			}
 		}
-
-		return true;
-	}
-
-	/**
-	 * @return bool
-	 */
-	public function explodeB() : bool{
-		$send = [];
-		$updateBlocks = [];
-
-		$source = (new Vector3($this->source->x, $this->source->y, $this->source->z))->floor();
-		$yield = (1 / $this->size) * 100;
-
-		if($this->what instanceof Entity){
-			$this->level->getServer()->getPluginManager()->callEvent($ev = new EntityExplodeEvent($this->what, $this->source, $this->affectedBlocks, $yield));
-			if($ev->isCancelled()){
-				return false;
-			}else{
-				$yield = $ev->getYield();
-				$this->affectedBlocks = $ev->getBlockList();
-			}
-		}
-
-		$explosionSize = $this->size * 2;
-		$minX = Math::floorFloat($this->source->x - $explosionSize - 1);
-		$maxX = Math::ceilFloat($this->source->x + $explosionSize + 1);
-		$minY = Math::floorFloat($this->source->y - $explosionSize - 1);
-		$maxY = Math::ceilFloat($this->source->y + $explosionSize + 1);
-		$minZ = Math::floorFloat($this->source->z - $explosionSize - 1);
-		$maxZ = Math::ceilFloat($this->source->z + $explosionSize + 1);
-
-		$explosionBB = new AxisAlignedBB($minX, $minY, $minZ, $maxX, $maxY, $maxZ);
-
-		$list = $this->level->getNearbyEntities($explosionBB, $this->what instanceof Entity ? $this->what : null);
-		foreach($list as $entity){
-			$distance = $entity->distance($this->source) / $explosionSize;
-
-			if($distance <= 1){
-				$motion = $entity->subtract($this->source)->normalize();
-
-				$impact = (1 - $distance) * ($exposure = 1);
-
-				$damage = (int) ((($impact * $impact + $impact) / 2) * 8 * $explosionSize + 1);
-
-				if($this->what instanceof Entity){
-					$ev = new EntityDamageByEntityEvent($this->what, $entity, EntityDamageEvent::CAUSE_ENTITY_EXPLOSION, $damage);
-				}elseif($this->what instanceof Block){
-					$ev = new EntityDamageByBlockEvent($this->what, $entity, EntityDamageEvent::CAUSE_BLOCK_EXPLOSION, $damage);
-				}else{
-					$ev = new EntityDamageEvent($entity, EntityDamageEvent::CAUSE_BLOCK_EXPLOSION, $damage);
-				}
-
-				if($entity->attack($ev->getFinalDamage(), $ev) === true){
-					$ev->useArmors();
-				}
-				$entity->setMotion($motion->multiply($impact));
-			}
-		}
-
-
-		$air = Item::get(Item::AIR);
-
-		foreach($this->affectedBlocks as $block){
-			$yieldDrops = false;
-
-			if($block->getId() === Block::TNT){
-				$mot = (new Random())->nextSignedFloat() * M_PI * 2;
-				$tnt = Entity::createEntity("PrimedTNT", $this->level, new CompoundTag("", [
-					"Pos" => new ListTag("Pos", [
-						new DoubleTag("", $block->x + 0.5),
-						new DoubleTag("", $block->y),
-						new DoubleTag("", $block->z + 0.5)
-					]),
-					"Motion" => new ListTag("Motion", [
-						new DoubleTag("", -sin($mot) * 0.02),
-						new DoubleTag("", 0.2),
-						new DoubleTag("", -cos($mot) * 0.02)
-					]),
-					"Rotation" => new ListTag("Rotation", [
-						new FloatTag("", 0),
-						new FloatTag("", 0)
-					]),
-					"Fuse" => new ByteTag("Fuse", mt_rand(10, 30))
-				]));
-				$tnt->spawnToAll();
-			}elseif($yieldDrops = (mt_rand(0, 100) < $yield)){
-				foreach($block->getDrops($air) as $drop){
-					$this->level->dropItem($block->add(0.5, 0.5, 0.5), Item::get(...$drop));
-				}
-			}
-
-			$this->level->setBlockIdAt($block->x, $block->y, $block->z, 0);
-			$this->level->setBlockDataAt($block->x, $block->y, $block->z, 0);
-
-			$t = $this->level->getTile($block);
-			if($t instanceof Tile){
-				if($t instanceof Chest){
-					$t->unpair();
-				}
-				if($yieldDrops and $t instanceof Container){
-					$dropPos = $t->asVector3()->add(0.5, 0.5, 0.5);
-					foreach($t->getInventory()->getContents() as $drop){
-						if(!$drop->isNull()){
-							$this->level->dropItem($dropPos, $drop);
-						}
-					}
-				}
-
-				$t->close();
-			}
-
-			$pos = new Vector3($block->x, $block->y, $block->z);
-
-			for($side = 0; $side <= 5; $side++){
-				$sideBlock = $pos->getSide($side);
-				if(!isset($this->affectedBlocks[$index = Level::blockHash($sideBlock->x, $sideBlock->y, $sideBlock->z)]) and !isset($updateBlocks[$index])){
-					$this->level->getServer()->getPluginManager()->callEvent($ev = new BlockUpdateEvent($this->level->getBlock($sideBlock)));
-					if(!$ev->isCancelled()){
-						foreach($this->level->getNearbyEntities(new AxisAlignedBB($sideBlock->x - 1, $sideBlock->y - 1, $sideBlock->z - 1, $sideBlock->x + 2, $sideBlock->y + 2, $sideBlock->z + 2)) as $entity){
-							$entity->onNearbyBlockChange();
-						}
-						$ev->getBlock()->onUpdate(Level::BLOCK_UPDATE_NORMAL);
-					}
-					$updateBlocks[$index] = true;
-				}
-			}
-			$send[] = new Vector3($block->x - $source->x, $block->y - $source->y, $block->z - $source->z);
-		}
-
-		$pk = new ExplodePacket();
-		$pk->x = $this->source->x;
-		$pk->y = $this->source->y;
-		$pk->z = $this->source->z;
-		$pk->radius = $this->size;
-		$pk->records = $send;
-		$this->level->addChunkPacket($source->x >> 4, $source->z >> 4, $pk);
-
-		$this->level->addParticle(new HugeExplodeSeedParticle($source));
-		$this->level->broadcastLevelSoundEvent($source, LevelSoundEventPacket::SOUND_EXPLODE);
 
 		return true;
 	}

@@ -31,6 +31,7 @@ use pocketmine\nbt\tag\ByteTag;
 use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\nbt\tag\IntTag;
 use pocketmine\nbt\tag\StringTag;
+use pocketmine\math\Vector3;
 use pocketmine\Player;
 use pocketmine\tile\Skull as SkullTile;
 
@@ -67,47 +68,14 @@ class SkullBlock extends Flowable {
 	 * @return AxisAlignedBB
 	 */
 	protected function recalculateBoundingBox(){
-		$x1 = 0;
-		$x2 = 0;
-		$z1 = 0;
-		$z2 = 0;
-		if($this->meta === 0 || $this->meta === 1){
-			return new AxisAlignedBB(
-				$this->x + 0.25,
-				$this->y,
-				$this->z + 0.25,
-				$this->x + 0.75,
-				$this->y + 0.5,
-				$this->z + 0.75
-			);
-		}elseif($this->meta === 2){
-			$x1 = 0.25;
-			$x2 = 0.75;
-			$z1 = 0;
-			$z2 = 0.5;
-		}elseif($this->meta === 3){
-			$x1 = 0.5;
-			$x2 = 1;
-			$z1 = 0.25;
-			$z2 = 0.75;
-		}elseif($this->meta === 4){
-			$x1 = 0.25;
-			$x2 = 0.75;
-			$z1 = 0.5;
-			$z2 = 1;
-		}elseif($this->meta === 5){
-			$x1 = 0;
-			$x2 = 0.5;
-			$z1 = 0.25;
-			$z2 = 0.75;
-		}
+		//TODO: different bounds depending on attached face (meta)
 		return new AxisAlignedBB(
-			$this->x + $x1,
-			$this->y + 0.25,
-			$this->z + $z1,
-			$this->x + $x2,
-			$this->y + 0.75,
-			$this->z + $z2
+			$this->x + 0.25,
+			$this->y,
+			$this->z + 0.25,
+			$this->x + 0.75,
+			$this->y + 0.5,
+			$this->z + 0.75
 		);
 	}
 

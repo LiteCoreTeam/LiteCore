@@ -65,16 +65,11 @@ abstract class Tile extends Position {
 	public $x;
 	public $y;
 	public $z;
-	public $attach;
-	public $metadata;
 	public $closed = false;
 	public $namedtag;
 	protected $lastUpdate;
 	protected $server;
 	protected $timings;
-
-	/** @var \pocketmine\event\TimingsHandler */
-	public $tickTimer;
 
 	public static function init(){
 		self::registerTile(Beacon::class);
@@ -164,7 +159,6 @@ abstract class Tile extends Position {
 		$this->z = (int) $this->namedtag["z"];
 
 		$this->getLevel()->addTile($this);
-		$this->tickTimer = Timings::getTileEntityTimings($this);
 	}
 
 	/**
@@ -181,11 +175,8 @@ abstract class Tile extends Position {
 		$this->namedtag->z = new IntTag("z", $this->z);
 	}
 
-	/**
-	 * @return \pocketmine\block\Block
-	 */
 	public function getBlock(){
-		return $this->level->getBlock($this);
+		return $this->level->getBlockAt($this->x, $this->y, $this->z);
 	}
 
 	/**

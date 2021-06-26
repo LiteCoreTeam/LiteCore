@@ -95,4 +95,8 @@ class Cobweb extends Flowable {
 		}
 		return [];
 	}
+
+	public function diffusesSkyLight() : bool{
+		return true;
+	}
 }

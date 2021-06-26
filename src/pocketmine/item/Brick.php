@@ -30,7 +30,7 @@ class Brick extends Item {
 	 * @param int $count
 	 */
 	public function __construct($meta = 0, $count = 1){
-		parent::__construct(self::BRICK, 0, $count, "Brick");
+		parent::__construct(self::BRICK, $meta, $count, "Brick");
 	}
 
 }

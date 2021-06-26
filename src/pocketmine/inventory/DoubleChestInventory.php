@@ -85,15 +85,22 @@ class DoubleChestInventory extends ChestInventory implements InventoryHolder {
 		return false;
 	}
 
+   /**
+	 * @return Item[]
+	 */
 	public function getContents(bool $includeEmpty = false) : array{
-		$result = $this->left->getContents($includeEmpty);
-		$leftSize = $this->left->getSize();
+		$contents = [];
+		$air = null;
 
-		foreach($this->right->getContents($includeEmpty) as $i => $item){
-			$result[$i + $leftSize] = $item;
+		foreach($this->slots as $i => $slot){
+			if($slot !== null){
+				$contents[$i] = clone $slot;
+			}elseif($includeEmpty){
+				$contents[$i] = $air ?? ($air = Item::get(Item::AIR, 0, 0));
+			}
 		}
 
-		return $result;
+		return $contents;
 	}
 
     /**
@@ -104,6 +111,7 @@ class DoubleChestInventory extends ChestInventory implements InventoryHolder {
 		if(count($items) > $this->size){
 			$items = array_slice($items, 0, $this->size, true);
 		}
+
 
 		for($i = 0; $i < $this->size; ++$i){
 			if(!isset($items[$i])){
@@ -117,10 +125,6 @@ class DoubleChestInventory extends ChestInventory implements InventoryHolder {
 			}elseif(!$this->setItem($i, $items[$i])){
 				$this->clear($i);
 			}
-		}
-
-		if($send){
-			$this->sendContents($this->getViewers());
 		}
 	}
 

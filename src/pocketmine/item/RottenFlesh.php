@@ -31,7 +31,7 @@ class RottenFlesh extends Food {
 	 * @param int $count
 	 */
 	public function __construct($meta = 0, $count = 1){
-		parent::__construct(self::ROTTEN_FLESH, 0, $count, "Rotten Flesh");
+		parent::__construct(self::ROTTEN_FLESH, $meta, $count, "Rotten Flesh");
 	}
 
 	/**

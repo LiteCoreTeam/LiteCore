@@ -25,6 +25,8 @@ use pocketmine\entity\Entity;
 use pocketmine\event\entity\EntityInventoryChangeEvent;
 use pocketmine\event\inventory\InventoryOpenEvent;
 use pocketmine\item\Item;
+use pocketmine\level\Level;
+use pocketmine\math\Vector3;
 use pocketmine\network\mcpe\protocol\ContainerSetContentPacket;
 use pocketmine\network\mcpe\protocol\ContainerSetSlotPacket;
 use pocketmine\Player;
@@ -157,7 +159,7 @@ abstract class BaseInventory implements Inventory {
 	 * @param Item[] $items
 	 * @param bool   $send
 	 */
-	public function setContents(array $items, $send = true){
+	public function setContents(array $items, bool $send = true){
 		if(count($items) > $this->size){
 			$items = array_slice($items, 0, $this->size, true);
 		}
@@ -177,6 +179,21 @@ abstract class BaseInventory implements Inventory {
 		if($send){
 			$this->sendContents($this->getViewers());
 		}
+	}
+
+	/**
+	 * Drops the contents of the inventory into the specified Level at the specified position and clears the inventory
+	 * contents.
+	 *
+	 * @param Level   $level
+	 * @param Vector3 $position
+	 */
+	public function dropContents(Level $level, Vector3 $position) : void{
+		foreach($this->getContents() as $item){
+			$level->dropItem($position, $item);
+		}
+
+		$this->clearAll();
 	}
 
 	/**
@@ -314,6 +331,10 @@ abstract class BaseInventory implements Inventory {
 		return -1;
 	}
 
+	public function isSlotEmpty(int $index) : bool{
+		return $this->slots[$index] === null or $this->slots[$index]->isNull();
+	}
+
 	/**
 	 * @return int
 	 */
@@ -352,7 +373,7 @@ abstract class BaseInventory implements Inventory {
 	}
 
 	/**
-	 * @param array ...$slots
+	 * @param Item ...$slots
 	 *
 	 * @return Item[]
 	 */
@@ -417,7 +438,7 @@ abstract class BaseInventory implements Inventory {
 	}
 
 	/**
-	 * @param array ...$slots
+	 * @param Item ...$slots
 	 *
 	 * @return Item[]
 	 */
@@ -504,6 +525,16 @@ abstract class BaseInventory implements Inventory {
 	 */
 	public function getViewers(){
 		return $this->viewers;
+	}
+
+	/**
+	 * Removes the inventory window from all players currently viewing it.
+	 */
+	public function removeAllViewers() : void{
+		foreach($this->viewers as $hash => $viewer){
+			$viewer->removeWindow($this);
+			unset($this->viewers[$hash]);
+		}
 	}
 
 	/**

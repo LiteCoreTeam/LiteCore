@@ -23,8 +23,17 @@ namespace pocketmine\scheduler;
 
 use pocketmine\event\Timings;
 use pocketmine\Server;
+use function array_keys;
+use function assert;
+use function count;
+use function spl_object_hash;
+use function time;
+use const PHP_INT_MAX;
+use const PTHREADS_INHERIT_CONSTANTS;
+use const PTHREADS_INHERIT_INI;
 
-class AsyncPool {
+class AsyncPool{
+	private const WORKER_START_OPTIONS = PTHREADS_INHERIT_INI | PTHREADS_INHERIT_CONSTANTS;
 
 	/** @var Server */
 	private $server;
@@ -59,7 +68,7 @@ class AsyncPool {
 			$this->workerUsage[$i] = 0;
 			$this->workers[$i] = new AsyncWorker($this->server->getLogger(), $i + 1, $memoryLimit);
 			$this->workers[$i]->setClassLoader($this->server->getLoader());
-			$this->workers[$i]->start();
+			$this->workers[$i]->start(self::WORKER_START_OPTIONS);
 		}
 	}
 
@@ -83,7 +92,7 @@ class AsyncPool {
 				$this->workerUsage[$i] = 0;
 				$this->workers[$i] = new AsyncWorker($this->server->getLogger(), $i + 1, $memoryLimit);
 				$this->workers[$i]->setClassLoader($this->server->getLoader());
-				$this->workers[$i]->start();
+				$this->workers[$i]->start(self::WORKER_START_OPTIONS);
 			}
 			$this->size = $newSize;
 		}
@@ -147,10 +156,9 @@ class AsyncPool {
 			$this->workers[$this->taskWorkers[$task->getTaskId()]]->collector($task);
 		}
 
+		$task->removeDanglingStoredObjects();
 		unset($this->tasks[$task->getTaskId()]);
 		unset($this->taskWorkers[$task->getTaskId()]);
-
-		$task->cleanObject();
 	}
 
 	public function removeTasks(){
@@ -159,6 +167,7 @@ class AsyncPool {
 			while(($task = $worker->unstack()) !== null){
 				//cancelRun() is not strictly necessary here, but it might be used to inform plugins of the task state
 				//(i.e. it never executed).
+				assert($task instanceof AsyncTask);
 				$task->cancelRun();
 				$this->removeTask($task, true);
 			}
@@ -197,26 +206,24 @@ class AsyncPool {
 		Timings::$schedulerAsyncTimer->startTiming();
 
 		foreach($this->tasks as $task){
-			if(!$task->isGarbage()){
-				$task->checkProgressUpdates($this->server);
-			}
+			$task->checkProgressUpdates($this->server);
 			if($task->isFinished() and !$task->isRunning() and !$task->isCrashed()){
 				if(!$task->hasCancelledRun()){
-					try{
-						$task->onCompletion($this->server);
-						if($task->removeDanglingStoredObjects()){
-							$this->server->getLogger()->notice("AsyncTask " . get_class($task) . " stored local complex data but did not remove them after completion");
-						}
-					}catch(\Throwable $e){
-						$this->server->getLogger()->critical("Could not execute completion of asychronous task " . (new \ReflectionClass($task))->getShortName() . ": " . $e->getMessage());
-						$this->server->getLogger()->logException($e);
-
-						$task->removeDanglingStoredObjects(); //silent
-					}
+					/*
+					 * It's possible for a task to submit a progress update and then finish before the progress
+					 * update is detected by the parent thread, so here we consume any missed updates.
+					 *
+					 * When this happens, it's possible for a progress update to arrive between the previous
+					 * checkProgressUpdates() call and the next isGarbage() call, causing progress updates to be
+					 * lost. Thus, it's necessary to do one last check here to make sure all progress updates have
+					 * been consumed before completing.
+					 */
+					$task->checkProgressUpdates($this->server);
+					$task->onCompletion($this->server);
 				}
 
 				$this->removeTask($task);
-			}elseif($task->isTerminated() or $task->isCrashed()){
+			}elseif($task->isCrashed()){
 				$this->server->getLogger()->critical("Could not execute asynchronous task " . (new \ReflectionClass($task))->getShortName() . ": Task crashed");
 				$this->removeTask($task, true);
 			}
@@ -225,6 +232,16 @@ class AsyncPool {
 		$this->collectWorkers();
 
 		Timings::$schedulerAsyncTimer->stopTiming();
+	}
+
+	/**
+	 * Returns an array of worker ID => task queue size
+	 *
+	 * @return int[]
+	 * @phpstan-return array<int, int>
+	 */
+	public function getTaskQueueSizes() : array{
+		return $this->workerUsage;
 	}
 
 	public function shutdownUnusedWorkers() : int{

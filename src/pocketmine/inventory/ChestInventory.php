@@ -46,6 +46,23 @@ class ChestInventory extends ContainerInventory {
 	}
 
 	/**
+	 * @param bool $withAir
+	 *
+	 * @return array|\pocketmine\item\Item[]
+	 */
+	public function getContents(bool $includeEmpty = false) : array{
+		if($includeEmpty){
+			$contents = [];
+			for($i = 0; $i < $this->getSize(); ++$i){
+				$contents[$i] = $this->getItem($i);
+			}
+
+			return $contents;
+		}
+		return parent::getContents();
+	}
+
+	/**
 	 * @param Player $who
 	 */
 	public function onOpen(Player $who){
@@ -60,7 +77,7 @@ class ChestInventory extends ContainerInventory {
 			$pk->case2 = 2;
 			if(($level = $this->getHolder()->getLevel()) instanceof Level){
 				$level->broadcastLevelSoundEvent($this->getHolder(), LevelSoundEventPacket::SOUND_CHEST_OPEN);
-				$level->addChunkPacket($this->getHolder()->getX() >> 4, $this->getHolder()->getZ() >> 4, $pk);
+				$level->addChunkPacket($this->getHolder()->getFloorX() >> 4, $this->getHolder()->getFloorZ() >> 4, $pk);
 			}
 		}
 
@@ -98,7 +115,7 @@ class ChestInventory extends ContainerInventory {
 			$pk->case2 = 0;
 			if(($level = $this->getHolder()->getLevel()) instanceof Level){
 				$level->broadcastLevelSoundEvent($this->getHolder(), LevelSoundEventPacket::SOUND_CHEST_CLOSED);
-				$level->addChunkPacket($this->getHolder()->getX() >> 4, $this->getHolder()->getZ() >> 4, $pk);
+				$level->addChunkPacket($this->getHolder()->getFloorX() >> 4, $this->getHolder()->getFloorZ() >> 4, $pk);
 			}
 		}
 		parent::onClose($who);

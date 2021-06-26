@@ -33,10 +33,11 @@ use pocketmine\nbt\tag\IntTag;
 use pocketmine\nbt\tag\ListTag;
 use pocketmine\nbt\tag\StringTag;
 
-class Chest extends Spawnable implements InventoryHolder, Container, Nameable {
+class Chest extends Spawnable implements InventoryHolder, Container, Nameable{
 
 	/** @var ChestInventory */
 	protected $inventory;
+	
 	/** @var DoubleChestInventory|null */
 	protected $doubleInventory = null;
 
@@ -49,27 +50,24 @@ class Chest extends Spawnable implements InventoryHolder, Container, Nameable {
 	public function __construct(Level $level, CompoundTag $nbt){
 		parent::__construct($level, $nbt);
 		$this->inventory = new ChestInventory($this);
+
 		if(!isset($this->namedtag->Items) or !($this->namedtag->Items instanceof ListTag)){
 			$this->namedtag->Items = new ListTag("Items", []);
 			$this->namedtag->Items->setTagType(NBT::TAG_Compound);
 		}
+
 		for($i = 0; $i < $this->getSize(); ++$i){
 			$this->inventory->setItem($i, $this->getItem($i), false);
 		}
 	}
 
 	public function close(){
-		if($this->closed === false){
-			foreach($this->getInventory()->getViewers() as $player){
-				$player->removeWindow($this->getInventory());
-			}
-
-			foreach($this->getInventory()->getViewers() as $player){
-				$player->removeWindow($this->getRealInventory());
-			}
+		if(!$this->closed){
+			$this->inventory->removeAllViewers();
 
 			if($this->doubleInventory !== null){
 				if($this->isPaired() and $this->level->isChunkLoaded($this->namedtag->pairx->getValue() >> 4, $this->namedtag->pairz->getValue() >> 4)){
+					$this->doubleInventory->removeAllViewers();
 					$this->doubleInventory->invalidate();
 					if(($pair = $this->getPair()) !== null){
 						$pair->doubleInventory = null;
@@ -88,9 +86,8 @@ class Chest extends Spawnable implements InventoryHolder, Container, Nameable {
 		parent::saveNBT();
 		$this->namedtag->Items = new ListTag("Items", []);
 		$this->namedtag->Items->setTagType(NBT::TAG_Compound);
-		$inventory = $this->getRealInventory();
 		for($index = 0; $index < $this->getSize(); ++$index){
-			$this->setItem($index, $inventory->getItem($index));
+			$this->setItem($index, $this->inventory->getItem($index));
 		}
 	}
 
@@ -143,7 +140,7 @@ class Chest extends Spawnable implements InventoryHolder, Container, Nameable {
 	public function setItem($index, Item $item){
 		$i = $this->getSlotIndex($index);
 
-		if($item->getId() === Item::AIR or $item->getCount() <= 0){
+        if($item->isNull()){
 			if($i >= 0){
 				unset($this->namedtag->Items[$i]);
 			}
@@ -186,7 +183,7 @@ class Chest extends Spawnable implements InventoryHolder, Container, Nameable {
 	}
 
 	protected function checkPairing(){
-		if($this->isPaired() and !$this->getLevel()->isChunkLoaded($this->namedtag->pairx->getValue() >> 4, $this->namedtag->pairz->getValue() >> 4)){
+		if($this->isPaired() and !$this->getLevel()->isInLoadedTerrain(new Vector3($this->namedtag->pairx->getValue(), $this->y, $this->namedtag->pairz->getValue()))){
 			//paired to a tile in an unloaded chunk
 			$this->doubleInventory = null;
 
@@ -242,11 +239,7 @@ class Chest extends Spawnable implements InventoryHolder, Container, Nameable {
 	 * @return bool
 	 */
 	public function isPaired(){
-		if(!isset($this->namedtag->pairx) or !isset($this->namedtag->pairz)){
-			return false;
-		}
-
-		return true;
+		return isset($this->namedtag->pairx) and isset($this->namedtag->pairz);
 	}
 
 	/**
@@ -254,7 +247,7 @@ class Chest extends Spawnable implements InventoryHolder, Container, Nameable {
 	 */
 	public function getPair(){
 		if($this->isPaired()){
-			$tile = $this->getLevel()->getTile(new Vector3((int) $this->namedtag["pairx"], $this->y, (int) $this->namedtag["pairz"]));
+			$tile = $this->getLevel()->getTileAt($this->namedtag->pairx->getValue(), $this->y, $this->namedtag->pairz->getValue());
 			if($tile instanceof Chest){
 				return $tile;
 			}

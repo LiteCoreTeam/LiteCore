@@ -65,7 +65,7 @@ class Hopper extends Spawnable implements InventoryHolder, Container, Nameable {
 		}
 
 		for($i = 0; $i < $this->getSize(); ++$i){
-			$this->inventory->setItem($i, $this->getItem($i));
+			$this->inventory->setItem($i, $this->getItem($i), false);
 		}
 
 		$this->scheduleUpdate();
@@ -76,6 +76,9 @@ class Hopper extends Spawnable implements InventoryHolder, Container, Nameable {
 			foreach($this->getInventory()->getViewers() as $player){
 				$player->removeWindow($this->getInventory());
 			}
+
+			$this->inventory = null;
+			
 			parent::close();
 		}
 	}
@@ -164,12 +167,13 @@ class Hopper extends Spawnable implements InventoryHolder, Container, Nameable {
 					if($item->getId() === Item::AIR or $item->getCount() < 1){
 						continue;
 					}
-					$targetItem = clone $item;
+
+                    $targetItem = clone $item;
 					$targetItem->setCount(1);
 
 					if($inv->canAddItem($targetItem)){
+                        $this->inventory->removeItem($targetItem);
 						$inv->addItem($targetItem);
-						$this->inventory->removeItem($targetItem);
 						$this->resetCooldownTicks();
 						if($target instanceof Hopper){
 							$target->resetCooldownTicks();

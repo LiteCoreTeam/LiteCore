@@ -24,6 +24,9 @@ namespace pocketmine\block;
 use pocketmine\item\Item;
 use pocketmine\item\Tool;
 use pocketmine\math\AxisAlignedBB;
+use pocketmine\math\Vector3;
+use pocketmine\level\Level;
+use pocketmine\block\Block;
 
 class Farmland extends Transparent{
 
@@ -71,6 +74,17 @@ class Farmland extends Transparent{
 			$this->y + 1, //TODO: this should be 0.9375, but MCPE currently treats them as a full block (https://bugs.mojang.com/browse/MCPE-12109)
 			$this->z + 1
 		);
+	}
+
+	public function onUpdate($type){
+		if($type === Level::BLOCK_UPDATE_NORMAL and $this->getSide(Vector3::SIDE_UP)->isSolid()){
+			$this->level->setBlock($this, Block::get(Block::DIRT), true);
+			return $type;
+		}elseif($type === Level::BLOCK_UPDATE_RANDOM){
+			//TODO: hydration
+		}
+
+		return false;
 	}
 
 	/**

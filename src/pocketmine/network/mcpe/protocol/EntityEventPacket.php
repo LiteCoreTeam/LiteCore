@@ -45,6 +45,10 @@ class EntityEventPacket extends DataPacket {
 	const AMBIENT_SOUND = 16;
 	const RESPAWN = 17;
 
+	const EATING_ITEM = 57;
+
+	const CONSUME_TOTEM = 65;
+
 	//TODO add new events
 
 	public $eid;
@@ -71,7 +75,7 @@ class EntityEventPacket extends DataPacket {
 	}
 
 	/**
-	 * @return PacketName|string
+	 * @return string Current packet name
 	 */
 	public function getName(){
 		return "EntityEventPacket";

@@ -88,7 +88,7 @@ class RCONInstance extends Thread{
 		$this->ipcSocket = $ipcSocket;
 		$this->notifier = $notifier;
 
-		$this->start(PTHREADS_INHERIT_NONE);
+		$this->start(PTHREADS_INHERIT_CONSTANTS);
 	}
 
 	/**

@@ -234,29 +234,27 @@ class BaseTransaction implements Transaction {
 			if(!$source->getServer()->allowInventoryCheats and !$source->isCreative()){
 				$change = $this->getChange();
 
-				if($change === null){ //No changes to make, ignore this transaction
-					return true;
-				}
+				if($change !== null){ //No changes to make, ignore this transaction
+				    /* Verify that we have the required items */
+				    if($change["out"] instanceof Item){
+					    if(!$this->getInventory()->slotContains($this->getSlot(), $change["out"])){
+					    	return false;
+					    }
+				    }
+				    if($change["in"] instanceof Item){
+					    if(!$source->getFloatingInventory()->contains($change["in"])){
+						    return false;
+					    }
+				    }
 
-				/* Verify that we have the required items */
-				if($change["out"] instanceof Item){
-					if(!$this->getInventory()->slotContains($this->getSlot(), $change["out"])){
-						return false;
-					}
-				}
-				if($change["in"] instanceof Item){
-					if(!$source->getFloatingInventory()->contains($change["in"])){
-						return false;
-					}
-				}
-
-				/* All checks passed, make changes to floating inventory
-				 * This will not be reached unless all requirements are met */
-				if($change["out"] instanceof Item){
-					$source->getFloatingInventory()->addItem($change["out"]);
-				}
-				if($change["in"] instanceof Item){
-					$source->getFloatingInventory()->removeItem($change["in"]);
+				    /* All checks passed, make changes to floating inventory
+				     * This will not be reached unless all requirements are met */
+				    if($change["out"] instanceof Item){
+					    $source->getFloatingInventory()->addItem($change["out"]);
+				    }
+				    if($change["in"] instanceof Item){
+					    $source->getFloatingInventory()->removeItem($change["in"]);
+				    }
 				}
 			}
 			$this->getInventory()->setItem($this->getSlot(), $this->getTargetItem(), false);

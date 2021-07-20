@@ -28,6 +28,7 @@ namespace pocketmine\level\format;
 
 use pocketmine\block\Block;
 use pocketmine\entity\Entity;
+use pocketmine\entity\XPOrb;
 use pocketmine\level\format\io\ChunkException;
 use pocketmine\level\Level;
 use pocketmine\nbt\NBT;
@@ -624,7 +625,7 @@ class Chunk{
      * @param Entity $entity
      */
     public function addEntity(Entity $entity){
-    	if($entity->isClosed()){
+    	if($entity->isClosed() and !($entity instanceof XPOrb)){ //TODO: очень тупой костыль
             throw new \InvalidArgumentException("Attempted to add a garbage closed Entity to a chunk");
         }
         $this->entities[$entity->getId()] = $entity;

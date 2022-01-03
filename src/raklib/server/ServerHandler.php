@@ -37,55 +37,52 @@ class ServerHandler{
 		$this->instance = $instance;
 	}
 
-	public function sendEncapsulated($identifier, EncapsulatedPacket $packet, $flags = RakLib::PRIORITY_NORMAL){
+	public function sendEncapsulated(string $identifier, EncapsulatedPacket $packet, int $flags = RakLib::PRIORITY_NORMAL) : void{
 		$buffer = chr(RakLib::PACKET_ENCAPSULATED) . chr(strlen($identifier)) . $identifier . chr($flags) . $packet->toInternalBinary();
 		$this->server->pushMainToThreadPacket($buffer);
 	}
 
-	public function sendRaw($address, $port, $payload){
+	public function sendRaw(string $address, int $port, string $payload) : void{
 		$buffer = chr(RakLib::PACKET_RAW) . chr(strlen($address)) . $address . Binary::writeShort($port) . $payload;
 		$this->server->pushMainToThreadPacket($buffer);
 	}
 
-	public function closeSession($identifier, $reason){
+	public function closeSession(string $identifier, string $reason) : void{
 		$buffer = chr(RakLib::PACKET_CLOSE_SESSION) . chr(strlen($identifier)) . $identifier . chr(strlen($reason)) . $reason;
 		$this->server->pushMainToThreadPacket($buffer);
 	}
 
-	public function sendOption($name, $value){
+	/**
+	 * @param mixed  $value Must be castable to string
+	 */
+	public function sendOption(string $name, $value) : void{
 		$buffer = chr(RakLib::PACKET_SET_OPTION) . chr(strlen($name)) . $name . $value;
 		$this->server->pushMainToThreadPacket($buffer);
 	}
 
-	public function blockAddress($address, $timeout){
+	public function blockAddress(string $address, int $timeout) : void{
 		$buffer = chr(RakLib::PACKET_BLOCK_ADDRESS) . chr(strlen($address)) . $address . Binary::writeInt($timeout);
 		$this->server->pushMainToThreadPacket($buffer);
 	}
 
-	public function unblockAddress($address){
+	public function unblockAddress(string $address) : void{
 		$buffer = chr(RakLib::PACKET_UNBLOCK_ADDRESS) . chr(strlen($address)) . $address;
 		$this->server->pushMainToThreadPacket($buffer);
 	}
 
-	public function shutdown(){
+	public function shutdown() : void{
 		$buffer = chr(RakLib::PACKET_SHUTDOWN);
 		$this->server->pushMainToThreadPacket($buffer);
 		$this->server->shutdown();
-		$this->server->synchronized(function(RakLibServer $server){
-			$server->wait(20000);
-		}, $this->server);
 		$this->server->join();
 	}
 
-	public function emergencyShutdown(){
+	public function emergencyShutdown() : void{
 		$this->server->shutdown();
 		$this->server->pushMainToThreadPacket(chr(RakLib::PACKET_EMERGENCY_SHUTDOWN));
 	}
 
-	/**
-	 * @return bool
-	 */
-	public function handlePacket(){
+	public function handlePacket() : bool{
 		if(($packet = $this->server->readThreadToMainPacket()) !== null){
 			$id = ord($packet[0]);
 			$offset = 1;

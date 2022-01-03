@@ -36,13 +36,6 @@ class Beacon extends Transparent {
 	}
 
 	/**
-	 * @return bool
-	 */
-	public function canBeActivated() : bool{
-		return true;
-	}
-
-	/**
 	 * @return string
 	 */
 	public function getName(){

@@ -85,7 +85,7 @@ namespace pocketmine {
 	const API_VERSION = "3.0.1";
 	const CODENAME = "vk.com/litecore_team";
 	const GENISYS_API_VERSION = '2.0.0';
-	const CORE_VERSION = '1.0.5-release';
+	const CORE_VERSION = '1.0.9-release';
 
 	const MIN_PHP_VERSION = "7.3.0";
 
@@ -168,14 +168,10 @@ namespace pocketmine {
 
 	define('pocketmine\RESOURCE_PATH', \pocketmine\PATH . 'src' . DIRECTORY_SEPARATOR . 'pocketmine' . DIRECTORY_SEPARATOR . 'resources' . DIRECTORY_SEPARATOR);
 
-	$opts = getopt("", ["data:", "plugins:", "no-wizard"]);
+	$opts = getopt("", ["data:", "plugins:", "no-wizard", "enable-ansi", "disable-ansi"]);
 
 	define('pocketmine\DATA', isset($opts["data"]) ? $opts["data"] . DIRECTORY_SEPARATOR : realpath(getcwd()) . DIRECTORY_SEPARATOR);
 	define('pocketmine\PLUGIN_PATH', isset($opts["plugins"]) ? $opts["plugins"] . DIRECTORY_SEPARATOR : realpath(getcwd()) . DIRECTORY_SEPARATOR . "plugins" . DIRECTORY_SEPARATOR);
-
-	Terminal::init();
-
-	define('pocketmine\ANSI', Terminal::hasFormattingCodes());
 
 	if(!file_exists(\pocketmine\DATA)){
 		mkdir(\pocketmine\DATA, 0777, true);
@@ -204,6 +200,14 @@ namespace pocketmine {
 
 	//Logger has a dependency on timezone
 	$tzError = Timezone::init();
+
+	if(isset($opts["enable-ansi"])){
+		Terminal::init(true);
+	}elseif(isset($opts["disable-ansi"])){
+		Terminal::init(false);
+	}else{
+		Terminal::init();
+	}
 
     $logger = new MainLogger(\pocketmine\DATA . "server.log");
     $logger->registerStatic();
@@ -235,8 +239,8 @@ namespace pocketmine {
 	if(substr_count($pthreads_version, ".") < 2){
 		$pthreads_version = "0.$pthreads_version";
 	}
-	if(version_compare($pthreads_version, "3.1.6") < 0){
-		$logger->critical("pthreads >= 3.1.6 is required, while you have $pthreads_version.");
+	if(version_compare($pthreads_version, "3.2.0") < 0){
+		$logger->critical("pthreads >= 3.2.0 is required, while you have $pthreads_version.");
 		++$errors;
 	}
 
@@ -308,6 +312,23 @@ namespace pocketmine {
 
 	if(\Phar::running(true) === ""){
 		$logger->warning("Non-packaged " . \pocketmine\NAME . " installation detected. Consider using a phar in production for better performance.");
+	}
+	if(function_exists('opcache_get_status') && ($opcacheStatus = opcache_get_status(false)) !== false){
+		$jitEnabled = $opcacheStatus["jit"]["on"] ?? false;
+		if($jitEnabled !== false){
+			$logger->warning(<<<'JIT_WARNING'
+
+
+	--------------------------------------- ! WARNING ! ---------------------------------------
+	You're using PHP 8.0 with JIT enabled. This provides significant performance improvements.
+	HOWEVER, it is EXPERIMENTAL, and has already been seen to cause weird and unexpected bugs.
+	Proceed with caution.
+	If you want to report any bugs, make sure to mention that you are using PHP 8.0 with JIT.
+	To turn off JIT, change `opcache.jit` to `0` in your php.ini file.
+	-------------------------------------------------------------------------------------------
+JIT_WARNING
+);
+		}
 	}
 
 	//TODO: move this to a Server field

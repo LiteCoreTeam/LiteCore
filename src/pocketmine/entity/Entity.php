@@ -64,8 +64,10 @@ use pocketmine\nbt\tag\ShortTag;
 use pocketmine\nbt\tag\StringTag;
 use pocketmine\network\mcpe\protocol\EntityEventPacket;
 use pocketmine\network\mcpe\protocol\MobEffectPacket;
+use pocketmine\network\mcpe\protocol\MoveEntityPacket;
 use pocketmine\network\mcpe\protocol\RemoveEntityPacket;
 use pocketmine\network\mcpe\protocol\SetEntityDataPacket;
+use pocketmine\network\mcpe\protocol\SetEntityMotionPacket;
 use pocketmine\network\mcpe\protocol\SetEntityLinkPacket;
 use pocketmine\Player;
 use pocketmine\plugin\Plugin;
@@ -291,6 +293,7 @@ abstract class Entity extends Location implements Metadatable {
 		Entity::registerEntity(ZombieHorse::class);
 		Entity::registerEntity(ZombieVillager::class);
 		Entity::registerEntity(WitherTNT::class);
+		Entity::registerEntity(EnderCrystal::class);
 
 		Entity::registerEntity(Human::class, true);
 
@@ -1542,7 +1545,7 @@ abstract class Entity extends Location implements Metadatable {
 			$this->lastYaw = $this->yaw;
 			$this->lastPitch = $this->pitch;
 
-			$this->level->addEntityMovement($this->x >> 4, $this->z >> 4, $this->getId(), $this->x, $this->y + $this->baseOffset, $this->z, $this->yaw, $this->pitch, $this->yaw);
+			$this->broadcastMovement($teleport);
 		}
 
 		if($diffMotion > 0.0025 or $wasStill !== $still){ //0.05 ** 2
@@ -1550,12 +1553,38 @@ abstract class Entity extends Location implements Metadatable {
 			$this->lastMotionY = $this->motionY;
 			$this->lastMotionZ = $this->motionZ;
 
-			$this->level->addEntityMotion($this->chunk->getX(), $this->chunk->getZ(), $this->id, $this->motionX, $this->motionY, $this->motionZ);
+			$this->broadcastMotion();
 		}
 	}
 
 	public function getOffsetPosition(Vector3 $vector3) : Vector3{
 		return new Vector3($vector3->x, $vector3->y + $this->baseOffset, $vector3->z);
+	}
+
+	protected function broadcastMovement(bool $teleport = false) : void{
+		$pk = new MoveEntityPacket();
+		$pk->eid = $this->id;
+		$fix = $this->getOffsetPosition($this);
+		$pk->x = $fix->x;
+        $pk->y = $fix->y;
+        $pk->z = $fix->z;
+		$pk->yaw = $this->yaw;
+		$pk->headYaw = $this->yaw;
+		$pk->pitch = $this->pitch;
+		//$pk->onGround = $this->onGround;
+		$pk->teleported = $teleport;
+
+		$this->level->broadcastPacketToViewers($this, $pk);
+	}
+
+	protected function broadcastMotion() : void{
+		$pk = new SetEntityMotionPacket();
+		$pk->eid = $this->id;
+		$pk->motionX = $this->motionX;
+		$pk->motionY = $this->motionY;
+		$pk->motionZ = $this->motionZ;
+
+		$this->level->broadcastPacketToViewers($this, $pk);
 	}
 
 	/**
@@ -2349,10 +2378,6 @@ abstract class Entity extends Location implements Metadatable {
 
 	/**
 	 * @param Vector3|Position|Location $pos
-	 * @param float|null                $yaw
-	 * @param float|null                $pitch
-	 *
-	 * @return bool
 	 */
 	public function teleport(Vector3 $pos, ?float $yaw = null, ?float $pitch = null) : bool{
 		if($pos instanceof Location){
@@ -2384,7 +2409,7 @@ abstract class Entity extends Location implements Metadatable {
 	/**
 	 * @return int
 	 */
-	public function getId(){
+	public function getId() : int{
 		return $this->id;
 	}
 
@@ -2672,5 +2697,4 @@ abstract class Entity extends Location implements Metadatable {
 	public function __toString(){
 		return (new \ReflectionClass($this))->getShortName() . "(" . $this->getId() . ")";
 	}
-
 }

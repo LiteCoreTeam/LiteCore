@@ -50,13 +50,6 @@ class Anvil extends Fallable {
 	}
 
 	/**
-	 * @return bool
-	 */
-	public function canBeActivated() : bool{
-		return true;
-	}
-
-	/**
 	 * @return int
 	 */
 	public function getHardness(){

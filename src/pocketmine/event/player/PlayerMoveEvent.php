@@ -52,13 +52,6 @@ class PlayerMoveEvent extends PlayerEvent implements Cancellable {
 	}
 
 	/**
-	 * @param Location $from
-	 */
-	public function setFrom(Location $from){
-		$this->from = $from;
-	}
-
-	/**
 	 * @return Location
 	 */
 	public function getTo(){

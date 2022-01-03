@@ -49,13 +49,6 @@ class PoweredRepeater extends RedstoneSource {
 	}
 
 	/**
-	 * @return bool
-	 */
-	public function canBeActivated() : bool{
-		return true;
-	}
-
-	/**
 	 * @return int
 	 */
 	public function getStrength(){

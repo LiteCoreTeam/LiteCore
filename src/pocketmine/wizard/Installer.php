@@ -27,12 +27,12 @@
 namespace pocketmine\wizard;
 
 use pocketmine\utils\Config;
-use pocketmine\utils\Utils;
+use pocketmine\utils\Internet;
+use pocketmine\utils\InternetException;
 
 class Installer {
 	const DEFAULT_NAME = "Minecraft: PE Server";
 	const DEFAULT_PORT = 19132;
-	const DEFAULT_MEMORY = 512;
 	const DEFAULT_PLAYERS = 20;
 	const DEFAULT_GAMEMODE = 0;
 	const DEFAULT_LEVEL_NAME = "world";
@@ -47,7 +47,7 @@ class Installer {
 		"VOID"
 	];
 
-	private $defaultLang;
+	private $defaultLang, $lang;
 
 	/**
 	 * Installer constructor.
@@ -167,9 +167,6 @@ LICENSE;
 		}while(!in_array($type, self::LEVEL_TYPES));
 		$config->set("level-type", $type);
 
-		/*echo "[*] " . $this->lang->ram_warning . "\n";
-		echo "[?] " . $this->lang->server_ram . " (" . self::DEFAULT_MEMORY . "): ";
-		$config->set("memory-limit", ((int) $this->getInput(self::DEFAULT_MEMORY)) . "M");*/
 		echo "[*] " . $this->lang->gamemode_info . "\n";
 		do{
 			echo "[?] " . $this->lang->default_gamemode . ": (" . self::DEFAULT_GAMEMODE . "): ";
@@ -252,8 +249,16 @@ LICENSE;
 
 		echo "[*] " . $this->lang->ip_get . "\n";
 
-		$externalIP = Utils::getIP();
-		$internalIP = gethostbyname(trim(`hostname`));
+		$externalIP = Internet::getIP();
+		if($externalIP === false){
+			$externalIP = "unknown (server offline)";
+		}
+
+		try{
+			$internalIP = Internet::getInternalIP();
+		}catch(InternetException $e){
+			$internalIP = "unknown (" . $e->getMessage() . ")";
+		}
 
 		echo "[!] " . $this->lang->get("ip_warning", ["{{EXTERNAL_IP}}", "{{INTERNAL_IP}}"], [$externalIP, $internalIP]) . "\n";
 		echo "[!] " . $this->lang->ip_confirm;
@@ -286,6 +291,4 @@ LICENSE;
 
 		return $input === "" ? $default : $input;
 	}
-
-
 }

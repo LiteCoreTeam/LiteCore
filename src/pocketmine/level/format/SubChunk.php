@@ -37,7 +37,7 @@ if(!defined(__NAMESPACE__ . '\ZERO_NIBBLE_ARRAY')){
 	define(__NAMESPACE__ . '\ZERO_NIBBLE_ARRAY', str_repeat("\x00", 2048));
 }
 
-class SubChunk {
+class SubChunk implements SubChunkInterface{
 	private const ZERO_NIBBLE_ARRAY = ZERO_NIBBLE_ARRAY;
 
 	/** @var string */

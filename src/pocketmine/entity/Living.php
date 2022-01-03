@@ -31,10 +31,10 @@ use pocketmine\event\entity\EntityRegainHealthEvent;
 use pocketmine\event\Timings;
 use pocketmine\item\Item as ItemItem;
 use pocketmine\math\Vector3;
+use pocketmine\math\VoxelRayTrace;
 use pocketmine\nbt\tag\FloatTag;
 use pocketmine\nbt\tag\Tag;
 use pocketmine\network\mcpe\protocol\EntityEventPacket;
-use pocketmine\utils\BlockIterator;
 
 abstract class Living extends Entity implements Damageable {
 
@@ -102,7 +102,6 @@ abstract class Living extends Entity implements Damageable {
 	public function hasLineOfSight(Entity $entity){
 		//TODO: head height
 		return true;
-		//return $this->getLevel()->rayTraceBlocks(Vector3::createVector($this->x, $this->y + $this->height, $this->z), Vector3::createVector($entity->x, $entity->y + $entity->height, $entity->z)) === null;
 	}
 
 	/**
@@ -116,7 +115,7 @@ abstract class Living extends Entity implements Damageable {
 	/**
 	 * Called when the entity jumps from the ground. This method adds upwards velocity to the entity.
 	 */
-	public function jump(){
+	public function jump() : void{
 		if($this->onGround){
 			$this->motionY = $this->getJumpVelocity(); //Y motion should already be 0 if we're jumping from the ground.
 		}
@@ -310,11 +309,8 @@ abstract class Living extends Entity implements Damageable {
 		$blocks = [];
 		$nextIndex = 0;
 
-		$itr = new BlockIterator($this->level, $this->getPosition(), $this->getDirectionVector(), $this->getEyeHeight(), $maxDistance);
-
-		while($itr->valid()){
-			$itr->next();
-			$block = $itr->current();
+		foreach(VoxelRayTrace::inDirection($this->add(0, $this->eyeHeight, 0), $this->getDirectionVector(), $maxDistance) as $vector3){
+			$block = $this->level->getBlockAt($vector3->x, $vector3->y, $vector3->z);
 			$blocks[$nextIndex++] = $block;
 
 			if($maxLength !== 0 and count($blocks) > $maxLength){
@@ -351,5 +347,21 @@ abstract class Living extends Entity implements Damageable {
 		}
 
 		return null;
+	}
+
+	/**
+	 * The NPC will look at the player.
+	 */
+	public function lookAt(Living $entity, Vector3 $target) : void{
+		$horizontal = sqrt(($target->x - $entity->x) ** 2 + ($target->z - $entity->z) ** 2);
+		$vertical = $target->y - $entity->y;
+		$entity->pitch = -atan2($vertical, $horizontal) / M_PI * 180; //negative is up, positive is down
+
+		$xDist = $target->x - $entity->x;
+		$zDist = $target->z - $entity->z;
+		$entity->yaw = atan2($zDist, $xDist) / M_PI * 180 - 90;
+		if($entity->yaw < 0){
+			$entity->yaw += 360.0;
+		}
 	}
 }

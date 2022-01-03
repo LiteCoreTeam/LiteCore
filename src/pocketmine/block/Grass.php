@@ -44,13 +44,6 @@ class Grass extends Solid {
 	}
 
 	/**
-	 * @return bool
-	 */
-	public function canBeActivated() : bool{
-		return true;
-	}
-
-	/**
 	 * @return string
 	 */
 	public function getName() : string{

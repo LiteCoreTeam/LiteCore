@@ -17,6 +17,7 @@ declare(strict_types=1);
 
 namespace raklib\server;
 
+use raklib\utils\InternetAddress;
 use function socket_bind;
 use function socket_close;
 use function socket_create;
@@ -29,6 +30,8 @@ use function socket_strerror;
 use function strlen;
 use function trim;
 use const AF_INET;
+use const AF_INET6;
+use const IPV6_V6ONLY;
 use const SO_RCVBUF;
 use const SO_SNDBUF;
 use const SOCK_DGRAM;
@@ -42,24 +45,37 @@ class UDPServerSocket{
 	 * @phpstan-var PhpSocket
 	 */
 	protected $socket;
+	/**
+	 * @var InternetAddress
+	 */
+	private $bindAddress;
 
-	public function __construct(int $port = 19132, string $interface = "0.0.0.0"){
-		$socket = @socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
+	public function __construct(InternetAddress $bindAddress){
+		$this->bindAddress = $bindAddress;
+		$socket = @socket_create($bindAddress->version === 4 ? AF_INET : AF_INET6, SOCK_DGRAM, SOL_UDP);
 		if($socket === false){
 			throw new \RuntimeException("Failed to create socket: " . trim(socket_strerror(socket_last_error())));
 		}
 		$this->socket = $socket;
 
-		if(@socket_bind($this->socket, $interface, $port) === true){
+		if($bindAddress->version === 6){
+			socket_set_option($this->socket, IPPROTO_IPV6, IPV6_V6ONLY, 1); //Don't map IPv4 to IPv6, the implementation can create another RakLib instance to handle IPv4
+		}
+
+		if(@socket_bind($this->socket, $bindAddress->ip, $bindAddress->port) === true){
 			$this->setSendBuffer(1024 * 1024 * 8)->setRecvBuffer(1024 * 1024 * 8);
 		}else{
 			$error = socket_last_error($this->socket);
 			if($error === SOCKET_EADDRINUSE){ //platform error messages aren't consistent
-				throw new \RuntimeException("Failed to bind socket: Something else is already running on $interface:$port");
+				throw new \RuntimeException("Failed to bind socket: Something else is already running on $bindAddress");
 			}
-			throw new \RuntimeException("Failed to bind to " . $port . ": " . trim(socket_strerror(socket_last_error($this->socket))));
+			throw new \RuntimeException("Failed to bind to " . $bindAddress . ": " . trim(socket_strerror(socket_last_error($this->socket))));
 		}
 		socket_set_nonblock($this->socket);
+	}
+
+	public function getBindAddress() : InternetAddress{
+		return $this->bindAddress;
 	}
 
 	/**

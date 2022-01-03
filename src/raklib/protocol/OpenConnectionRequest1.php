@@ -13,10 +13,11 @@
  *
  */
 
+declare(strict_types=1);
+
 namespace raklib\protocol;
 
 #include <rules/RakLibPacket.h>
-
 
 use raklib\RakLib;
 use function str_pad;
@@ -30,13 +31,13 @@ class OpenConnectionRequest1 extends OfflineMessage{
 	/** @var int */
 	public $mtuSize;
 
-	protected function encodePayload(){
+	protected function encodePayload() : void{
 		$this->writeMagic();
 		$this->putByte($this->protocol);
 		$this->buffer = str_pad($this->buffer, $this->mtuSize, "\x00");
 	}
 
-	protected function decodePayload(){
+	protected function decodePayload() : void{
 		$this->readMagic();
 		$this->protocol = $this->getByte();
 		$this->mtuSize = strlen($this->buffer);

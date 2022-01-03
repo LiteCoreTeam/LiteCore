@@ -30,25 +30,28 @@
 
 namespace pocketmine;
 
+use const PTHREADS_INHERIT_ALL;
+
 /**
  * This class must be extended by all custom threading classes
  */
-abstract class Worker extends \Worker {
+abstract class Worker extends \Worker{
 
-	/** @var \ClassLoader */
+	/** @var \ClassLoader|null */
 	protected $classLoader;
 
+	/** @var bool */
 	protected $isKilled = false;
 
 	/**
-	 * @return \ClassLoader
+	 * @return \ClassLoader|null
 	 */
 	public function getClassLoader(){
 		return $this->classLoader;
 	}
 
 	/**
-	 * @param \ClassLoader|null $loader
+	 * @return void
 	 */
 	public function setClassLoader(\ClassLoader $loader = null){
 		if($loader === null){
@@ -65,21 +68,15 @@ abstract class Worker extends \Worker {
 	 * (unless you are using a custom autoloader).
 	 */
 	public function registerClassLoader(){
-		if(!interface_exists("ClassLoader", false)){
-			require(\pocketmine\PATH . "src/spl/ClassLoader.php");
-			require(\pocketmine\PATH . "src/spl/BaseClassLoader.php");
-		}
 		if($this->classLoader !== null){
 			$this->classLoader->register(true);
 		}
 	}
 
 	/**
-	 * @param int $options
-	 *
 	 * @return bool
 	 */
-	public function start(?int $options = \PTHREADS_INHERIT_ALL){
+	public function start(int $options = PTHREADS_INHERIT_ALL){
 		ThreadManager::getInstance()->add($this);
 
 		if($this->getClassLoader() === null){
@@ -91,11 +88,13 @@ abstract class Worker extends \Worker {
 
 	/**
 	 * Stops the thread using the best way possible. Try to stop it yourself before calling this.
+	 *
+	 * @return void
 	 */
 	public function quit(){
 		$this->isKilled = true;
 
-		if($this->isRunning()){
+		if(!$this->isShutdown()){
 			while($this->unstack() !== null);
 			$this->notify();
 			$this->shutdown();

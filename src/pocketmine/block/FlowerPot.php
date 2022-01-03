@@ -57,13 +57,6 @@ class FlowerPot extends Flowable {
 	}
 
 	/**
-	 * @return bool
-	 */
-	public function canBeActivated() : bool{
-		return true;
-	}
-
-	/**
 	 * @return AxisAlignedBB
 	 */
 	protected function recalculateBoundingBox(){

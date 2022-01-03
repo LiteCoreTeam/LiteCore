@@ -52,13 +52,6 @@ class ItemFrame extends Flowable {
 	}
 
 	/**
-	 * @return bool
-	 */
-	public function canBeActivated() : bool{
-		return true;
-	}
-
-	/**
 	 * @param Item        $item
 	 * @param Player|null $player
 	 *

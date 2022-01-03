@@ -13,61 +13,26 @@
  *
  */
 
+declare(strict_types=1);
+
 namespace raklib;
 
-use function extension_loaded;
-use function phpversion;
-use function substr_count;
-use function version_compare;
-use const PHP_EOL;
-use const PHP_VERSION;
-
-//Dependencies check
-$errors = 0;
-if(version_compare("7.0", PHP_VERSION) > 0){
-	echo "[CRITICAL] Use PHP >= 7.0" . PHP_EOL;
-	++$errors;
-}
-
-if(!extension_loaded("sockets")){
-	echo "[CRITICAL] Unable to find the Socket extension." . PHP_EOL;
-	++$errors;
-}
-
-if(!extension_loaded("pthreads")){
-	echo "[CRITICAL] Unable to find the pthreads extension." . PHP_EOL;
-	++$errors;
-}else{
-	$pthreads_version = phpversion("pthreads");
-	if(substr_count($pthreads_version, ".") < 2){
-		$pthreads_version = "0.$pthreads_version";
-	}
-
-	if(version_compare($pthreads_version, "3.0.0") < 0){
-		echo "[CRITICAL] pthreads >= 3.0.0 is required, while you have $pthreads_version.";
-		++$errors;
-	}
-}
-
-if($errors > 0){
-	exit(1); //Exit with error
-}
-unset($errors);
-
 abstract class RakLib{
-	const VERSION = "0.12.0";
+	public const VERSION = "0.12.0";
+
+	public const MIN_PHP_VERSION = "7.2.0";
 
 	/**
 	 * Default vanilla Raknet protocol version that this library implements. Things using RakNet can override this
 	 * protocol version with something different.
 	 */
-	const DEFAULT_PROTOCOL_VERSION = 8;
-	const MAGIC = "\x00\xff\xff\x00\xfe\xfe\xfe\xfe\xfd\xfd\xfd\xfd\x12\x34\x56\x78";
+	public const DEFAULT_PROTOCOL_VERSION = 6;
+	public const MAGIC = "\x00\xff\xff\x00\xfe\xfe\xfe\xfe\xfd\xfd\xfd\xfd\x12\x34\x56\x78";
 
-	const PRIORITY_NORMAL = 0;
-	const PRIORITY_IMMEDIATE = 1;
+	public const PRIORITY_NORMAL = 0;
+	public const PRIORITY_IMMEDIATE = 1;
 
-	const FLAG_NEED_ACK = 0b00001000;
+	public const FLAG_NEED_ACK = 0b00001000;
 
 	/*
 	 * These internal "packets" DO NOT exist in the RakNet protocol. They are used by the RakLib API to communicate
@@ -86,7 +51,7 @@ abstract class RakLib{
 	 * byte (flags, last 3 bits, priority)
 	 * payload (binary internal EncapsulatedPacket)
 	 */
-	const PACKET_ENCAPSULATED = 0x01;
+	public const PACKET_ENCAPSULATED = 0x01;
 
 	/*
 	 * OPEN_SESSION payload:
@@ -97,7 +62,7 @@ abstract class RakLib{
 	 * short (port)
 	 * long (clientID)
 	 */
-	const PACKET_OPEN_SESSION = 0x02;
+	public const PACKET_OPEN_SESSION = 0x02;
 
 	/*
 	 * CLOSE_SESSION payload:
@@ -105,21 +70,21 @@ abstract class RakLib{
 	 * byte[] (identifier)
 	 * string (reason)
 	 */
-	const PACKET_CLOSE_SESSION = 0x03;
+	public const PACKET_CLOSE_SESSION = 0x03;
 
 	/*
 	 * INVALID_SESSION payload:
 	 * byte (identifier length)
 	 * byte[] (identifier)
 	 */
-	const PACKET_INVALID_SESSION = 0x04;
+	public const PACKET_INVALID_SESSION = 0x04;
 
 	/* TODO: implement this
 	 * SEND_QUEUE payload:
 	 * byte (identifier length)
 	 * byte[] (identifier)
 	 */
-	const PACKET_SEND_QUEUE = 0x05;
+	public const PACKET_SEND_QUEUE = 0x05;
 
 	/*
 	 * ACK_NOTIFICATION payload:
@@ -127,7 +92,7 @@ abstract class RakLib{
 	 * byte[] (identifier)
 	 * int (identifierACK)
 	 */
-	const PACKET_ACK_NOTIFICATION = 0x06;
+	public const PACKET_ACK_NOTIFICATION = 0x06;
 
 	/*
 	 * SET_OPTION payload:
@@ -135,7 +100,7 @@ abstract class RakLib{
 	 * byte[] (option name)
 	 * byte[] (option value)
 	 */
-	const PACKET_SET_OPTION = 0x07;
+	public const PACKET_SET_OPTION = 0x07;
 
 	/*
 	 * RAW payload:
@@ -144,7 +109,7 @@ abstract class RakLib{
 	 * short (port)
 	 * byte[] (payload)
 	 */
-	const PACKET_RAW = 0x08;
+	public const PACKET_RAW = 0x08;
 
 	/*
 	 * BLOCK_ADDRESS payload:
@@ -152,14 +117,14 @@ abstract class RakLib{
 	 * byte[] (address)
 	 * int (timeout)
 	 */
-	const PACKET_BLOCK_ADDRESS = 0x09;
+	public const PACKET_BLOCK_ADDRESS = 0x09;
 
 	/*
 	 * UNBLOCK_ADDRESS payload:
 	 * byte (address length)
 	 * byte[] (address)
 	 */
-	const PACKET_UNBLOCK_ADDRESS = 0x0a;
+	public const PACKET_UNBLOCK_ADDRESS = 0x10;
 
 	/*
 	 * REPORT_PING payload:
@@ -167,29 +132,25 @@ abstract class RakLib{
 	 * byte[] (identifier)
 	 * int32 (measured latency in MS)
 	 */
-	const PACKET_REPORT_PING = 0x11;
+	public const PACKET_REPORT_PING = 0x11;
 
 	/*
 	 * No payload
 	 *
 	 * Sends the disconnect message, removes sessions correctly, closes sockets.
 	 */
-	const PACKET_SHUTDOWN = 0x7e;
+	public const PACKET_SHUTDOWN = 0x7e;
 
 	/*
 	 * No payload
 	 *
 	 * Leaves everything as-is and halts, other Threads can be in a post-crash condition.
 	 */
-	const PACKET_EMERGENCY_SHUTDOWN = 0x7f;
+	public const PACKET_EMERGENCY_SHUTDOWN = 0x7f;
 
 	/**
 	 * Regular RakNet uses 10 by default. MCPE uses 20. Configure this value as appropriate.
 	 * @var int
 	 */
 	public static $SYSTEM_ADDRESS_COUNT = 20;
-
-	public static function bootstrap(\ClassLoader $loader){
-		$loader->addPath(dirname(__FILE__) . DIRECTORY_SEPARATOR . "..");
-	}
 }

@@ -31,13 +31,6 @@ use pocketmine\Server;
 abstract class Crops extends Flowable {
 
 	/**
-	 * @return bool
-	 */
-	public function canBeActivated() : bool{
-		return true;
-	}
-
-	/**
 	 * @param Item        $item
 	 * @param Block       $block
 	 * @param Block       $target

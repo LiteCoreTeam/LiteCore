@@ -21,7 +21,12 @@
 
 namespace pocketmine\entity;
 
-class AttributeMap implements \ArrayAccess {
+use function array_filter;
+
+/**
+ * @phpstan-implements \ArrayAccess<int, float>
+ */
+class AttributeMap implements \ArrayAccess{
 	/** @var Attribute[] */
 	private $attributes = [];
 

@@ -55,13 +55,6 @@ class Bed extends Transparent{
 	}
 
 	/**
-	 * @return bool
-	 */
-	public function canBeActivated() : bool{
-		return true;
-	}
-
-	/**
 	 * @return float
 	 */
 	public function getHardness(){
@@ -179,7 +172,7 @@ class Bed extends Transparent{
 
 				return true;
 			}elseif($player->distanceSquared($this) > 4 and $player->distanceSquared($other) > 4){
-				$player->sendMessage(new TranslationContainer(TextFormat::GRAY . "%tile.bed.tooFar"));
+				//MCPE doesn't have messages for bed too far away
 				return true;
 			}
 
@@ -291,4 +284,11 @@ class Bed extends Transparent{
 		return 0x08;
 	}
 
+	public function getAffectedBlocks() : array{
+		if(($other = $this->getOtherHalf()) !== null){
+			return [$this, $other];
+		}
+
+		return parent::getAffectedBlocks();
+	}
 }

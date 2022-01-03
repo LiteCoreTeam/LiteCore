@@ -105,7 +105,7 @@ class Furnace extends Spawnable implements InventoryHolder, Container, Nameable 
 
 	public function close(){
 		if(!$this->closed){
-			$this->inventory->removeAllViewers();
+			$this->inventory->removeAllViewers(true);
 			
 			$this->inventory = null;
 			

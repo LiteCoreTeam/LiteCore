@@ -48,13 +48,6 @@ class FlintSteel extends Tool {
 	}
 
 	/**
-	 * @return bool
-	 */
-	public function canBeActivated() : bool{
-		return true;
-	}
-
-	/**
 	 * @param Level  $level
 	 * @param Player $player
 	 * @param Block  $block

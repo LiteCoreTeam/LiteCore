@@ -13,6 +13,8 @@
  *
  */
 
+declare(strict_types=1);
+
 namespace raklib\protocol;
 
 #include <rules/RakLibPacket.h>
@@ -20,14 +22,15 @@ namespace raklib\protocol;
 class UnconnectedPing extends OfflineMessage{
 	public static $ID = MessageIdentifiers::ID_UNCONNECTED_PING;
 
+	/** @var int */
 	public $pingID;
 
-	protected function encodePayload(){
+	protected function encodePayload() : void{
 		$this->putLong($this->pingID);
 		$this->writeMagic();
 	}
 
-	protected function decodePayload(){
+	protected function decodePayload() : void{
 		$this->pingID = $this->getLong();
 		$this->readMagic();
 	}

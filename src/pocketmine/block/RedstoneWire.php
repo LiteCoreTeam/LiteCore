@@ -223,8 +223,6 @@ class RedstoneWire extends RedstoneSource {
 			}
 
 			$this->checkTorchOn($block, [static::getOppositeSide($side)]);
-
-			unset($connected, $notConnected);
 		}
 	}
 
@@ -263,8 +261,6 @@ class RedstoneWire extends RedstoneSource {
 			}
 
 			$this->checkTorchOff($block, [static::getOppositeSide($side)]);
-
-			unset($connected, $notConnected);
 		}
 	}
 

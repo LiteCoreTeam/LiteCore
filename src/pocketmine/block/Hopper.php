@@ -46,13 +46,6 @@ class Hopper extends Transparent {
 	}
 
 	/**
-	 * @return bool
-	 */
-	public function canBeActivated() : bool{
-		return true;
-	}
-
-	/**
 	 * @return int
 	 */
 	public function getToolType(){

@@ -122,7 +122,6 @@ class Piston extends Solid{
 			]);
 			$chunk = $this->getLevel();
 			$tile = Tile::createTile(Tile::PISTON_ARM, $chunk, $nbt);
-			$this->ttile = $tile;
 			//$this->onUpdate(Level::BLOCK_UPDATE_NORMAL, 0);
 		}
 		/*$faces = [

@@ -91,7 +91,7 @@ class FlowerPot extends Spawnable {
 	}
 
 	public function removeItem(){
-		$this->setItem(Item::get(Item::AIR));
+		$this->setItem(Item::get(Item::AIR, 0, 0));
 	}
 
 	/**

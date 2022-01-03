@@ -29,7 +29,9 @@ use pocketmine\Server;
 
 class LightPopulationTask extends AsyncTask{
 
+	/** @var int */
 	public $levelId;
+	/** @var string */
 	public $chunk;
 
 	public function __construct(Level $level, Chunk $chunk){
@@ -43,10 +45,6 @@ class LightPopulationTask extends AsyncTask{
 		}
 		/** @var Chunk $chunk */
 		$chunk = Chunk::fastDeserialize($this->chunk);
-		if($chunk === null){
-			//TODO error
-			return;
-		}
 
 		$chunk->recalculateHeightMap();
 		$chunk->populateSkyLight();
@@ -55,18 +53,11 @@ class LightPopulationTask extends AsyncTask{
 		$this->chunk = $chunk->fastSerialize();
 	}
 
-	/**
-	 * @param Server $server
-	 */
 	public function onCompletion(Server $server){
 		$level = $server->getLevel($this->levelId);
 		if($level !== null){
 			/** @var Chunk $chunk */
 			$chunk = Chunk::fastDeserialize($this->chunk);
-			if($chunk === null){
-				//TODO error
-				return;
-			}
 			$level->generateChunkCallback($chunk->getX(), $chunk->getZ(), $chunk);
 		}
 	}

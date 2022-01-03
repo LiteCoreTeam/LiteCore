@@ -108,13 +108,6 @@ class Item implements ItemIds, JsonSerializable {
 	/** @var string */
 	protected $name;
 
-	/**
-	 * @return bool
-	 */
-	public function canBeActivated() : bool{
-		return false;
-	}
-
     /**
      * @param bool $readFromJson
      * @param bool $registerCreativeItems
@@ -410,14 +403,14 @@ class Item implements ItemIds, JsonSerializable {
 		try{
 			$class = self::$list[$id];
 			if($class === null){
-				return (new Item($id, $meta, $count))->parseNamedTagAndSet($tags);
+				return (new Item($id, $meta, $count))->setCompoundTag($tags);
 			}elseif($id < 256){
-				return (new ItemBlock(new $class($meta), $meta, $count))->parseNamedTagAndSet($tags);
+				return (new ItemBlock(new $class($meta), $meta, $count))->setCompoundTag($tags);
 			}else{
-				return (new $class($meta, $count))->parseNamedTagAndSet($tags);
+				return (new $class($meta, $count))->setCompoundTag($tags);
 			}
 		}catch(RuntimeException $e){
-			return (new Item($id, $meta, $count))->parseNamedTagAndSet($tags);
+			return (new Item($id, $meta, $count))->setCompoundTag($tags);
 		}
 	}
 
@@ -474,6 +467,27 @@ class Item implements ItemIds, JsonSerializable {
 			$this->block = Block::get($this->id, $this->meta);
 			$this->name = $this->block->getName();
 		}
+	}
+
+	/**
+	 * @deprecated This method accepts NBT serialized in a network-dependent format.
+	 * @see Item::setNamedTag()
+	 *
+	 * @param $tags
+	 *
+	 * @return $this
+	 */
+	public function setCompoundTag($tags){
+		if($tags instanceof CompoundTag){
+			$this->setNamedTag($tags);
+		}elseif(is_string($tags) and strlen($tags) > 0){
+			$this->setNamedTag(self::parseCompoundTag($tags));
+		}else{
+			$this->tags = (string) $tags;
+			$this->cachedNBT = null;
+		}
+
+		return $this;
 	}
 
 	/**
@@ -647,6 +661,35 @@ class Item implements ItemIds, JsonSerializable {
 	}
 
 	/**
+	 * @param int $id
+	 * @param int $level
+	 */
+	public function removeEnchantment(int $id, int $level = -1){
+		if(!$this->hasEnchantments()){
+			return;
+		}
+
+		$tag = $this->getNamedTag();
+		foreach($tag->ench as $k => $entry){
+			if($entry["id"] === $id){
+				if($level === -1 or $entry["lvl"] === $level){
+					unset($tag->ench[$k]);
+					break;
+				}
+			}
+		}
+		$this->setNamedTag($tag);
+	}
+
+	public function removeEnchantments(){
+		if($this->hasEnchantments()){
+			$tag = $this->getNamedTag();
+			unset($tag->ench);
+			$this->setNamedTag($tag);
+		}
+	}
+
+	/**
 	 * @param Enchantment $ench
 	 */
 	public function addEnchantment(Enchantment $ench){
@@ -767,7 +810,7 @@ class Item implements ItemIds, JsonSerializable {
 		$tag->RepairCost = new IntTag("RepairCost", $cost);
 
 		if(!$hadCompoundTag){
-			$this->setNamedTag($tag);
+			$this->setCompoundTag($tag);
 		}
 
 		return $this;
@@ -853,7 +896,7 @@ class Item implements ItemIds, JsonSerializable {
 			]);
 		}
 
-		$this->setNamedTag($tag);
+		$this->setCompoundTag($tag);
 
 		return $this;
 	}
@@ -953,21 +996,6 @@ class Item implements ItemIds, JsonSerializable {
 	}
 
 	/**
-	 * @param string $tags
-	 * @return $this
-	 */
-	public function parseNamedTagAndSet(string $tags){
-		if(strlen($tags) > 0){
-			$this->setNamedTag(self::parseCompoundTag($tags));
-		}else{
-			$this->tags = $tags;
-			$this->cachedNBT = null;
-		}
-
-		return $this;
-	}
-
-	/**
 	 * @param CompoundTag $tag
 	 *
 	 * @return $this|Item
@@ -987,7 +1015,7 @@ class Item implements ItemIds, JsonSerializable {
 	 * @return Item
 	 */
 	public function clearNamedTag(){
-		return $this->setNamedTag(new CompoundTag());
+		return $this->setCompoundTag("");
 	}
 
 	/**

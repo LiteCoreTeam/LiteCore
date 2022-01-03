@@ -63,11 +63,11 @@ class Chest extends Spawnable implements InventoryHolder, Container, Nameable{
 
 	public function close(){
 		if(!$this->closed){
-			$this->inventory->removeAllViewers();
+			$this->inventory->removeAllViewers(true);
 
 			if($this->doubleInventory !== null){
 				if($this->isPaired() and $this->level->isChunkLoaded($this->namedtag->pairx->getValue() >> 4, $this->namedtag->pairz->getValue() >> 4)){
-					$this->doubleInventory->removeAllViewers();
+					$this->doubleInventory->removeAllViewers(true);
 					$this->doubleInventory->invalidate();
 					if(($pair = $this->getPair()) !== null){
 						$pair->doubleInventory = null;

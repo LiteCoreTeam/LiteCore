@@ -43,13 +43,6 @@ class SpawnEgg extends Item {
 	}
 
 	/**
-	 * @return bool
-	 */
-	public function canBeActivated() : bool{
-		return true;
-	}
-
-	/**
 	 * @param Level  $level
 	 * @param Player $player
 	 * @param Block  $block
@@ -89,9 +82,8 @@ class SpawnEgg extends Item {
 			$entity = Entity::createEntity($this->meta, $level, $nbt);
 
 			if($entity instanceof Entity){
-				--$this->count;
+				$this->pop();
 				$entity->spawnToAll();
-
 				return true;
 			}
 

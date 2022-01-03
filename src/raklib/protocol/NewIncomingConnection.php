@@ -1,42 +1,43 @@
 <?php
 
 /*
+ * RakLib network library
  *
- *  ____            _        _   __  __ _                  __  __ ____
- * |  _ \ ___   ___| | _____| |_|  \/  (_)_ __   ___      |  \/  |  _ \
- * | |_) / _ \ / __| |/ / _ \ __| |\/| | | '_ \ / _ \_____| |\/| | |_) |
- * |  __/ (_) | (__|   <  __/ |_| |  | | | | | |  __/_____| |  | |  __/
- * |_|   \___/ \___|_|\_\___|\__|_|  |_|_|_| |_|\___|     |_|  |_|_|
+ *
+ * This project is not affiliated with Jenkins Software LLC nor RakNet.
  *
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
+ * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * @author PocketMine Team
- * @link http://www.pocketmine.net/
- *
- *
-*/
+ */
+
+declare(strict_types=1);
 
 namespace raklib\protocol;
 
 #include <rules/RakLibPacket.h>
 
 use raklib\RakLib;
+use raklib\utils\InternetAddress;
+use function strlen;
 
 class NewIncomingConnection extends Packet{
 	public static $ID = MessageIdentifiers::ID_NEW_INCOMING_CONNECTION;
 
+	/** @var InternetAddress */
 	public $address;
-	public $port;
-	
+
+	/** @var InternetAddress[] */
 	public $systemAddresses = [];
-	
+
+	/** @var int */
 	public $sendPingTime;
+	/** @var int */
 	public $sendPongTime;
 
-	protected function encodePayload(){
+	protected function encodePayload() : void{
 		$this->putAddress($this->address);
 		foreach($this->systemAddresses as $address){
 			$this->putAddress($address);
@@ -45,13 +46,20 @@ class NewIncomingConnection extends Packet{
 		$this->putLong($this->sendPongTime);
 	}
 
-	protected function decodePayload(){
-		$this->getAddress($this->address, $this->port);
+	protected function decodePayload() : void{
+		$this->address = $this->getAddress();
+
+		//TODO: HACK!
+		$stopOffset = strlen($this->buffer) - 16; //buffer length - sizeof(sendPingTime) - sizeof(sendPongTime)
+		$dummy = new InternetAddress("0.0.0.0", 0, 4);
 		for($i = 0; $i < RakLib::$SYSTEM_ADDRESS_COUNT; ++$i){
-			$this->getAddress($addr, $port, $version);
-			$this->systemAddresses[$i] = [$addr, $port, $version];
+			if($this->offset >= $stopOffset){
+				$this->systemAddresses[$i] = clone $dummy;
+			}else{
+				$this->systemAddresses[$i] = $this->getAddress();
+			}
 		}
-		
+
 		$this->sendPingTime = $this->getLong();
 		$this->sendPongTime = $this->getLong();
 	}

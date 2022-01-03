@@ -112,7 +112,7 @@ class FloatingTextParticle extends Particle {
 			$pk->x = $this->x;
 			$pk->y = $this->y - 0.50;
 			$pk->z = $this->z;
-			$pk->item = Item::get(Item::AIR);
+			$pk->item = Item::get(Item::AIR, 0, 0);
 			$flags = (
 				(1 << Entity::DATA_FLAG_CAN_SHOW_NAMETAG) |
 				(1 << Entity::DATA_FLAG_ALWAYS_SHOW_NAMETAG) |
@@ -121,7 +121,7 @@ class FloatingTextParticle extends Particle {
 			$pk->metadata = [
 				Entity::DATA_FLAGS => [Entity::DATA_TYPE_LONG, $flags],
 				Entity::DATA_NAMETAG => [Entity::DATA_TYPE_STRING, $this->title . ($this->text !== "" ? "\n" . $this->text : "")],
-				Entity::DATA_SCALE => [Entity::DATA_TYPE_FLOAT, 0],
+				Entity::DATA_SCALE => [Entity::DATA_TYPE_FLOAT, 0]
 			];
 
 			$p[] = $pk;

@@ -52,7 +52,7 @@ interface BlockIds {
 	const WOOD = 17;
 	const TRUNK = 17;
 	const LEAVES = 18;
-	const SPONGE = 19;
+	const SPONGE = 19, WET_SPONGE = 19;
 	const GLASS = 20;
 	const LAPIS_ORE = 21;
 	const LAPIS_BLOCK = 22;
@@ -304,7 +304,7 @@ interface BlockIds {
 	const FROSTED_ICE = 207;
 	const END_ROD = 208;
 
-	const SHULKER_BOX = 218;
+	const SHULKER_BOX = 218, UNDYED_SHULKER_BOX = 218;
 	const PURPLE_GLAZED_TERRACOTTA = 219;
 	const WHITE_GLAZED_TERRACOTTA = 220;
 	const ORANGE_GLAZED_TERRACOTTA = 221;

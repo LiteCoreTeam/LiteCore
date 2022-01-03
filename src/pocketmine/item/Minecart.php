@@ -41,13 +41,6 @@ class Minecart extends Item {
 		parent::__construct(self::MINECART, $meta, $count, "Minecart");
 	}
 
-	/**
-	 * @return bool
-	 */
-	public function canBeActivated() : bool{
-		return true;
-	}
-
     /**
      * @return int
      */

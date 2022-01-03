@@ -291,7 +291,7 @@ class BrewingStand extends Spawnable implements InventoryHolder, Container, Name
 					}
 				}
 
-				$ingredient->count--;
+				$ingredient->pop();
 				if($ingredient->getCount() <= 0) $ingredient = Item::get(Item::AIR);
 				$this->inventory->setIngredient($ingredient);
 			}

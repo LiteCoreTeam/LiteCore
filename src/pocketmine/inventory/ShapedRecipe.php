@@ -180,7 +180,7 @@ class ShapedRecipe implements Recipe {
 	 * @return null|Item
 	 */
 	public function getIngredient($x, $y){
-		return isset($this->ingredients[$y][$x]) ? $this->ingredients[$y][$x] : Item::get(Item::AIR);
+		return isset($this->ingredients[$y][$x]) ? $this->ingredients[$y][$x] : Item::get(Item::AIR, 0, 0);
 	}
 
 	/**

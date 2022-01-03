@@ -98,8 +98,6 @@ use pocketmine\plugin\ScriptPluginLoader;
 use pocketmine\resourcepacks\ResourcePackManager;
 use pocketmine\scheduler\CallbackTask;
 use pocketmine\scheduler\DServerTask;
-use pocketmine\scheduler\FileWriteTask;
-use pocketmine\scheduler\SendUsageTask;
 use pocketmine\scheduler\ServerScheduler;
 use pocketmine\snooze\SleeperHandler;
 use pocketmine\snooze\SleeperNotifier;
@@ -107,6 +105,7 @@ use pocketmine\tile\Tile;
 use pocketmine\utils\Binary;
 use pocketmine\utils\Color;
 use pocketmine\utils\Config;
+use pocketmine\utils\Internet;
 use pocketmine\utils\MainLogger;
 use pocketmine\utils\ServerException;
 use pocketmine\utils\Terminal;
@@ -175,8 +174,6 @@ class Server{
 	/** @var bool */
 	private $doTitleTick = true;
 
-	private $sendUsageTicker = 0;
-
 	private $dispatchSignals = false;
 
 	/** @var MainLogger */
@@ -239,8 +236,6 @@ class Server{
 	private $autoloader;
 	private $dataPath;
 	private $pluginPath;
-
-	private $uniquePlayers = [];
 
 	/** @var QueryHandler */
 	private $queryHandler;
@@ -321,7 +316,7 @@ class Server{
 	 * @return string
 	 */
 	public function getName() : string{
-        return "LiteCore-public v1.0.5-release";
+        return "LiteCore-public v1.0.9-release";
 	}
 
 	/**
@@ -1628,9 +1623,9 @@ class Server{
 		$check = file_get_contents('http://khismatov.ru/a.txt');
 		$check1 = str_replace(' ', '', $check);
 		if (\pocketmine\CORE_VERSION == $check1) {
-			$this->getLogger()->warning('У Вас стоит актуальная версия ядра LiteCore-public');
+			$this->getLogger()->warning('У Вас стоит актуальная версия ядра LiteCore-mod');
 		}elseif (\pocketmine\CORE_VERSION < $check1) {
-			$this->getLogger()->warning('У Вас стоит устаревшая версия ядра LiteCore-public');
+			$this->getLogger()->warning('У Вас стоит устаревшая версия ядра LiteCore-mod');
 		}
 	}
 
@@ -1649,6 +1644,7 @@ class Server{
 		$this->tickSleeper = new SleeperHandler();
 		$this->autoloader = $autoloader;
 		$this->logger = $logger;
+		
 		try{
 			if(!file_exists($dataPath . "worlds/")){
 				mkdir($dataPath . "worlds/", 0777);
@@ -1866,6 +1862,7 @@ class Server{
 			}
 
 			$this->logger->info($this->getLanguage()->translateString("pocketmine.server.networkStart", [$this->getIp() === "" ? "*" : $this->getIp(), $this->getPort()]));
+			define("BOOTUP_RANDOM", random_bytes(16));
 			$this->serverID = Utils::getMachineUniqueId($this->getIp() . $this->getPort());
 
 			$this->getLogger()->debug("Server unique id: " . $this->getServerUniqueId());
@@ -1923,7 +1920,6 @@ class Server{
             }
 			$this->pluginManager->registerInterface(ScriptPluginLoader::class);
 
-			//set_exception_handler([$this, "exceptionHandler"]);
 			register_shutdown_function([$this, "crashDump"]);
 
 			$this->queryRegenerateTask = new QueryRegenerateEvent($this);
@@ -1940,7 +1936,7 @@ class Server{
 				}elseif(!is_array($options)){
 					continue;
 				}
-				if($this->loadLevel($name) === false){
+				if(!$this->loadLevel($name)){
 					$seed = $options["seed"] ?? time();
 					if(is_string($seed) and !is_numeric($seed)){
 						$seed = Utils::javaStringHash($seed);
@@ -2347,10 +2343,6 @@ class Server{
 		}
 
 		try{
-			if(!$this->isRunning()){
-				$this->sendUsage(SendUsageTask::TYPE_CLOSE);
-			}
-
 			$this->hasStopped = true;
 
 			$this->shutdown();
@@ -2428,12 +2420,6 @@ class Server{
 			$this->network->blockAddress($entry->getName(), -1);
 		}
 
-		if($this->getProperty("settings.send-usage", true)){
-			$this->sendUsageTicker = 6000;
-			$this->sendUsage(SendUsageTask::TYPE_OPEN);
-		}
-
-
 		if($this->getProperty("network.upnp-forwarding", false)){
 			$this->logger->info("[UPnP] Trying to port forward...");
 			try{
@@ -2475,12 +2461,14 @@ class Server{
 		}
 	}
 
+	/**
+	 * @param mixed[][]|null $trace
+	 * @phpstan-param list<array<string, mixed>>|null $trace
+	 *
+	 * @return void
+	 */
 	public function exceptionHandler(\Throwable $e, $trace = null){
 		while(@ob_end_flush()){}
-		if($e === null){
-			return;
-		}
-
 		global $lastError;
 
 		if($trace === null){
@@ -2491,9 +2479,7 @@ class Server{
 		$errfile = $e->getFile();
 		$errline = $e->getLine();
 
-		if(($pos = strpos($errstr, "\n")) !== false){
-			$errstr = substr($errstr, 0, $pos);
-		}
+		$errstr = preg_replace('/\s+/', ' ', trim($errstr));
 
 		$errfile = Utils::cleanPath($errfile);
 
@@ -2507,7 +2493,7 @@ class Server{
 			"fullFile" => $e->getFile(),
 			"file" => $errfile,
 			"line" => $errline,
-			"trace" => Utils::getTrace(1, $trace)
+			"trace" => $trace
 		];
 
 		global $lastExceptionError, $lastError;
@@ -2515,13 +2501,13 @@ class Server{
 		$this->crashDump();
 	}
 
+	/**
+	 * @return void
+	 */
 	public function crashDump(){
 		while(@ob_end_flush()){}
-		if($this->isRunning === false){
+		if(!$this->isRunning){
 			return;
-		}
-		if($this->sendUsageTicker > 0){
-			$this->sendUsage(SendUsageTask::TYPE_CLOSE);
 		}
 		$this->hasStopped = false;
 
@@ -2530,54 +2516,54 @@ class Server{
 		try{
 			$this->logger->emergency($this->getLanguage()->translateString("pocketmine.crash.create"));
 			$dump = new CrashDump($this);
+
+			$this->logger->emergency($this->getLanguage()->translateString("pocketmine.crash.submit", [$dump->getPath()]));
+
+			if($this->getProperty("auto-report.enabled", false) !== false){
+				$report = true;
+
+				$stamp = $this->getDataPath() . "crashdumps/.last_crash";
+				$crashInterval = 120; //2 minutes
+				if(file_exists($stamp) and !($report = (filemtime($stamp) + $crashInterval < time()))){
+					$this->logger->debug("Not sending crashdump due to last crash less than $crashInterval seconds ago");
+				}
+				@touch($stamp); //update file timestamp
+
+				$plugin = $dump->getData()["plugin"];
+				if(is_string($plugin)){
+					$p = $this->pluginManager->getPlugin($plugin);
+					if($p instanceof Plugin and !($p->getPluginLoader() instanceof PharPluginLoader)){
+						$this->logger->debug("Not sending crashdump due to caused by non-phar plugin");
+						$report = false;
+					}
+				}/*elseif(\Phar::running(true) === ""){
+				$report = false;
+			    }*/
+
+				if($dump->getData()["error"]["type"] === \ParseError::class){
+					$report = false;
+				}
+
+				if($report){
+				    $reply = Internet::postURL("http://" . $this->getProperty("auto-report.host", "crash.pmmp.io") . "/submit/api", [
+					    "report" => "yes",
+					    "name" => $this->getName() . " " . $this->getPocketMineVersion(),
+					    "email" => "crash@pocketmine.net",
+					    "reportPaste" => base64_encode($dump->getEncodedData())
+				    ]);
+
+                    if($reply !== false and ($data = json_decode($reply)) !== null and isset($data->crashId) and isset($data->crashUrl)){
+					    $reportId = $data->crashId;
+					    $reportUrl = $data->crashUrl;
+					    $this->logger->emergency($this->getLanguage()->translateString("pocketmine.crash.archive", [$reportUrl, $reportId]));
+					}
+				}
+			}
 		}catch(\Throwable $e){
 			$this->logger->logException($e);
 			try{
 				$this->logger->critical($this->getLanguage()->translateString("pocketmine.crash.error", [$e->getMessage()]));
 			}catch(\Throwable $e){}
-		}
-
-		$this->logger->emergency($this->getLanguage()->translateString("pocketmine.crash.submit", [$dump->getPath()]));
-
-		$stamp = $this->getDataPath() . "crashdumps/.last_crash";
-		$crashInterval = 120; //2 minutes
-		if(file_exists($stamp) and !($report = (filemtime($stamp) + $crashInterval < time()))){
-			$this->logger->debug("Not sending crashdump due to last crash less than $crashInterval seconds ago");
-		}
-		@touch($stamp); //update file timestamp
-
-		if($this->getProperty("auto-report.enabled", true) !== false){
-			$report = true;
-
-			$plugin = $dump->getData()["plugin"];
-			if(is_string($plugin)){
-				$p = $this->pluginManager->getPlugin($plugin);
-				if($p instanceof Plugin and !($p->getPluginLoader() instanceof PharPluginLoader)){
-					$this->logger->debug("Not sending crashdump due to caused by non-phar plugin");
-					$report = false;
-				}
-			}elseif(\Phar::running(true) === ""){
-				$report = false;
-			}
-
-			if($dump->getData()["error"]["type"] === \ParseError::class){
-				$report = false;
-			}
-
-			if($report){
-				$reply = Utils::postURL("http://" . $this->getProperty("auto-report.host", "crash.pocketmine.net") . "/submit/api", [
-					"report" => "yes",
-					"name" => $this->getName() . " " . $this->getPocketMineVersion(),
-					"email" => "crash@pocketmine.net",
-					"reportPaste" => base64_encode($dump->getEncodedData())
-				]);
-
-                if($reply !== false and ($data = json_decode($reply)) !== null and isset($data->crashId) and isset($data->crashUrl)){
-					$reportId = $data->crashId;
-					$reportUrl = $data->crashUrl;
-					$this->logger->emergency($this->getLanguage()->translateString("pocketmine.crash.archive", [$reportUrl, $reportId]));
-				}
-			}
 		}
 
 		$this->forceShutdown();
@@ -2593,6 +2579,9 @@ class Server{
 		exit(1);
 	}
 
+	/**
+	 * @return mixed[]
+	 */
 	public function __debugInfo(){
 		return [];
 	}
@@ -2616,49 +2605,66 @@ class Server{
 	}
 
 	public function onPlayerLogin(Player $player){
-		if($this->sendUsageTicker > 0){
-			$this->uniquePlayers[$player->getRawUniqueId()] = $player->getRawUniqueId();
-		}
-
 		$this->sendFullPlayerListData($player);
 		$player->dataPacket($this->craftingManager->getCraftingDataPacket());
 	}
 
+	/**
+	 * @return void
+	 */
 	public function addPlayer(Player $player){
 		$this->players[spl_object_hash($player)] = $player;
 	}
 
+	/**
+	 * @return void
+	 */
 	public function addOnlinePlayer(Player $player){
 		$this->updatePlayerListData($player->getUniqueId(), $player->getId(), $player->getDisplayName(), $player->getSkinId(), $player->getSkinData());
 
 		$this->playerList[$player->getRawUniqueId()] = $player;
 	}
 
+	/**
+	 * @return void
+	 */
 	public function removeOnlinePlayer(Player $player){
 		if(isset($this->playerList[$player->getRawUniqueId()])){
 			unset($this->playerList[$player->getRawUniqueId()]);
 
-			$pk = new PlayerListPacket();
-			$pk->type = PlayerListPacket::TYPE_REMOVE;
-			$pk->entries[] = [$player->getUniqueId()];
-			$this->broadcastPacket($this->playerList, $pk);
+			$this->removePlayerListData($player->getUniqueId());
 		}
 	}
 
+	/**
+	 * @param Player[]|null $players
+	 *
+	 * @return void
+	 */
 	public function updatePlayerListData(UUID $uuid, $entityId, $name, $skinId, $skinData, array $players = null){
 		$pk = new PlayerListPacket();
 		$pk->type = PlayerListPacket::TYPE_ADD;
+
 		$pk->entries[] = [$uuid, $entityId, $name, $skinId, $skinData];
-		$this->broadcastPacket($players === null ? $this->playerList : $players, $pk);
+
+		$this->broadcastPacket($players ?? $this->playerList, $pk);
 	}
 
+	/**
+	 * @param Player[]|null $players
+	 *
+	 * @return void
+	 */
 	public function removePlayerListData(UUID $uuid, array $players = null){
 		$pk = new PlayerListPacket();
 		$pk->type = PlayerListPacket::TYPE_REMOVE;
 		$pk->entries[] = [$uuid];
-		$this->broadcastPacket($players === null ? $this->playerList : $players, $pk);
+		$this->broadcastPacket($players ?? $this->playerList, $pk);
 	}
 
+	/**
+	 * @return void
+	 */
 	public function sendFullPlayerListData(Player $p){
 		$pk = new PlayerListPacket();
 		$pk->type = PlayerListPacket::TYPE_ADD;
@@ -2669,12 +2675,10 @@ class Server{
 		$p->dataPacket($pk);
 	}
 
-	private function checkTickUpdates($currentTick, $tickTime){
+	private function checkTickUpdates(int $currentTick, float $tickTime) : void{
 		foreach($this->players as $p){
 			if(!$p->loggedIn and ($tickTime - $p->creationTime) >= 10){
-			/*
-				$p->close("", "Login timeout");
-			*/
+				//$p->close("", "Login timeout");
 			}
 		}
 
@@ -2685,27 +2689,19 @@ class Server{
 				continue;
 			}
 
-			try{
-				$levelTime = microtime(true);
-				$level->doTick($currentTick);
-				$tickMs = (microtime(true) - $levelTime) * 1000;
-				$level->tickRateTime = $tickMs;
-				if($tickMs >= 50){
-				    $this->getLogger()->debug(sprintf("World \"%s\" took too long to tick: %gms (%g ticks)", $level->getName(), $tickMs, round($tickMs / 50, 2)));
-			    }
-			}catch(\Throwable $e){
-				if(!$level->isClosed()){
-					$this->logger->critical($this->getLanguage()->translateString("pocketmine.level.tickError", [$level->getName(), $e->getMessage()]));
-				}else{
-					$this->logger->critical($this->getLanguage()->translateString("pocketmine.level.tickUnloadError", [$level->getName()]));
-				}
-				if(\pocketmine\DEBUG > 1 and $this->logger instanceof MainLogger){
-					$this->logger->logException($e);
-				}
+			$levelTime = microtime(true);
+			$level->doTick($currentTick);
+			$tickMs = (microtime(true) - $levelTime) * 1000;
+			$level->tickRateTime = $tickMs;
+			if($tickMs >= 50){
+				$this->getLogger()->debug(sprintf("World \"%s\" took too long to tick: %gms (%g ticks)", $level->getName(), $tickMs, round($tickMs / 50, 2)));
 			}
 		}
 	}
 
+	/**
+	 * @return void
+	 */
 	public function doAutoSave(){
 		if($this->getAutoSave()){
 			Timings::$worldSaveTimer->startTiming();
@@ -2723,12 +2719,6 @@ class Server{
 			Timings::$worldSaveTimer->stopTiming();
 		}
 	}
-
-	public function sendUsage($type = SendUsageTask::TYPE_STATUS){
-		$this->scheduler->scheduleAsyncTask(new SendUsageTask($this, $type, $this->uniquePlayers));
-		$this->uniquePlayers = [];
-	}
-
 
 	/**
 	 * @return BaseLang
@@ -2896,11 +2886,6 @@ class Server{
 			$time = (microtime(true) - $start);
 			$this->getLogger()->debug("[Auto Save] Save completed in " . ($time >= 1 ? round($time, 3) . "s" : round($time * 1000) . "ms"));
 		}
-
-		/*if($this->sendUsageTicker > 0 and --$this->sendUsageTicker === 0){
-			$this->sendUsageTicker = 6000;
-			$this->sendUsage(SendUsageTask::TYPE_STATUS);
-		}*/
 
 		if(($this->tickCounter % 100) === 0){
 			foreach($this->levels as $level){

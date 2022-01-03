@@ -23,8 +23,9 @@ declare(strict_types=1);
 
 namespace pocketmine\level\format;
 
+use function str_repeat;
 
-class EmptySubChunk extends SubChunk {
+class EmptySubChunk implements SubChunkInterface{
 	/** @var EmptySubChunk */
 	private static $instance;
 
@@ -164,6 +165,10 @@ class EmptySubChunk extends SubChunk {
 	 */
 	public function setBlockSkyLight(int $x, int $y, int $z, int $level) : bool{
 		return false;
+	}
+
+	public function getHighestBlockAt(int $x, int $z) : int{
+		return -1;
 	}
 
 	/**

@@ -21,10 +21,11 @@
 
 namespace pocketmine\inventory;
 
+use pocketmine\event\inventory\InventoryClickEvent;
 use pocketmine\event\inventory\InventoryTransactionEvent;
 use pocketmine\Player;
 
-class SimpleTransactionQueue implements TransactionQueue {
+class SimpleTransactionQueue implements TransactionQueue{
 
 	/** @var Player[] */
 	protected $player = null;
@@ -111,6 +112,14 @@ class SimpleTransactionQueue implements TransactionQueue {
 		while(!$this->transactionQueue->isEmpty()){
 			$transaction = $this->transactionQueue->dequeue();
 
+			if($transaction->getInventory() instanceof ContainerInventory || $transaction->getInventory() instanceof PlayerInventory){
+				$this->player->getServer()->getPluginManager()->callEvent($event = new InventoryClickEvent($transaction->getInventory(), $this->player, $transaction->getSlot(), $transaction->getInventory()->getItem($transaction->getSlot())));
+
+				if($event->isCancelled()){
+					$ev->setCancelled(true);
+				}
+			}
+
 			if($ev->isCancelled()){
 				$this->transactionCount -= 1;
 				$transaction->sendSlotUpdate($this->player); //Send update back to client for cancelled transaction
@@ -139,5 +148,7 @@ class SimpleTransactionQueue implements TransactionQueue {
 			$f->sendSlotUpdate($this->player);
 			unset($this->inventories[spl_object_hash($f)]);
 		}
+
+		return true;
 	}
 }

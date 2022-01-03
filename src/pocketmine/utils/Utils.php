@@ -31,9 +31,18 @@ use pocketmine\utils\MainLogger;
 /**
  * Big collection of functions
  */
-class Utils {
-	public static $online = true;
-	public static $ip = false;
+class Utils{
+	public const OS_WINDOWS = "win";
+	public const OS_IOS = "ios";
+	public const OS_MACOS = "mac";
+	public const OS_ANDROID = "android";
+	public const OS_LINUX = "linux";
+	public const OS_BSD = "bsd";
+	public const OS_UNKNOWN = "other";
+
+	public const CLEAN_PATH_SRC_PREFIX = "pmsrc";
+	public const CLEAN_PATH_PLUGINS_PREFIX = "plugins";
+
 	public static $os;
 	private static $serverUniqueId = null;
 
@@ -50,6 +59,25 @@ class Utils {
 		}else{
 			return sha1(strtolower($variable));
 		}
+	}
+
+	/**
+	 * Returns a readable identifier for the class of the given object. Sanitizes class names for anonymous classes.
+	 *
+	 * @throws \ReflectionException
+	 */
+	public static function getNiceClassName(object $obj) : string{
+		$reflect = new \ReflectionClass($obj);
+		if($reflect->isAnonymous()){
+			$filename = $reflect->getFileName();
+
+			return "anonymous@" . ($filename !== false ?
+					self::cleanPath($filename) . "#L" . $reflect->getStartLine() :
+					"internal"
+				);
+		}
+
+		return $reflect->getName();
 	}
 
 	/**
@@ -121,7 +149,8 @@ class Utils {
 	}
 
 	/**
-	 * Gets the External IP using an external service, it is cached
+	 * @deprecated
+	 * @see Internet::getIP()
 	 *
 	 * @param bool $force default false, force IP check even when cached
 	 *
@@ -129,35 +158,7 @@ class Utils {
 	 */
 
 	public static function getIP($force = false){
-		if(Utils::$online === false){
-			return false;
-		}elseif(Utils::$ip !== false and $force !== true){
-			return Utils::$ip;
-		}
-		$ip = trim(strip_tags(Utils::getURL("https://api.ipify.org")));
-		if($ip){
-			Utils::$ip = $ip;
-		}else{
-			$ip = Utils::getURL("http://www.checkip.org/");
-			if(preg_match('#">([0-9a-fA-F\:\.]*)</span>#', $ip, $matches) > 0){
-				Utils::$ip = $matches[1];
-			}else{
-				$ip = Utils::getURL("http://checkmyip.org/");
-				if(preg_match('#Your IP address is ([0-9a-fA-F\:\.]*)#', $ip, $matches) > 0){
-					Utils::$ip = $matches[1];
-				}else{
-					$ip = trim(Utils::getURL("http://ifconfig.me/ip"));
-					if($ip != ""){
-						Utils::$ip = $ip;
-					}else{
-						return false;
-					}
-				}
-			}
-		}
-
-		return Utils::$ip;
-
+		return Internet::getIP($force);
 	}
 
 	/**
@@ -336,15 +337,12 @@ class Utils {
 		return $output;
 	}
 
-
 	/**
 	 * Returns a string that can be printed, replaces non-printable characters
 	 *
-	 * @param $str
-	 *
-	 * @return string
+	 * @param mixed $str
 	 */
-	public static function printable($str){
+	public static function printable($str) : string{
 		if(!is_string($str)){
 			return gettype($str);
 		}
@@ -365,7 +363,8 @@ class Utils {
 	}*/
 
 	/**
-	 * GETs an URL using cURL
+	 * @deprecated
+	 * @see Internet::getURL()
 	 *
 	 * @param       $page
 	 * @param int   $timeout default 10
@@ -373,30 +372,13 @@ class Utils {
 	 *
 	 * @return bool|mixed
 	 */
-	public static function getURL($page, $timeout = 10, array $extraHeaders = []){
-		if(Utils::$online === false){
-			return false;
-		}
-
-		$ch = curl_init($page);
-		curl_setopt($ch, CURLOPT_HTTPHEADER, array_merge(["User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:12.0) Gecko/20100101 Firefox/12.0 PocketMine-MP"], $extraHeaders));
-		curl_setopt($ch, CURLOPT_AUTOREFERER, true);
-		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-		curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
-		curl_setopt($ch, CURLOPT_FORBID_REUSE, 1);
-		curl_setopt($ch, CURLOPT_FRESH_CONNECT, 1);
-		curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-		curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, (int) $timeout);
-		curl_setopt($ch, CURLOPT_TIMEOUT, (int) $timeout);
-		$ret = curl_exec($ch);
-		curl_close($ch);
-
-		return $ret;
+	public static function getURL($page, $timeout = 10, array $extraHeaders = [], &$err = null, &$headers = null, &$httpCode = null){
+		return Internet::getURL($page, $timeout, $extraHeaders, $err, $headers, $httpCode);
 	}
 
 	/**
-	 * POSTs data to an URL
+	 * @deprecated
+	 * @see Internet::postURL()
 	 *
 	 * @param              $page
 	 * @param array|string $args
@@ -405,28 +387,8 @@ class Utils {
 	 *
 	 * @return bool|mixed
 	 */
-	public static function postURL($page, $args, $timeout = 10, array $extraHeaders = []){
-		if(Utils::$online === false){
-			return false;
-		}
-
-		$ch = curl_init($page);
-		curl_setopt($ch, CURLOPT_POST, 1);
-		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-		curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
-		curl_setopt($ch, CURLOPT_FORBID_REUSE, 1);
-		curl_setopt($ch, CURLOPT_FRESH_CONNECT, 1);
-		curl_setopt($ch, CURLOPT_POSTFIELDS, $args);
-		curl_setopt($ch, CURLOPT_AUTOREFERER, true);
-		curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-		curl_setopt($ch, CURLOPT_HTTPHEADER, array_merge(["User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:12.0) Gecko/20100101 Firefox/12.0 PocketMine-MP"], $extraHeaders));
-		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-		curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, (int) $timeout);
-		curl_setopt($ch, CURLOPT_TIMEOUT, (int) $timeout);
-		$ret = curl_exec($ch);
-		curl_close($ch);
-
-		return $ret;
+	public static function postURL($page, $args, $timeout = 10, array $extraHeaders = [], &$err = null, &$headers = null, &$httpCode = null){
+		return Internet::postURL($page, $args, $timeout, $extraHeaders, $err, $headers, $httpCode);
 	}
 
 	/**
@@ -489,20 +451,19 @@ class Utils {
 	public static function getReferenceCount($value, $includeCurrent = true){
 		ob_start();
 		debug_zval_dump($value);
-		$ret = explode("\n", ob_get_contents());
+		$contents = ob_get_contents();
+		if($contents === false) throw new AssumptionFailedError("ob_get_contents() should never return false here");
+		$ret = explode("\n", $contents);
 		ob_end_clean();
 
-		if(count($ret) >= 1 and preg_match('/^.* refcount\\(([0-9]+)\\)\\{$/', trim($ret[0]), $m) > 0){
+		if(preg_match('/^.* refcount\\(([0-9]+)\\)\\{$/', trim($ret[0]), $m) > 0){
 			return ((int) $m[1]) - ($includeCurrent ? 3 : 4); //$value + zval call + extra call
 		}
 		return -1;
 	}
 
 	/**
-	 * @param int        $start
-	 * @param array|null $trace
-	 *
-	 * @return array
+	 * @deprecated
 	 */
 	public static function getTrace($start = 0, $trace = null){
 		if($trace === null){
@@ -535,7 +496,87 @@ class Utils {
 		return $messages;
 	}
 
+	/**
+	 * @param mixed[][] $trace
+	 * @phpstan-param list<array<string, mixed>> $trace
+	 *
+	 * @return string[]
+	 */
+	public static function printableTrace(array $trace, int $maxStringLength = 80) : array{
+		$messages = [];
+		for($i = 0; isset($trace[$i]); ++$i){
+			$params = "";
+			if(isset($trace[$i]["args"]) or isset($trace[$i]["params"])){
+				if(isset($trace[$i]["args"])){
+					$args = $trace[$i]["args"];
+				}else{
+					$args = $trace[$i]["params"];
+				}
+
+				$params = implode(", ", array_map(function($value) use($maxStringLength) : string{
+					if(is_object($value)){
+						return "object " . self::getNiceClassName($value);
+					}
+					if(is_array($value)){
+						return "array[" . count($value) . "]";
+					}
+					if(is_string($value)){
+						return "string[" . strlen($value) . "] " . substr(Utils::printable($value), 0, $maxStringLength);
+					}
+					return gettype($value) . " " . Utils::printable((string) $value);
+				}, $args));
+			}
+			$messages[] = "#$i " . (isset($trace[$i]["file"]) ? self::cleanPath($trace[$i]["file"]) : "") . "(" . (isset($trace[$i]["line"]) ? $trace[$i]["line"] : "") . "): " . (isset($trace[$i]["class"]) ? $trace[$i]["class"] . (($trace[$i]["type"] === "dynamic" or $trace[$i]["type"] === "->") ? "->" : "::") : "") . $trace[$i]["function"] . "(" . Utils::printable($params) . ")";
+		}
+		return $messages;
+	}
+
+	/**
+	 * @return mixed[][]
+	 * @phpstan-return list<array<string, mixed>>
+	 */
+	public static function currentTrace(int $skipFrames = 0) : array{
+		++$skipFrames; //omit this frame from trace, in addition to other skipped frames
+		if(function_exists("xdebug_get_function_stack")){
+			$trace = array_reverse(xdebug_get_function_stack());
+		}else{
+			$e = new \Exception();
+			$trace = $e->getTrace();
+		}
+		for($i = 0; $i < $skipFrames; ++$i){
+			unset($trace[$i]);
+		}
+		return array_values($trace);
+	}
+
+
+	/**
+	 * @return string[]
+	 */
+	public static function printableCurrentTrace(int $skipFrames = 0) : array{
+		return self::printableTrace(self::currentTrace(++$skipFrames));
+	}
+
+	/**
+	 * @param string $path
+	 *
+	 * @return string
+	 */
 	public static function cleanPath($path){
-		return str_replace(["\\", ".php", "phar://", str_replace(["\\", "phar://"], ["/", ""], \pocketmine\PATH), str_replace(["\\", "phar://"], ["/", ""], \pocketmine\PLUGIN_PATH)], ["/", "", "", "", ""], $path);
+		$result = str_replace([DIRECTORY_SEPARATOR, ".php", "phar://"], ["/", "", ""], $path);
+
+		//remove relative paths
+		//TODO: make these paths dynamic so they can be unit-tested against
+		static $cleanPaths = [
+			\pocketmine\PLUGIN_PATH => self::CLEAN_PATH_PLUGINS_PREFIX, //this has to come BEFORE \pocketmine\PATH because it's inside that by default on src installations
+			\pocketmine\PATH => self::CLEAN_PATH_SRC_PREFIX
+		];
+		foreach($cleanPaths as $cleanPath => $replacement){
+			$cleanPath = rtrim(str_replace([DIRECTORY_SEPARATOR, "phar://"], ["/", ""], $cleanPath), "/");
+			if(strpos($result, $cleanPath) === 0){
+				$result = ltrim(str_replace($cleanPath, $replacement, $result), "/");
+			}
+		}
+		return $result;
 	}
 }

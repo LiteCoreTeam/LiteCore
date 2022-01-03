@@ -38,13 +38,6 @@ class GlassBottle extends Item {
 	}
 
 	/**
-	 * @return bool
-	 */
-	public function canBeActivated() : bool{
-		return true;
-	}
-
-	/**
 	 * @param Level  $level
 	 * @param Player $player
 	 * @param Block  $block
@@ -69,7 +62,7 @@ class GlassBottle extends Item {
 					$player->getInventory()->setItemInHand(Item::get(Item::POTION, 0, 1));
 					return true;
 				}else{
-					$this->count--;
+					$this->pop();
 					$player->getInventory()->setItemInHand($this);
 				}
 				if($player->getInventory()->canAddItem(Item::get(Item::POTION, 0, 1)) === true){

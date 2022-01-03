@@ -74,7 +74,7 @@ class Chunk{
     /** @var int */
     protected $height = Chunk::MAX_SUBCHUNKS;
 
-    /** @var SubChunk[] */
+    /** @var \SplFixedArray|SubChunkInterface[] */
     protected $subChunks;
 
     /** @var EmptySubChunk */
@@ -118,23 +118,11 @@ class Chunk{
 
         $this->height = Chunk::MAX_SUBCHUNKS; //TODO: add a way of changing this
 
+        $this->subChunks = new \SplFixedArray($this->height);
         $this->emptySubChunk = EmptySubChunk::getInstance();
 
-        foreach($subChunks as $y => $subChunk){
-            if($y < 0 or $y >= $this->height){
-                throw new ChunkException("Invalid subchunk index $y!");
-            }
-            if($subChunk->isEmpty()){
-                $this->subChunks[$y] = $this->emptySubChunk;
-            }else{
-                $this->subChunks[$y] = $subChunk;
-            }
-        }
-
-        for($i = 0; $i < $this->height; ++$i){
-            if(!isset($this->subChunks[$i])){
-                $this->subChunks[$i] = $this->emptySubChunk;
-            }
+        foreach($this->subChunks as $y => $null){
+			$this->subChunks[$y] = $subChunks[$y] ?? $this->emptySubChunk;
         }
 
         if(count($heightMap) === 256){
@@ -471,6 +459,8 @@ class Chunk{
      * if the chunk is light-populated after being terrain-populated.
      *
      * TODO: fast adjacent light spread
+     *
+     * @return void
      */
     public function populateSkyLight(){
         $maxY = $this->getMaxY();
@@ -481,7 +471,6 @@ class Chunk{
             for($z = 0; $z < 16; ++$z){
                 $y = $maxY;
                 $heightMap = $this->getHeightMap($x, $z);
-                
                 for(; $y >= $heightMap; --$y){
                     $this->setBlockSkyLight($x, $y, $z, 15);
                 }
@@ -824,40 +813,33 @@ class Chunk{
     }
 
     /**
-     * @param bool $value
-     */
+	 * @return void
+	 */
     public function setChanged(bool $value = true){
         $this->hasChanged = $value;
     }
 
     /**
-     * Returns the subchunk at the specified subchunk Y coordinate, or an empty, unmodifiable stub if it does not exist or the coordinate is out of range.
-     *
-     * @param int  $y
-     * @param bool $generateNew Whether to create a new, modifiable subchunk if there is not one in place
-     *
-     * @return SubChunk|EmptySubChunk
-     */
-    public function getSubChunk(int $y, bool $generateNew = false) : SubChunk{
+	 * Returns the subchunk at the specified subchunk Y coordinate, or an empty, unmodifiable stub if it does not exist or the coordinate is out of range.
+	 *
+	 * @param bool $generateNew Whether to create a new, modifiable subchunk if there is not one in place
+	 */
+    public function getSubChunk(int $y, bool $generateNew = false) : SubChunkInterface{
         if($y < 0 or $y >= $this->height){
             return $this->emptySubChunk;
         }elseif($generateNew and $this->subChunks[$y] instanceof EmptySubChunk){
             $this->subChunks[$y] = new SubChunk();
         }
-        assert($this->subChunks[$y] !== null, "Somehow something broke, no such subchunk at index $y");
 
         return $this->subChunks[$y];
     }
 
     /**
-     * Sets a subchunk in the chunk index
-     * @param int           $y
-     * @param SubChunk|null $subChunk
-     * @param bool          $allowEmpty Whether to check if the chunk is empty, and if so replace it with an empty stub
-     *
-     * @return bool
-     */
-    public function setSubChunk(int $y, SubChunk $subChunk = null, bool $allowEmpty = false) : bool{
+	 * Sets a subchunk in the chunk index
+	 *
+	 * @param bool                   $allowEmpty Whether to check if the chunk is empty, and if so replace it with an empty stub
+	 */
+    public function setSubChunk(int $y, SubChunkInterface $subChunk = null, bool $allowEmpty = false) : bool{
         if($y < 0 or $y >= $this->height){
             return false;
         }
@@ -871,18 +853,19 @@ class Chunk{
     }
 
     /**
-     * @return SubChunk[]
-     */
-    public function getSubChunks() : array{
-        return $this->subChunks;
-    }
+	 * @return \SplFixedArray|SubChunkInterface[]
+	 * @phpstan-return \SplFixedArray<SubChunkInterface>
+	 */
+	public function getSubChunks() : \SplFixedArray{
+		return $this->subChunks;
+	}
 
     /**
      * Returns the Y coordinate of the highest non-empty subchunk in this chunk.
      */
     public function getHighestSubChunkIndex() : int{
-        for($y = count($this->subChunks) - 1; $y >= 0; --$y){
-            if($this->subChunks[$y] === null or $this->subChunks[$y] instanceof EmptySubChunk){
+        for($y = $this->subChunks->count() - 1; $y >= 0; --$y){
+			if($this->subChunks[$y] instanceof EmptySubChunk){
                 //No need to thoroughly prune empties at runtime, this will just reduce performance.
                 continue;
             }
@@ -1039,5 +1022,4 @@ class Chunk{
     public static function chunkBlockHash(int $x, int $y, int $z) : int{
         return ($x << 12) | ($z << 8) | $y;
     }
-
 }

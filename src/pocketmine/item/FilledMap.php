@@ -15,6 +15,13 @@ class FilledMap extends Item{
         parent::__construct(self::FILLED_MAP, $meta, $count, "Filled Map");
     }
 
+    public function setCompoundTag($tags){
+        parent::setCompoundTag($tags);
+        $this->getMapId(); //Костыль
+
+        return $this;
+    }
+
     public function setNamedTag(CompoundTag $tag){
         if(!isset($tag["map_uuid"])){
             $uuid = (new Random())->nextInt();
@@ -24,15 +31,15 @@ class FilledMap extends Item{
         return parent::setNamedTag($tag);
     }
 
-	public function getMapId() : string{
-		$tag = $this->getNamedTag();
-		if($tag === null){
-			$tag = new CompoundTag();
-			$this->setNamedTag($tag);
-		}
+    public function getMapId() : string{
+        $tag = $this->getNamedTag();
+        if($tag === null){
+            $tag = new CompoundTag();
+            $this->setNamedTag($tag);
+        }
 
-		return $tag->map_uuid;
-	}
+        return $tag["map_uuid"];
+    }
 
     public function saveMapData(ClientboundMapItemDataPacket $clientboundMapItemDataPacket) : void{
         $namedTag = $this->getNamedTag();
@@ -55,10 +62,6 @@ class FilledMap extends Item{
         }
 
         return null;
-    }
-
-    public function canBeActivated() : bool{
-        return true;
     }
 
     public function getMaxStackSize() : int{

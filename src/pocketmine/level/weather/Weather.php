@@ -37,8 +37,8 @@ class Weather {
 
 	private $level;
 	private $weatherNow = 0;
-	private $strength1;
-	private $strength2;
+	private $strength1 = 100000;
+	private $strength2 = 35000;
 	private $duration;
 	private $canCalculate = true;
 

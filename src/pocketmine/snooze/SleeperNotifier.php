@@ -26,21 +26,17 @@ namespace pocketmine\snooze;
 use function assert;
 
 /**
- * Notifiers are Threaded objects which can be attached to threaded sleepers in order to wake them up. They also record
- * state so that the main thread handler can determine which notifier woke up the sleeper.
+ * Notifiers are Threaded objects which can be attached to threaded sleepers in order to wake them up.
  */
 class SleeperNotifier extends \Threaded{
-	/** @var ThreadedSleeper */
-	private $threadedSleeper;
+	/** @var \Threaded */
+	private $sharedObject;
 
 	/** @var int */
 	private $sleeperId;
 
-	/** @var bool */
-	private $notification = false;
-
-	final public function attachSleeper(ThreadedSleeper $sleeper, int $id) : void{
-		$this->threadedSleeper = $sleeper;
+	final public function attachSleeper(\Threaded $sharedObject, int $id) : void{
+		$this->sharedObject = $sharedObject;
 		$this->sleeperId = $id;
 	}
 
@@ -52,31 +48,14 @@ class SleeperNotifier extends \Threaded{
 	 * Call this method from other threads to wake up the main server thread.
 	 */
 	final public function wakeupSleeper() : void{
-		assert($this->threadedSleeper !== null);
-
-		$this->threadedSleeper->synchronized(function() : void{
-			if(!$this->notification){
-				$this->notification = true;
-
-				/*
-				 * if we didn't synchronize with ThreadedSleeper, the main thread might detect the notification
-				 * (notification = true by this point in the code), process and decrement notification count, all before
-				 * we got a chance to increment it and wake up the sleeper in the first place, leading to an underflow.
-				 */
-				$this->threadedSleeper->wakeupNoSync();
+		$shared = $this->sharedObject;
+		assert($shared !== null);
+		$sleeperId = $this->sleeperId;
+		$shared->synchronized(function() use ($shared, $sleeperId) : void{
+			if(!isset($shared[$sleeperId])){
+				$shared[$sleeperId] = $sleeperId;
+				$shared->notify();
 			}
-		});
-	}
-
-	final public function hasNotification() : bool{
-		return $this->notification;
-	}
-
-	final public function clearNotification() : void{
-		/* wakeupSleeper() synchronizes with ThreadedSleeper, we must do the same here. */
-		$this->threadedSleeper->synchronized(function() : void{
-			$this->threadedSleeper->clearNotificationNoSync();
-			$this->notification = false;
 		});
 	}
 }

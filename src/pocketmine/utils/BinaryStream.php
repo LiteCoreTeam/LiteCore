@@ -24,13 +24,12 @@ namespace pocketmine\utils;
 #include <rules/BinaryIO.h>
 
 use pocketmine\item\Item;
-use stdClass;
 use function chr;
 use function ord;
 use function strlen;
 use function substr;
 
-class BinaryStream extends stdClass{
+class BinaryStream{
 
 	/** @var int */
 	public $offset;
@@ -120,8 +119,8 @@ class BinaryStream extends stdClass{
 		return $this->get(1) !== "\x00";
 	}
 
-	public function putBool($v) : void{
-		$this->putByte((bool) $v);
+	public function putBool(bool $v) : void{
+		$this->buffer .= ($v ? "\x01" : "\x00");
 	}
 
 	public function getByte() : int{
@@ -133,14 +132,14 @@ class BinaryStream extends stdClass{
 	}
 
 	/**
-	 * @return int|string
+	 * @return int
 	 */
 	public function getLong(){
 		return Binary::readLong($this->get(8));
 	}
 
 	/**
-	 * @param $v
+	 * @param int $v
 	 */
 	public function putLong($v){
 		$this->buffer .= Binary::writeLong($v);
@@ -158,14 +157,14 @@ class BinaryStream extends stdClass{
 	}
 
 	/**
-	 * @return int|string
+	 * @return int
 	 */
 	public function getLLong(){
 		return Binary::readLLong($this->get(8));
 	}
 
 	/**
-	 * @param $v
+	 * @param int $v
 	 */
 	public function putLLong($v){
 		$this->buffer .= Binary::writeLLong($v);
@@ -186,24 +185,21 @@ class BinaryStream extends stdClass{
 	}
 
 	/**
-	 * @return int
-	 */
-	public function getSignedShort(){
-		return Binary::readSignedShort($this->get(2));
-	}
-
-	/**
 	 * @param $v
 	 */
 	public function putShort($v){
 		$this->buffer .= Binary::writeShort($v);
 	}
 
+	public function getShort(){
+		return Binary::readShort($this->get(2));
+	}
+
 	/**
 	 * @return int
 	 */
-	public function getShort(){
-		return Binary::readShort($this->get(2));
+	public function getSignedShort(){
+		return Binary::readSignedShort($this->get(2));
 	}
 
 	/**
@@ -235,6 +231,10 @@ class BinaryStream extends stdClass{
 	 */
 	public function getLShort($signed = true){
 		return $signed ? Binary::readSignedLShort($this->get(2)) : Binary::readLShort($this->get(2));
+	}
+
+	public function getSignedLShort(){
+		return Binary::readSignedLShort($this->get(2));
 	}
 
 	/**
@@ -287,10 +287,16 @@ class BinaryStream extends stdClass{
 		$this->buffer .= Binary::writeLTriad($v);
 	}
 
-	/**
-	 * @return UUID
-	 */
-	public function getUUID(){
+	public function getString(){
+		return $this->get($this->getUnsignedVarInt());
+	}
+
+	public function putString($v){
+		$this->putUnsignedVarInt(strlen($v));
+		$this->put($v);
+	}
+
+	public function getUUID() : UUID{
 		//This is actually two little-endian longs: UUID Most followed by UUID Least
 		$part1 = $this->getLInt();
 		$part0 = $this->getLInt();
@@ -299,9 +305,6 @@ class BinaryStream extends stdClass{
 		return new UUID($part0, $part1, $part2, $part3);
 	}
 
-	/**
-	 * @param UUID $uuid
-	 */
 	public function putUUID(UUID $uuid){
 		$this->putLInt($uuid->getPart(1));
 		$this->putLInt($uuid->getPart(0));
@@ -309,10 +312,7 @@ class BinaryStream extends stdClass{
 		$this->putLInt($uuid->getPart(2));
 	}
 
-	/**
-	 * @return Item
-	 */
-	public function getSlot(){
+	public function getSlot() : Item{
 		$id = $this->getVarInt();
 
 		if($id <= 0){
@@ -372,24 +372,9 @@ class BinaryStream extends stdClass{
 	}
 
 	/**
-	 * @return bool|string
-	 */
-	public function getString(){
-		return $this->get($this->getUnsignedVarInt());
-	}
-
-	/**
-	 * @param $v
-	 */
-	public function putString($v){
-		$this->putUnsignedVarInt(strlen($v));
-		$this->put($v);
-	}
-
-	/**
 	 * Reads an unsigned varint32 from the stream.
 	 */
-	public function getUnsignedVarInt(){
+	public function getUnsignedVarInt() : int{
 		return Binary::readUnsignedVarInt($this->buffer, $this->offset);
 	}
 
@@ -398,55 +383,53 @@ class BinaryStream extends stdClass{
 	 *
 	 * @param $v
 	 */
-	public function putUnsignedVarInt($v){
+	public function putUnsignedVarInt(int $v){
 		$this->put(Binary::writeUnsignedVarInt($v));
 	}
 
 	/**
 	 * Reads a signed varint32 from the stream.
 	 */
-	public function getVarInt(){
+	public function getVarInt() : int{
 		return Binary::readVarInt($this->buffer, $this->offset);
 	}
 
 	/**
-	 * Reads a 64-bit zigzag-encoded variable-length integer from the buffer and returns it.
-	 * @return int|string int, or the string representation of an int64 on 32-bit platforms
-	 */
-	public function getVarLong(){
-		return Binary::readVarLong($this->buffer, $this->offset);
-	}
-
-	/**
-	 * Writes a 64-bit variable-length integer to the end of the buffer.
-	 * @param int|string $v int, or the string representation of an int64 on 32-bit platforms
-	 */
-	public function putUnsignedVarLong($v){
-		$this->buffer .= Binary::writeUnsignedVarLong($v);
-	}
-
-	/**
 	 * Reads a 64-bit variable-length integer from the buffer and returns it.
-	 * @return int|string int, or the string representation of an int64 on 32-bit platforms
+	 * @return int
 	 */
 	public function getUnsignedVarLong(){
 		return Binary::readUnsignedVarLong($this->buffer, $this->offset);
 	}
 
 	/**
+	 * Writes a 64-bit variable-length integer to the end of the buffer.
+	 * @param int $v
+	 */
+	public function putUnsignedVarLong($v){
+		$this->buffer .= Binary::writeUnsignedVarLong($v);
+	}
+
+	/**
+	 * Reads a 64-bit zigzag-encoded variable-length integer from the buffer and returns it.
+	 * @return int
+	 */
+	public function getVarLong(){
+		return Binary::readVarLong($this->buffer, $this->offset);
+	}
+
+	/**
 	 * Writes a 64-bit zigzag-encoded variable-length integer to the end of the buffer.
-	 * @param int|string $v int, or the string representation of an int64 on 32-bit platforms
+	 * @param int $v
 	 */
 	public function putVarLong($v){
 		$this->buffer .= Binary::writeVarLong($v);
 	}
 
 	/**
-	 * Writes a signed varint32 to the stream.
-	 *
-	 * @param $v
+	 * Writes a 32-bit zigzag-encoded variable-length integer to the end of the buffer.
 	 */
-	public function putVarInt($v){
+	public function putVarInt($v) : void{
 		$this->put(Binary::writeVarInt($v));
 	}
 
@@ -476,6 +459,18 @@ class BinaryStream extends stdClass{
 	}
 
 	/**
+	 * Reads a block position with a signed Y coordinate.
+	 * @param int &$x
+	 * @param int &$y
+	 * @param int &$z
+	 */
+	public function getSignedBlockCoords(&$x, &$y, &$z){
+		$x = $this->getVarInt();
+		$y = $this->getVarInt();
+		$z = $this->getVarInt();
+	}
+
+	/**
 	 * @param $x
 	 * @param $y
 	 * @param $z
@@ -483,6 +478,18 @@ class BinaryStream extends stdClass{
 	public function putBlockCoords($x, $y, $z){
 		$this->putVarInt($x);
 		$this->putUnsignedVarInt($y);
+		$this->putVarInt($z);
+	}
+
+	/**
+	 * Writes a block position with a signed Y coordinate.
+	 * @param int $x
+	 * @param int $y
+	 * @param int $z
+	 */
+	public function putSignedBlockCoords(int $x, int $y, int $z){
+		$this->putVarInt($x);
+		$this->putVarInt($y);
 		$this->putVarInt($z);
 	}
 

@@ -28,15 +28,7 @@ use pocketmine\math\AxisAlignedBB;
 use pocketmine\math\Vector3;
 use pocketmine\Player;
 
-
-abstract class Door extends Transparent implements ElectricalAppliance {
-
-	/**
-	 * @return bool
-	 */
-	public function canBeActivated() : bool{
-		return true;
-	}
+abstract class Door extends Transparent implements ElectricalAppliance{
 
 	/**
 	 * @return bool
@@ -262,7 +254,7 @@ abstract class Door extends Transparent implements ElectricalAppliance {
 		if($face === 1){
 			$blockUp = $this->getSide(Vector3::SIDE_UP);
 			$blockDown = $this->getSide(Vector3::SIDE_DOWN);
-			if($blockUp->canBeReplaced() === false or $blockDown->isTransparent() === true){
+			if($blockUp->canBeReplaced() === false or $blockDown->isTransparent()){
 				return false;
 			}
 			$direction = $player instanceof Player ? $player->getDirection() : 0;
@@ -270,12 +262,12 @@ abstract class Door extends Transparent implements ElectricalAppliance {
 				0 => 3,
 				1 => 4,
 				2 => 2,
-				3 => 5,
+				3 => 5
 			];
 			$next = $this->getSide($face[(($direction + 2) % 4)]);
 			$next2 = $this->getSide($face[$direction]);
 			$metaUp = 0x08;
-			if($next->getId() === $this->getId() or ($next2->isTransparent() === false and $next->isTransparent() === true)){ //Door hinge
+			if($next->getId() === $this->getId() or (!$next2->isTransparent() and $next->isTransparent())){ //Door hinge
 				$metaUp |= 0x01;
 			}
 
@@ -328,12 +320,7 @@ abstract class Door extends Transparent implements ElectricalAppliance {
 			$down = $this->getSide(Vector3::SIDE_DOWN);
 			if($down->getId() === $this->getId()){
 				$meta = $down->getDamage() ^ 0x04;
-				$this->getLevel()->setBlock($down, Block::get($this->getId(), $meta), true);
-				$players = $this->getLevel()->getChunkPlayers($this->x >> 4, $this->z >> 4);
-				if($player instanceof Player){
-					unset($players[$player->getLoaderId()]);
-				}
-
+				$this->level->setBlock($down, Block::get($this->getId(), $meta), true);
 				$this->level->addSound(new DoorSound($this));
 				return true;
 			}
@@ -341,14 +328,26 @@ abstract class Door extends Transparent implements ElectricalAppliance {
 			return false;
 		}else{
 			$this->meta ^= 0x04;
-			$this->getLevel()->setBlock($this, $this, true);
-			$players = $this->getLevel()->getChunkPlayers($this->x >> 4, $this->z >> 4);
-			if($player instanceof Player){
-				unset($players[$player->getLoaderId()]);
-			}
+			$this->level->setBlock($this, $this, true);
 			$this->level->addSound(new DoorSound($this));
 		}
 
 		return true;
+	}
+
+	public function getAffectedBlocks() : array{
+		if(($this->getDamage() & 0x08) === 0x08){
+			$down = $this->getSide(Vector3::SIDE_DOWN);
+			if($down->getId() === $this->getId()){
+				return [$this, $down];
+			}
+		}else{
+			$up = $this->getSide(Vector3::SIDE_UP);
+			if($up->getId() === $this->getId()){
+				return [$this, $up];
+			}
+		}
+
+		return parent::getAffectedBlocks();
 	}
 }

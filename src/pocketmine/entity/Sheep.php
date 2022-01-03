@@ -34,8 +34,6 @@ use pocketmine\math\Vector3;
 class Sheep extends Animal implements Colorable {
 	const NETWORK_ID = 13;
 
-	const DATA_COLOR_INFO = 16;
-
 	public $width = 0.3;
     public $length = 0.9;
     public $height = 0;
@@ -62,7 +60,7 @@ class Sheep extends Animal implements Colorable {
 		}
 		parent::__construct($level, $nbt);
 
-		$this->setDataProperty(self::DATA_COLOR_INFO, self::DATA_TYPE_BYTE, $this->getColor());
+		$this->setDataProperty(self::DATA_COLOR, self::DATA_TYPE_BYTE, $this->getColor());
 	}
 
 	/**

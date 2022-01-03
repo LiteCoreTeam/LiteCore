@@ -22,6 +22,8 @@
 namespace pocketmine\level;
 
 use pocketmine\block\Block;
+use pocketmine\block\BlockIds;
+use pocketmine\block\Water;
 use pocketmine\entity\Entity;
 use pocketmine\event\block\BlockUpdateEvent;
 use pocketmine\event\entity\EntityDamageByBlockEvent;
@@ -29,9 +31,11 @@ use pocketmine\event\entity\EntityDamageByEntityEvent;
 use pocketmine\event\entity\EntityDamageEvent;
 use pocketmine\event\entity\EntityExplodeEvent;
 use pocketmine\item\Item;
+use pocketmine\level\light\LightPopulationTask;
 use pocketmine\level\particle\HugeExplodeSeedParticle;
 use pocketmine\level\utils\SubChunkIteratorManager;
 use pocketmine\math\AxisAlignedBB;
+use pocketmine\math\Math;
 use pocketmine\math\Vector3;
 use pocketmine\nbt\tag\ByteTag;
 use pocketmine\nbt\tag\CompoundTag;
@@ -40,12 +44,13 @@ use pocketmine\nbt\tag\FloatTag;
 use pocketmine\nbt\tag\ListTag;
 use pocketmine\network\mcpe\protocol\ExplodePacket;
 use pocketmine\network\mcpe\protocol\LevelSoundEventPacket;
-use pocketmine\utils\Random;
 use pocketmine\tile\Chest;
 use pocketmine\tile\Container;
 use pocketmine\tile\Tile;
+use pocketmine\utils\Random;
 use function ceil;
 use function floor;
+use function in_array;
 use function mt_rand;
 
 class Explosion{
@@ -122,7 +127,7 @@ class Explosion{
 							$vBlock->x = $pointerX >= $x ? $x : $x - 1;
 							$vBlock->y = $pointerY >= $y ? $y : $y - 1;
 							$vBlock->z = $pointerZ >= $z ? $z : $z - 1;
-							
+
 							$pointerX += $vector->x;
 							$pointerY += $vector->y;
 							$pointerZ += $vector->z;
@@ -136,8 +141,11 @@ class Explosion{
 							if($blockId !== 0){
 								$blastForce -= (Block::$blastResistance[$blockId] / 5 + 0.3) * $this->stepLen;
 								if($blastForce > 0){
-									if(!isset($this->affectedBlocks[$index = Level::blockHash($vBlock->x, $vBlock->y, $vBlock->z)])){
-										$this->affectedBlocks[$index] = Block::get($blockId, $this->subChunkHandler->currentSubChunk->getBlockData($vBlock->x & 0x0f, $vBlock->y & 0x0f, $vBlock->z & 0x0f), $vBlock);
+									if(!isset($this->affectedBlocks[Level::blockHash($vBlock->x, $vBlock->y, $vBlock->z)])){
+										$_block = Block::get($blockId, $this->subChunkHandler->currentSubChunk->getBlockData($vBlock->x & 0x0f, $vBlock->y & 0x0f, $vBlock->z & 0x0f), $vBlock);
+										foreach($_block->getAffectedBlocks() as $_affectedBlock){
+											$this->affectedBlocks[Level::blockHash($_affectedBlock->x, $_affectedBlock->y, $_affectedBlock->z)] = $_affectedBlock;
+										}
 									}
 								}
 							}
@@ -287,11 +295,17 @@ class Explosion{
 		$this->level->addParticle(new HugeExplodeSeedParticle($source));
 		$this->level->broadcastLevelSoundEvent($source, LevelSoundEventPacket::SOUND_EXPLODE);
 
+		$this->level->getServer()->getScheduler()->scheduleAsyncTask(new LightPopulationTask($this->level, $this->level->getChunk($this->source->x >> 4, $this->source->z >> 4))); //TODO: delete hack
+
 		return true;
 	}
 
 	public function explodeC() : bool{
 		if($this->size < 0.1){
+			return false;
+		}
+
+		if($this->isInsideOfWater()){
 			return false;
 		}
 
@@ -324,7 +338,8 @@ class Explosion{
 							}
 							$block = $this->level->getBlock($vBlock);
 
-							if(($block->getId() !== 0)and($block->getId() != 7)){
+							$blockId = $block->getId();
+							if(!in_array($blockId, [0, 7, BlockIds::END_PORTAL_FRAME, BlockIds::END_PORTAL], true)){
 								if(!isset($this->affectedBlocks[$index = Level::blockHash($block->x, $block->y, $block->z)])){
 									$this->affectedBlocks[$index] = $block;
 								}
@@ -336,5 +351,24 @@ class Explosion{
 		}
 
 		return true;
+	}
+
+	/**
+	 * @return bool
+	 */
+	public function isInsideOfWater(){
+		if($this->level === null or $this->level->isClosed()){
+			return true;
+		}
+
+		$block = $this->level->getBlock((new Vector3())->setComponents(Math::floorFloat($this->source->x), Math::floorFloat($y = ($this->source->y)), Math::floorFloat($this->source->z)));
+
+		if($block instanceof Water){
+			$f = ($block->y + 1) - ($block->getFluidHeightPercent() - 0.1111111);
+
+			return $y < $f;
+		}
+
+		return false;
 	}
 }

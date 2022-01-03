@@ -72,13 +72,6 @@ class Cauldron extends Solid {
 	}
 
 	/**
-	 * @return bool
-	 */
-	public function canBeActivated() : bool{
-		return true;
-	}
-
-	/**
 	 * @return int
 	 */
 	public function getToolType(){
@@ -227,7 +220,7 @@ class Cauldron extends Solid {
 					$color = Color::averageColor($color, $tile->getCustomColor());
 				}
 				if($player->isSurvival()){
-					$item->setCount($item->getCount() - 1);
+					$item->pop();
 					/*if($item->getCount() <= 0){
 						$player->getInventory()->setItemInHand(Item::get(Item::AIR));
 					}*/
@@ -300,7 +293,7 @@ class Cauldron extends Solid {
 						$player->getInventory()->setItemInHand(Item::get(Item::GLASS_BOTTLE));
 					}
 					$color = Potion::getColor($item->getDamage());
-					$this->getLevel()->addSound(new SpellSound($this->add(0.5, 1, 0.5), $color[0], $color[1], $color[2]));
+				//	$this->getLevel()->addSound(new SpellSound($this->add(0.5, 1, 0.5), $color[0], $color[1], $color[2]));
 				}
 				break;
 			case Item::GLASS_BOTTLE:
@@ -326,7 +319,7 @@ class Cauldron extends Solid {
 					$this->getLevel()->setBlock($this, $this, true);
 					$this->addItem($item, $player, $result);
 					$color = Potion::getColor($result->getDamage());
-					$this->getLevel()->addSound(new SpellSound($this->add(0.5, 1, 0.5), $color[0], $color[1], $color[2]));
+				//	$this->getLevel()->addSound(new SpellSound($this->add(0.5, 1, 0.5), $color[0], $color[1], $color[2]));
 				}else{
 					$this->meta -= 2;
 					$this->getLevel()->setBlock($this, $this, true);
@@ -350,7 +343,7 @@ class Cauldron extends Solid {
 		if($item->getCount() <= 1){
 			$player->getInventory()->setItemInHand($result);
 		}else{
-			$item->setCount($item->getCount() - 1);
+			$item->pop();
 			if($player->getInventory()->canAddItem($result) === true){
 				$player->getInventory()->addItem($result);
 			}else{

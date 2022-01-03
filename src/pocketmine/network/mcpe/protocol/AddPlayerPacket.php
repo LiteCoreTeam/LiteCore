@@ -31,12 +31,12 @@ class AddPlayerPacket extends DataPacket {
 	public $x;
 	public $y;
 	public $z;
-	public $speedX;
-	public $speedY;
-	public $speedZ;
-	public $pitch;
-	public $headYaw;
-	public $yaw;
+	public $speedX = 0.0;
+	public $speedY = 0.0;
+	public $speedZ = 0.0;
+	public $pitch = 0.0;
+	public $headYaw = null;
+	public $yaw = 0.0;
 	public $item;
 	public $metadata = [];
 

@@ -91,7 +91,7 @@ class ResourcePackManager {
 			try{
 				$pack = (string) $pack;
 			}catch(\ErrorException $e){
-				$logger->critical("Found invalid entry in resource pack list at offset $pos of type " . gettype($pack));
+				$this->server->getLogger()->critical("Found invalid entry in resource pack list at offset $pos of type " . gettype($pack));
 				continue;
 			}
 			try{
@@ -121,7 +121,7 @@ class ResourcePackManager {
 					throw new ResourcePackException("Format not recognized");
 				}
 			}catch(ResourcePackException $e){
-				$logger->critical("Could not load resource pack \"$pack\": " . $e->getMessage());
+				$this->server->getLogger()->critical("Could not load resource pack \"$pack\": " . $e->getMessage());
 			}
 		}
 

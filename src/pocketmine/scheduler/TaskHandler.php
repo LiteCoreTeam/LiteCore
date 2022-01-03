@@ -22,9 +22,10 @@
 namespace pocketmine\scheduler;
 
 use pocketmine\event\Timings;
+use pocketmine\event\TimingsHandler;
 use pocketmine\utils\MainLogger;
 
-class TaskHandler {
+class TaskHandler{
 
 	/** @var Task */
 	protected $task;
@@ -44,7 +45,7 @@ class TaskHandler {
 	/** @var bool */
 	protected $cancelled = false;
 
-	/** @var \pocketmine\event\TimingsHandler */
+	/** @var TimingsHandler */
 	public $timings;
 
 	public $timingName = null;
@@ -57,11 +58,14 @@ class TaskHandler {
 	 * @param int    $period
 	 */
 	public function __construct($timingName, Task $task, $taskId, $delay = -1, $period = -1){
+		if($task->getHandler() !== null){
+			throw new \InvalidArgumentException("Cannot assign multiple handlers to the same task");
+		}
 		$this->task = $task;
 		$this->taskId = $taskId;
 		$this->delay = $delay;
 		$this->period = $period;
-		$this->timingName = $timingName === null ? "Unknown" : $timingName;
+		$this->timingName = $timingName ?? "Unknown";
 		$this->timings = Timings::getPluginTaskTimings($this, $period);
 		$this->task->setHandler($this);
 	}
@@ -81,7 +85,7 @@ class TaskHandler {
 		$this->nextRun = $ticks;
 	}
 
-	public function getTaskId(){
+	public function getTaskId() : int{
 		return $this->taskId;
 	}
 
@@ -140,6 +144,6 @@ class TaskHandler {
 			return $this->timingName;
 		}
 
-		return get_class($this->task);
+		return $this->task->getName();
 	}
 }

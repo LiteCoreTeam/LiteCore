@@ -56,10 +56,9 @@ class TallGrass extends Flowable {
 		static $names = [
 			0 => "Dead Shrub",
 			1 => "Tall Grass",
-			2 => "Fern",
-			3 => ""
+			2 => "Fern"
 		];
-		return $names[$this->meta & 0x03];
+		return $names[$this->meta & 0x03] ?? "Unknown";
 	}
 
 	/**

@@ -65,7 +65,7 @@ class ItemFrame extends Spawnable {
 		if(isset($this->namedtag->Item)){
 			return Item::nbtDeserialize($this->namedtag->Item);
 		}else{
-			return Item::get(Item::AIR);
+			return Item::get(Item::AIR, 0, 0);
 		}
 	}
 

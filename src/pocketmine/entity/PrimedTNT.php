@@ -163,7 +163,6 @@ class PrimedTNT extends Entity implements Explosive {
 
 	public function explode(){
 		$this->server->getPluginManager()->callEvent($ev = new ExplosionPrimeEvent($this, 4, $this->dropItem));
-
 		if(!$ev->isCancelled()){
 			$explosion = new Explosion(Position::fromObject($this->add(0, $this->height / 2, 0), $this->level), $ev->getForce(), $this, $ev->dropItem());
 			if($ev->isBlockBreaking()){

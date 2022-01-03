@@ -122,7 +122,6 @@ use pocketmine\utils\MainLogger;
 use SplFixedArray;
 use Throwable;
 use UnexpectedValueException;
-use const pocketmine\DEBUG;
 use function spl_object_hash;
 
 class Network {
@@ -272,70 +271,62 @@ class Network {
 	 * @param Player      $player
 	 */
 	public function processBatch(BatchPacket $packet, Player $player){
-		try{
-			if(strlen($packet->payload) === 0){
-				//prevent zlib_decode errors for incorrectly-decoded packets
-				throw new InvalidArgumentException("BatchPacket payload is empty or packet decode error");
+		$rawLen = strlen($packet->payload);
+		if($rawLen === 0){
+			throw new \InvalidArgumentException("BatchPacket payload is empty or packet decode error");
+		}elseif($rawLen < 3){
+			throw new \InvalidArgumentException("Not enough bytes, expected zlib header");
+		}
+
+		$str = zlib_decode($packet->payload, 1024 * 1024 * 2); //Max 2MB
+		$len = strlen($str);
+
+		if($len === 0){
+			throw new InvalidStateException("Decoded BatchPacket payload is empty");
+		}
+
+		$stream = new BinaryStream($str);
+
+		$count = 0;
+
+		$packetsCounter = [];
+		$isFiltered = false;
+		while(!$stream->feof()){
+			if($count++ >= 500){
+				throw new UnexpectedValueException("Too many packets in a single batch");
 			}
 
-			$str = zlib_decode($packet->payload, 1024 * 1024 * 2); //Max 2MB
-			$len = strlen($str);
-
-			if($len === 0){
-				throw new InvalidStateException("Decoded BatchPacket payload is empty");
-			}
-
-			$stream = new BinaryStream($str);
-
-			$count = 0;
-
-			/*$packetsCounter = [];
-			$isFiltered = false;*/
-			while(!$stream->feof()){
-				if($count++ >= 500){
-				    throw new UnexpectedValueException("Too many packets in a single batch");
+			$buf = $stream->getString();
+			if(($pk = $this->getPacket(ord($buf[0]))) !== null){
+				if(!$pk->canBeBatched()){
+				    throw new UnexpectedValueException("Received invalid " . get_class($pk) . " inside BatchPacket");
 			    }
 
-				$buf = $stream->getString();
-				if(($pk = $this->getPacket(ord($buf[0]))) !== null){
-					if(!$pk->canBeBatched()){
-				        throw new UnexpectedValueException("Received invalid " . get_class($pk) . " inside BatchPacket");
-			        }
-
-			        /*@$packetsCounter[$pk::NETWORK_ID]++;
-					if(@$packetsCounter[$pk::NETWORK_ID] > 150){
-						$isFiltered = true;
-					}*/
-
-					$pk->setBuffer($buf, 1);
-
-					$pk->decode();
-					if(!$pk->feof() and !$pk->mayHaveUnreadBytes()){
-			            $remains = substr($pk->buffer, $pk->offset);
-			            $this->server->getLogger()->debug("Still " . strlen($remains) . " bytes unread in " . $pk->getName() . ": 0x" . bin2hex($remains));
-		            }
-					$player->handleDataPacket($pk);
+			    @$packetsCounter[$pk::NETWORK_ID]++;
+			    if(@$packetsCounter[$pk::NETWORK_ID] > 300){ //TODO: говнокод
+				    $isFiltered = true;
 				}
+
+				$pk->setBuffer($buf, 1);
+
+				$pk->decode();
+				if(!$pk->feof() and !$pk->mayHaveUnreadBytes()){
+			        $remains = substr($pk->buffer, $pk->offset);
+			        $this->server->getLogger()->debug("Still " . strlen($remains) . " bytes unread in " . $pk->getName() . ": 0x" . bin2hex($remains));
+		        }
+			    $player->handleDataPacket($pk);
 			}
+		}
 
-			/*if($isFiltered){
-				if (@$this->packetsFloodFilter[$player->getAddress()] < 10){
-					@$this->packetsFloodFilter[$player->getAddress()]++;
-				}else{
-					unset($this->packetsFloodFilter[$player->getAddress()]);
-					$this->blockAddress($player->getAddress(), 1200);
-				}
+		if($isFiltered){
+			if (@$this->packetsFloodFilter[$player->getAddress()] < 15){
+				@$this->packetsFloodFilter[$player->getAddress()]++;
 			}else{
 				unset($this->packetsFloodFilter[$player->getAddress()]);
-			}*/
-		}catch(Throwable $e){
-			if(DEBUG > 1){
-				$logger = $this->server->getLogger();
-				if($logger instanceof MainLogger){
-					$logger->debug("BatchPacket " . " 0x" . bin2hex($packet->payload));
-					$logger->logException($e);
-				}
+				$this->blockAddress($player->getAddress(), 150);
 			}
+		}else{
+			unset($this->packetsFloodFilter[$player->getAddress()]);
 		}
 	}
 

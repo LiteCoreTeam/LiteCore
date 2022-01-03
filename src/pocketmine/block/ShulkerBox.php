@@ -81,13 +81,6 @@ class ShulkerBox extends Transparent{
     }
 
     /**
-     * @return bool
-     */
-    public function canBeActivated() : bool{
-        return true;
-    }
-
-    /**
      * @param Item $item
      * @param Block $block
      * @param Block $target
@@ -199,6 +192,6 @@ class ShulkerBox extends Transparent{
             14 => "Red",
             15 => "Black"
         ];
-        return $names[$meta] ?? "Unknown";
+        return $names[$meta] ?? "Undyed";
     }
 }

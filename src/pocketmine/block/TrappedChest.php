@@ -70,13 +70,6 @@ class TrappedChest extends RedstoneSource {
 	}
 
 	/**
-	 * @return bool
-	 */
-	public function canBeActivated() : bool{
-		return true;
-	}
-
-	/**
 	 * @return float
 	 */
 	public function getHardness(){

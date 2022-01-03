@@ -32,9 +32,9 @@ use pocketmine\entity\Entity;
 use pocketmine\item\Item;
 use pocketmine\item\Tool;
 use pocketmine\level\Level;
-use pocketmine\level\MovingObjectPosition;
 use pocketmine\level\Position;
 use pocketmine\math\AxisAlignedBB;
+use pocketmine\math\RayTraceResult;
 use pocketmine\math\Vector3;
 use pocketmine\metadata\Metadatable;
 use pocketmine\metadata\MetadataValue;
@@ -452,10 +452,10 @@ class Block extends Position implements BlockIds, Metadatable{
 	 *
 	 * @param int $type
 	 *
-	 * @return void
+	 * @return bool|int
 	 */
 	public function onUpdate($type){
-
+		return false;
 	}
 
 	/**
@@ -471,14 +471,14 @@ class Block extends Position implements BlockIds, Metadatable{
 	}
 
 	/**
-	 * @return int
+	 * @return float
 	 */
 	public function getHardness(){
 		return 10;
 	}
 
 	/**
-	 * @return int
+	 * @return float
 	 */
 	public function getResistance(){
 		return $this->getHardness() * 5;
@@ -520,6 +520,26 @@ class Block extends Position implements BlockIds, Metadatable{
 			}
 		}
 		return false;
+	}
+
+	public function isLightedByAround(){
+
+	}
+
+	public function lightAround(){
+
+	}
+
+	public function turnAroundOff(){
+
+	}
+
+	public function turnOn(){
+
+	}
+
+	public function turnOff(){
+
 	}
 
 	/**
@@ -609,15 +629,6 @@ class Block extends Position implements BlockIds, Metadatable{
 	 * @return bool
 	 */
 	public function canBeFlowedInto(){
-		return false;
-	}
-
-	/**
-	 * AKA: Block->isActivable
-	 *
-	 * @return bool
-	 */
-	public function canBeActivated() : bool{
 		return false;
 	}
 
@@ -824,6 +835,16 @@ class Block extends Position implements BlockIds, Metadatable{
 	}
 
 	/**
+	 * Returns a list of blocks that this block is part of. In most cases, only contains the block itself, but in cases
+	 * such as double plants, beds and doors, will contain both halves.
+	 *
+	 * @return Block[]
+	 */
+	public function getAffectedBlocks() : array{
+		return [$this];
+	}
+
+	/**
 	 * @return string
 	 */
 	public function __toString(){
@@ -913,9 +934,9 @@ class Block extends Position implements BlockIds, Metadatable{
 	 * @param Vector3 $pos1
 	 * @param Vector3 $pos2
 	 *
-	 * @return MovingObjectPosition
+	 * @return RayTraceResult|null
 	 */
-	public function calculateIntercept(Vector3 $pos1, Vector3 $pos2){
+	public function calculateIntercept(Vector3 $pos1, Vector3 $pos2) : ?RayTraceResult{
 		$bbs = $this->getCollisionBoxes();
 		if(count($bbs) === 0){
 			return null;

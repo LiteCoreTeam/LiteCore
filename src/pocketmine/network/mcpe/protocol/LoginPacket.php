@@ -34,7 +34,6 @@ class LoginPacket extends DataPacket {
 
 	const EDITION_POCKET = 0;
 
-
 	public $username;
 	public $protocol;
 	public $gameEdition;

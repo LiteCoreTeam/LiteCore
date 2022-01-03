@@ -48,13 +48,6 @@ class Chest extends Transparent {
 	}
 
 	/**
-	 * @return bool
-	 */
-	public function canBeActivated() : bool{
-		return true;
-	}
-
-	/**
 	 * @return float
 	 */
 	public function getHardness(){

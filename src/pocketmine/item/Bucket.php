@@ -44,13 +44,6 @@ class Bucket extends Item {
 		return $this->meta === Block::AIR ? 16 : 1; //empty buckets stack to 16
 	}
 
-	/**
-	 * @return bool
-	 */
-	public function canBeActivated() : bool{
-		return true;
-	}
-
 	public function getFuelResidue() : Item{
 		if($this->meta === Block::LAVA or $this->meta === Block::STILL_LAVA){
 			return Item::get(Item::BUCKET);

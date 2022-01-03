@@ -187,13 +187,6 @@ class WoodenButton extends RedstoneSource {
 	}
 
 	/**
-	 * @return bool
-	 */
-	public function canBeActivated() : bool{
-		return true;
-	}
-
-	/**
 	 * @param Block|null $from
 	 *
 	 * @return bool

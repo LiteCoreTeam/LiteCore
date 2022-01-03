@@ -29,6 +29,7 @@ use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\nbt\tag\ShortTag;
 use pocketmine\network\mcpe\protocol\AddEntityPacket;
 use pocketmine\Player;
+use pocketmine\item\Bow;
 
 class Arrow extends Projectile {
 	const NETWORK_ID = 80;
@@ -44,6 +45,8 @@ class Arrow extends Projectile {
 
 	protected $potionId;
 
+	protected $bow;
+
 	/**
 	 * Arrow constructor.
 	 *
@@ -52,13 +55,22 @@ class Arrow extends Projectile {
 	 * @param Entity|null $shootingEntity
 	 * @param bool        $critical
 	 */
-	public function __construct(Level $level, CompoundTag $nbt, Entity $shootingEntity = null, bool $critical = false){
+	public function __construct(Level $level, CompoundTag $nbt, Entity $shootingEntity = null, bool $critical = false, Bow $bow = null){
 		if(!isset($nbt->Potion)){
 			$nbt->Potion = new ShortTag("Potion", 0);
 		}
 		parent::__construct($level, $nbt, $shootingEntity);
 		$this->potionId = $this->namedtag["Potion"];
 		$this->setCritical($critical);
+		$this->bow = $bow;
+	}
+
+	public function getBow() : ?Bow{
+		return $this->bow;
+	}
+
+	public function setBow(?Bow $bow){
+		$this->bow = $bow;
 	}
 
 	/**

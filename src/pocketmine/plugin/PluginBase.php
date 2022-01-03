@@ -124,8 +124,8 @@ abstract class PluginBase implements Plugin {
 			$this->loader = $loader;
 			$this->server = $server;
 			$this->description = $description;
-			$this->dataFolder = rtrim($dataFolder, "\\/") . "/";
-			$this->file = rtrim($file, "\\/") . "/";
+		    $this->dataFolder = rtrim($dataFolder, "/" . DIRECTORY_SEPARATOR) . "/";
+		    $this->file = rtrim($file, "/" . DIRECTORY_SEPARATOR) . "/";
 			$this->configFile = $this->dataFolder . "config.yml";
 			$this->logger = new PluginLogger($this);
 		}
@@ -191,7 +191,7 @@ abstract class PluginBase implements Plugin {
 	 * @return resource Resource data, or null
 	 */
 	public function getResource($filename){
-		$filename = rtrim(str_replace("\\", "/", $filename), "/");
+		$filename = rtrim(str_replace(DIRECTORY_SEPARATOR, "/", $filename), "/");
 		if(file_exists($this->file . "resources/" . $filename)){
 			return fopen($this->file . "resources/" . $filename, "rb");
 		}

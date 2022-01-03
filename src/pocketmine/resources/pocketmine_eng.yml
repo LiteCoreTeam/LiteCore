@@ -13,8 +13,6 @@ settings:
  shutdown-message: "The server is being rebooted or disabled for technical work!"
  #Allow listing plugins via Query
  query-plugins: false
- #Show a console message when a plugin uses deprecated API methods
- deprecated-verbose: true
  #Enable plugin and core profiling by default
  enable-profiling: false
  #Will only add results when tick measurement is below or equal to given value (default 20)
@@ -87,7 +85,7 @@ network:
  compression-level: 6
  #Use AsyncTasks for compression. Adds half/one tick delay, less CPU load on main thread
  async-compression: false
- #Experimental, only for Windows. Tries to use UPnP to automatically port forward
+ #Experimental. Use UPnP to automatically port forward
  upnp-forwarding: false
  #Maximum size in bytes of packets sent over the network (default 1492 bytes). Packets larger than this will be
  #fragmented or split into smaller parts. Clients can request MTU sizes up to but not more than this number.
@@ -150,11 +148,6 @@ auto-report:
  send-settings: true
  send-phpinfo: false
  host: crash.pmmp.io
-
-anonymous-statistics:
- #Sends anonymous statistics for data aggregation, plugin usage tracking
- enabled: false
- host: stats.pocketmine.net
 
 commands:
  #Here you can customize server commands

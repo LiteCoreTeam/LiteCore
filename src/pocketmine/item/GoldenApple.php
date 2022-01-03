@@ -59,6 +59,10 @@ class GoldenApple extends Food {
 		return 9.6;
 	}
 
+	public function requiresHunger() : bool{
+		return true;
+	}
+
 	/**
 	 * @return array
 	 */

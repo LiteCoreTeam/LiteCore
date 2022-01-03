@@ -219,12 +219,7 @@ class ServerScheduler {
 		return $this->handle(new TaskHandler(get_class($task), $task, $this->nextId(), $delay, $period));
 	}
 
-	/**
-	 * @param TaskHandler $handler
-	 *
-	 * @return TaskHandler
-	 */
-	private function handle(TaskHandler $handler){
+	private function handle(TaskHandler $handler) : TaskHandler{
 		if($handler->isDelayed()){
 			$nextRun = $this->currentTick + $handler->getDelay();
 		}else{

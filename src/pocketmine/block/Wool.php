@@ -21,10 +21,10 @@
 
 namespace pocketmine\block;
 
-
+use pocketmine\block\utils\ColorBlockMetaHelper;
 use pocketmine\item\Tool;
 
-class Wool extends Solid {
+class Wool extends Solid{
 	const WHITE = 0;
 	const ORANGE = 1;
 	const MAGENTA = 2;
@@ -44,52 +44,20 @@ class Wool extends Solid {
 
 	protected $id = self::WOOL;
 
-	/**
-	 * Wool constructor.
-	 *
-	 * @param int $meta
-	 */
 	public function __construct($meta = 0){
 		$this->meta = $meta;
 	}
 
-	/**
-	 * @return float
-	 */
 	public function getHardness(){
 		return 0.8;
 	}
 
-	/**
-	 * @return int
-	 */
 	public function getToolType(){
 		return Tool::TYPE_SHEARS;
 	}
 
-	/**
-	 * @return string
-	 */
 	public function getName() : string{
-		static $names = [
-			0 => "White Wool",
-			1 => "Orange Wool",
-			2 => "Magenta Wool",
-			3 => "Light Blue Wool",
-			4 => "Yellow Wool",
-			5 => "Lime Wool",
-			6 => "Pink Wool",
-			7 => "Gray Wool",
-			8 => "Light Gray Wool",
-			9 => "Cyan Wool",
-			10 => "Purple Wool",
-			11 => "Blue Wool",
-			12 => "Brown Wool",
-			13 => "Green Wool",
-			14 => "Red Wool",
-			15 => "Black Wool",
-		];
-		return $names[$this->meta & 0x0f];
+		return ColorBlockMetaHelper::getColorFromMeta($this->meta) . " Wool";
 	}
 
 	/**

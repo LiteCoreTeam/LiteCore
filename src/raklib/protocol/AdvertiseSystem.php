@@ -13,6 +13,8 @@
  *
  */
 
+declare(strict_types=1);
+
 namespace raklib\protocol;
 
 class AdvertiseSystem extends Packet{
@@ -21,11 +23,11 @@ class AdvertiseSystem extends Packet{
 	/** @var string */
 	public $serverName;
 
-	protected function encodePayload(){
+	protected function encodePayload() : void{
 		$this->putString($this->serverName);
 	}
 
-	protected function decodePayload(){
+	protected function decodePayload() : void{
 		$this->serverName = $this->getString();
 	}
 }

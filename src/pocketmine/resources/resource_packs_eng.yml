@@ -1,10 +1,12 @@
-# Global resource pack configuration
-# Configure this file to use global resource packs on your LiteCore server.
+#This configuration file controls global resources used on your LiteCore server.
 
-# Choose whether players have to accept downloading your resource pack(s) to join the game.
+#Choose whether players must use your chosen resource packs to join the server.
+#NOTE: This will do nothing if there are no resource packs in the stack below.
 force_resources: false
-# List of your resource packs. They should be put under `resource_packs` folder.
 resource_stack:
- # e.g.
- # - Creeper_texture_pack.mcpack
- # - vanilla.zip
+  #Resource packs here are applied from bottom to top. This means that resources in higher packs will override those in lower packs.
+  #Entries here must indicate the filename of the resource pack.
+  #Example
+  # - natural.zip
+  # - vanilla.zip
+  #If you want to force clients to use vanilla resources, you must place a vanilla resource pack in your resources folder and add it to the stack here.

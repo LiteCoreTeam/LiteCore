@@ -29,7 +29,6 @@ use pocketmine\event\entity\EntityDamageEvent;
 use pocketmine\event\entity\ProjectileHitEvent;
 use pocketmine\item\Potion;
 use pocketmine\level\Level;
-use pocketmine\level\MovingObjectPosition;
 use pocketmine\math\Vector3;
 use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\nbt\tag\ShortTag;
@@ -213,14 +212,14 @@ abstract class Projectile extends Entity{
 					continue;
 				}
 
-				$axisalignedbb = $entity->boundingBox->grow(0.3, 0.3, 0.3);
-				$ob = $axisalignedbb->calculateIntercept($this, $moveVector);
+				$axisalignedbb = $entity->boundingBox->expandedCopy(0.3, 0.3, 0.3);
+				$rayTraceResult = $axisalignedbb->calculateIntercept($this, $moveVector);
 
-				if($ob === null){
+				if($rayTraceResult === null){
 					continue;
 				}
 
-				$distance = $this->distanceSquared($ob->hitVector);
+				$distance = $this->distanceSquared($rayTraceResult->hitVector);
 
 				if($distance < $nearDistance){
 					$nearDistance = $distance;
@@ -229,14 +228,8 @@ abstract class Projectile extends Entity{
 			}
 
 			if($nearEntity !== null){
-				$movingObjectPosition = MovingObjectPosition::fromEntity($nearEntity);
-			}
-
-			if($movingObjectPosition !== null){
-				if($movingObjectPosition->entityHit !== null){
-					$this->onCollideWithEntity($movingObjectPosition->entityHit);
-					return false;
-				}
+				$this->onCollideWithEntity($nearEntity);
+				return false;
 			}
 
 			$this->move($this->motionX, $this->motionY, $this->motionZ);

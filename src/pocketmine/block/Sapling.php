@@ -27,7 +27,7 @@ use pocketmine\level\Level;
 use pocketmine\Player;
 use pocketmine\utils\Random;
 
-class Sapling extends Flowable {
+class Sapling extends Flowable{
 	const OAK = 0;
 	const SPRUCE = 1;
 	const BIRCH = 2;
@@ -47,13 +47,6 @@ class Sapling extends Flowable {
 	}
 
 	/**
-	 * @return bool
-	 */
-	public function canBeActivated() : bool{
-		return true;
-	}
-
-	/**
 	 * @return string
 	 */
 	public function getName() : string{
@@ -63,11 +56,9 @@ class Sapling extends Flowable {
 			2 => "Birch Sapling",
 			3 => "Jungle Sapling",
 			4 => "Acacia Sapling",
-			5 => "Dark Oak Sapling",
-			6 => "",
-			7 => "",
+			5 => "Dark Oak Sapling"
 		];
-		return $names[$this->meta & 0x07];
+		return $names[$this->meta & 0x07] ?? "Unknown";
 	}
 
 
@@ -104,9 +95,8 @@ class Sapling extends Flowable {
 		if($item->getId() === Item::DYE and $item->getDamage() === 0x0F){ //Bonemeal
 			//TODO: change log type
 			Tree::growTree($this->getLevel(), $this->x, $this->y, $this->z, new Random(mt_rand()), $this->meta & 0x07, false);
-			if(($player->gamemode & 0x01) === 0){
-                $item->pop();
-			}
+			
+            $item->pop();
 
 			return true;
 		}

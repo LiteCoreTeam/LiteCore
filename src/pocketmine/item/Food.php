@@ -34,12 +34,19 @@ abstract class Food extends Item implements FoodSource {
 		return true;
 	}
 
+	public function requiresHunger() : bool{
+		return true;
+	}
+
 	/**
 	 * @param Entity $entity
 	 *
 	 * @return bool
 	 */
 	public function canBeConsumedBy(Entity $entity) : bool{
+		if (!$this->requiresHunger()) {
+			return $entity instanceof Player;
+		}
 		return $entity instanceof Player and ($entity->getFood() < $entity->getMaxFood()) and $this->canBeConsumed();
 	}
 
@@ -51,7 +58,7 @@ abstract class Food extends Item implements FoodSource {
 			return Item::get(0);
 		}else{
 			$new = clone $this;
-			$new->count--;
+			$new->pop();
 			return $new;
 		}
 	}

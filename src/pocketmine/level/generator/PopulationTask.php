@@ -28,28 +28,35 @@ use pocketmine\scheduler\AsyncTask;
 use pocketmine\Server;
 
 
-class PopulationTask extends AsyncTask {
+class PopulationTask extends AsyncTask{
 
+	/** @var bool */
 	public $state;
+	/** @var int */
 	public $levelId;
+	/** @var string */
 	public $chunk;
 
+	/** @var string */
 	public $chunk0;
+	/** @var string */
 	public $chunk1;
+	/** @var string */
 	public $chunk2;
+	/** @var string */
 	public $chunk3;
+
 	//center chunk
+
+	/** @var string */
 	public $chunk5;
+	/** @var string */
 	public $chunk6;
+	/** @var string */
 	public $chunk7;
+	/** @var string */
 	public $chunk8;
 
-	/**
-	 * PopulationTask constructor.
-	 *
-	 * @param Level $level
-	 * @param Chunk $chunk
-	 */
 	public function __construct(Level $level, Chunk $chunk){
 		$this->state = true;
 		$this->levelId = $level->getId();
@@ -87,11 +94,6 @@ class PopulationTask extends AsyncTask {
 			}
 		}
 
-		if($chunk === null){
-			//TODO error
-			return;
-		}
-
 		$manager->setChunk($chunk->getX(), $chunk->getZ(), $chunk);
 		if(!$chunk->isGenerated()){
 			$generator->generateChunk($chunk->getX(), $chunk->getZ());
@@ -125,22 +127,14 @@ class PopulationTask extends AsyncTask {
 		$manager->cleanChunks();
 	}
 
-	/**
-	 * @param Server $server
-	 */
 	public function onCompletion(Server $server){
 		$level = $server->getLevel($this->levelId);
 		if($level !== null){
-			if($this->state === false){
+			if(!$this->state){
 				$level->registerGenerator();
 			}
 
 			$chunk = Chunk::fastDeserialize($this->chunk);
-
-			if($chunk === null){
-				//TODO error
-				return;
-			}
 
 			for($i = 0; $i < 9; ++$i){
 				if($i === 4){

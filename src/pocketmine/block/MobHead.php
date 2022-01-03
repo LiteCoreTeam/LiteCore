@@ -64,6 +64,7 @@ class MobHead extends Flowable {
 	 * @return AxisAlignedBB
 	 */
 	protected function recalculateBoundingBox(){
+		//TODO: different bounds depending on attached face (meta)
 		return new AxisAlignedBB(
 			$this->x + 0.25,
 			$this->y,
@@ -111,30 +112,6 @@ class MobHead extends Flowable {
 			return true;
 		}
 		return false;
-	}
-
-	/**
-	 * @param int $type
-	 *
-	 * @return int|void
-	 */
-	public function onUpdate($type){
-		$faces = [
-			1 => 0,
-			2 => 3,
-			3 => 2,
-			4 => 5,
-			5 => 4,
-		];
-		if($type === Level::BLOCK_UPDATE_NORMAL){
-			if($this->getSide($faces[$this->meta])->getId() === self::AIR){
-				$this->getLevel()->useBreakOn($this);
-
-				return Level::BLOCK_UPDATE_NORMAL;
-			}
-		}
-
-		return parent::onUpdate($type);
 	}
 
 	/**

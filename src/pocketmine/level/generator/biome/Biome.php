@@ -79,22 +79,28 @@ abstract class Biome {
 
 	const VOID = 127;
 
-	const MAX_BIOMES = 256;
+	public const MAX_BIOMES = 256;
 
-	/** @var Biome[] */
-	private static $biomes = [];
+	/** @var Biome[]|\SplFixedArray */
+	private static $biomes;
 
+	/** @var int */
 	private $id;
+	/** @var bool */
 	private $registered = false;
 	/** @var Populator[] */
 	private $populators = [];
 
+	/** @var int */
 	private $minElevation;
+	/** @var int */
 	private $maxElevation;
-
+	/** @var Block[] */
 	private $groundCover = [];
 
+	/** @var float */
 	protected $rainfall = 0.5;
+	/** @var float */
 	protected $temperature = 0.5;
 
 	/**
@@ -121,6 +127,8 @@ abstract class Biome {
 	}
 
 	public static function init(){
+		self::$biomes = new \SplFixedArray(self::MAX_BIOMES);
+
 		self::register(self::OCEAN, new OceanBiome());
 		self::register(self::PLAINS, new PlainBiome());
 		self::register(self::DESERT, new DesertBiome());

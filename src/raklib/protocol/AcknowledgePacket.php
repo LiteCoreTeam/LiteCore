@@ -13,13 +13,15 @@
  *
  */
 
+declare(strict_types=1);
+
 namespace raklib\protocol;
+
 
 use function chr;
 use function count;
 use function sort;
 use const SORT_NUMERIC;
-
 #ifndef COMPILE
 use pocketmine\utils\Binary;
 #endif
@@ -33,7 +35,7 @@ abstract class AcknowledgePacket extends Packet{
 	/** @var int[] */
 	public $packets = [];
 
-	protected function encodePayload(){
+	protected function encodePayload() : void{
 		$payload = "";
 		sort($this->packets, SORT_NUMERIC);
 		$count = count($this->packets);
@@ -79,7 +81,7 @@ abstract class AcknowledgePacket extends Packet{
 		$this->buffer .= $payload;
 	}
 
-	protected function decodePayload(){
+	protected function decodePayload() : void{
 		$count = $this->getShort();
 		$this->packets = [];
 		$cnt = 0;
@@ -101,6 +103,7 @@ abstract class AcknowledgePacket extends Packet{
 
 	public function clean(){
 		$this->packets = [];
+
 		return parent::clean();
 	}
 }

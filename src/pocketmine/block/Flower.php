@@ -26,7 +26,7 @@ use pocketmine\level\Level;
 use pocketmine\math\Vector3;
 use pocketmine\Player;
 
-class Flower extends Flowable {
+class Flower extends Flowable{
 	const TYPE_POPPY = 0;
 	const TYPE_BLUE_ORCHID = 1;
 	const TYPE_ALLIUM = 2;
@@ -61,16 +61,9 @@ class Flower extends Flowable {
 			self::TYPE_ORANGE_TULIP => "Orange Tulip",
 			self::TYPE_WHITE_TULIP => "White Tulip",
 			self::TYPE_PINK_TULIP => "Pink Tulip",
-			self::TYPE_OXEYE_DAISY => "Oxeye Daisy",
-			9 => "Unknown",
-			10 => "Unknown",
-			11 => "Unknown",
-			12 => "Unknown",
-			13 => "Unknown",
-			14 => "Unknown",
-			15 => "Unknown"
+			self::TYPE_OXEYE_DAISY => "Oxeye Daisy"
 		];
-		return $names[$this->meta];
+		return $names[$this->meta] ?? "Unknown";
 	}
 
 

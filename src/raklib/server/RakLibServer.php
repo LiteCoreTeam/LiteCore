@@ -13,12 +13,15 @@
  *
  */
 
+declare(strict_types=1);
+
 namespace raklib\server;
 
 use pocketmine\snooze\SleeperNotifier;
 use raklib\RakLib;
-use function error_get_last;
+use raklib\utils\InternetAddress;
 use function array_reverse;
+use function error_get_last;
 use function error_reporting;
 use function function_exists;
 use function gc_enable;
@@ -58,8 +61,8 @@ use const E_WARNING;
 use const PHP_INT_MAX;
 
 class RakLibServer extends \Thread{
-	protected $port;
-	protected $interface;
+	/** @var InternetAddress */
+	private $address;
 
 	/** @var \ThreadedLogger */
 	protected $logger;
@@ -92,13 +95,8 @@ class RakLibServer extends \Thread{
 	 * @param string               $autoloaderPath Path to Composer autoloader
 	 * @param int|null             $overrideProtocolVersion Optional custom protocol version to use, defaults to current RakLib's protocol
 	 */
-	public function __construct(\ThreadedLogger $logger, $autoloaderPath, $port, $interface = "0.0.0.0", int $maxMtuSize = 1492, ?int $overrideProtocolVersion = null, ?SleeperNotifier $sleeper = null){
-		$this->port = (int) $port;
-		if($port < 1 or $port > 65536){
-			throw new \Exception("Invalid port range");
-		}
-
-		$this->interface = $interface;
+	public function __construct(\ThreadedLogger $logger, $autoloaderPath, InternetAddress $address, int $maxMtuSize = 1492, ?int $overrideProtocolVersion = null, ?SleeperNotifier $sleeper = null){
+		$this->address = $address;
 
 		$this->serverId = mt_rand(0, PHP_INT_MAX);
 		$this->maxMtuSize = $maxMtuSize;
@@ -129,14 +127,6 @@ class RakLibServer extends \Thread{
 
 	public function shutdown() : void{
 		$this->shutdown = true;
-	}
-
-	public function getPort(){
-		return $this->port;
-	}
-
-	public function getInterface(){
-		return $this->interface;
 	}
 
 	/**
@@ -291,15 +281,14 @@ class RakLibServer extends \Thread{
 
 			gc_enable();
 			error_reporting(-1);
-			ini_set("display_errors", 1);
-			ini_set("display_startup_errors", 1);
+			ini_set("display_errors", '1');
+			ini_set("display_startup_errors", '1');
 
 			set_error_handler([$this, "errorHandler"], E_ALL);
 			register_shutdown_function([$this, "shutdownHandler"]);
 
-
-			$socket = new UDPServerSocket($this->port, $this->interface);
-			$manager = new SessionManager($this, $socket, $this->maxMtuSize);
+			$socket = new UDPServerSocket($this->address);
+			new SessionManager($this, $socket, $this->maxMtuSize);
 		}catch(\Throwable $e){
 			$this->logger->logException($e);
 		}

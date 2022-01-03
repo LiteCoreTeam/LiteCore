@@ -62,13 +62,6 @@ class TNT extends Solid implements ElectricalAppliance {
 		return 0;
 	}
 
-	/**
-	 * @return bool
-	 */
-	public function canBeActivated() : bool{
-		return true;
-	}
-
 	public function hasEntityCollision(){
 		return true;
 	}

@@ -24,9 +24,10 @@ namespace pocketmine\block;
 use pocketmine\item\Item;
 use pocketmine\item\Tool;
 use pocketmine\math\AxisAlignedBB;
+use pocketmine\math\Vector3;
 use pocketmine\Player;
 
-class WoodSlab extends Transparent {
+class WoodSlab extends Transparent{
 
 	protected $id = self::WOOD_SLAB;
 
@@ -56,11 +57,13 @@ class WoodSlab extends Transparent {
 			2 => "Birch",
 			3 => "Jungle",
 			4 => "Acacia",
-			5 => "Dark Oak",
-			6 => "",
-			7 => ""
+			5 => "Dark Oak"
 		];
-		return (($this->meta & 0x08) === 0x08 ? "Upper " : "") . $names[$this->meta & 0x07] . " Wooden Slab";
+		return (($this->meta & 0x08) === 0x08 ? "Upper " : "") . ($names[$this->meta & 0x07] ?? "") . " Wooden Slab";
+	}
+
+	public function getVariantBitmask() : int{
+		return 0x07;
 	}
 
 	/**
@@ -88,6 +91,23 @@ class WoodSlab extends Transparent {
 			);
 		}
 	}
+
+	public function canBePlacedAt(Block $blockReplace, Vector3 $clickVector, int $face, bool $isClickedBlock) : bool{
+		if(parent::canBePlacedAt($blockReplace, $clickVector, $face, $isClickedBlock)){
+			return true;
+		}
+
+		if($blockReplace->getId() === $this->getId() and $blockReplace->getVariant() === $this->getVariant()){
+			if(($blockReplace->getDamage() & 0x08) !== 0){ //Trying to combine with top slab
+				return $clickVector->y <= 0.5 or (!$isClickedBlock and $face === Vector3::SIDE_UP);
+			}else{
+				return $clickVector->y >= 0.5 or (!$isClickedBlock and $face === Vector3::SIDE_DOWN);
+			}
+		}
+
+		return false;
+	}
+
 
 	/**
 	 * @param Item        $item

@@ -1,9 +1,6 @@
-#!/bin/bash
+#!/usr/bin/env bash
 DIR="$(cd -P "$( dirname "${BASH_SOURCE[0]}" )" && pwd)"
 cd "$DIR"
-
-# Автоматический рестарт сервера
-DO_LOOP="no"
 
 while getopts "p:f:l" OPTION 2> /dev/null; do
 	case ${OPTION} in
@@ -50,18 +47,17 @@ fi
 LOOPS=0
 
 set +e
-while [ "$LOOPS" -eq 0 ] || [ "$DO_LOOP" == "yes" ]; do
-	if [ "$DO_LOOP" == "yes" ]; then
-		"$PHP_BINARY" "$POCKETMINE_FILE" $@
-	else
-		exec "$PHP_BINARY" "$POCKETMINE_FILE" $@
-	fi
-	if [ "$DO_LOOP" == "yes" ]; then
+
+if [ "$DO_LOOP" == "yes" ]; then
+	while true; do
 		if [ ${LOOPS} -gt 0 ]; then
 			echo "Restarted $LOOPS times"
 		fi
+		"$PHP_BINARY" "$POCKETMINE_FILE" $@
 		echo "Чтобы выйти из цикла, нажмите CTRL + C сейчас. В ином случае подождите 2 секунды, сервер перезапустится."
 		sleep 2
 		((LOOPS++))
-	fi
-done
+	done
+else
+	exec "$PHP_BINARY" "$POCKETMINE_FILE" $@
+fi

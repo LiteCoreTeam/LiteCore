@@ -12,10 +12,6 @@ class EmptyMap extends Item{
         parent::__construct(self::EMPTY_MAP, $meta, $count, "Empty Map");
     }
 
-    public function canBeActivated() : bool{
-        return true;
-    }
-
     public function getMaxStackSize() : int{
         return 1;
     }

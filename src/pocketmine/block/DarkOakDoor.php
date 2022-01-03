@@ -45,13 +45,6 @@ class DarkOakDoor extends Door {
 	}
 
 	/**
-	 * @return bool
-	 */
-	public function canBeActivated() : bool{
-		return true;
-	}
-
-	/**
 	 * @return int
 	 */
 	public function getHardness(){

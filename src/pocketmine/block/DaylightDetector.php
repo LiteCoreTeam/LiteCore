@@ -59,13 +59,6 @@ class DaylightDetector extends RedstoneSource {
 	}
 
 	/**
-	 * @return bool
-	 */
-	public function canBeActivated() : bool{
-		return true;
-	}
-
-	/**
 	 * @return DLDetector
 	 */
 	protected function getTile(){
@@ -74,12 +67,12 @@ class DaylightDetector extends RedstoneSource {
 			return $t;
 		}else{
 			$nbt = new CompoundTag("", [
-				new StringTag("id", Tile::DL_DETECTOR),
+				new StringTag("id", Tile::DAY_LIGHT_DETECTOR),
 				new IntTag("x", $this->x),
 				new IntTag("y", $this->y),
 				new IntTag("z", $this->z)
 			]);
-			return Tile::createTile(Tile::DL_DETECTOR, $this->getLevel(), $nbt);
+			return Tile::createTile(Tile::DAY_LIGHT_DETECTOR, $this->getLevel(), $nbt);
 		}
 	}
 

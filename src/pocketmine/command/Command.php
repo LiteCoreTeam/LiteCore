@@ -131,7 +131,7 @@ abstract class Command{
 	 *
 	 * @return mixed
 	 */
-	public abstract function execute(CommandSender $sender, $commandLabel, array $args);
+	public abstract function execute(CommandSender $sender, string $commandLabel, array $args): bool;
 
 	/**
 	 * @return string
@@ -352,10 +352,8 @@ abstract class Command{
 		if($message instanceof TextContainer){
 			$m = clone $message;
 			$result = "[" . $source->getName() . ": " . ($source->getServer()->getLanguage()->get($m->getText()) !== $m->getText() ? "%" : "") . $m->getText() . "]";
-
 			$users = $source->getServer()->getPluginManager()->getPermissionSubscriptions(Server::BROADCAST_CHANNEL_ADMINISTRATIVE);
 			$colored = TextFormat::GRAY . TextFormat::ITALIC . $result;
-
 			$m->setText($result);
 			$result = clone $m;
 			$m->setText($colored);
@@ -365,18 +363,14 @@ abstract class Command{
 			$result = new TranslationContainer("chat.type.admin", [$source->getName(), $message]);
 			$colored = new TranslationContainer(TextFormat::GRAY . TextFormat::ITALIC . "%chat.type.admin", [$source->getName(), $message]);
 		}
-
-		if($sendToSource === true and !($source instanceof ConsoleCommandSender)){
+	
+		if($sendToSource === true && !($source instanceof ConsoleCommandSender)){
 			$source->sendMessage($message);
 		}
-
+	
 		foreach($users as $user){
-			if($user instanceof CommandSender){
-				if($user instanceof ConsoleCommandSender){
-					$user->sendMessage($result);
-				}elseif($user !== $source){
-					$user->sendMessage($colored);
-				}
+			if($user instanceof CommandSender && ($user instanceof ConsoleCommandSender || $user !== $source)){
+				$user->sendMessage($user instanceof ConsoleCommandSender ? $result : $colored);
 			}
 		}
 	}

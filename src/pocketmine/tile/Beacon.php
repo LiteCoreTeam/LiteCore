@@ -20,7 +20,7 @@
  * @link http://www.pocketmine.net/
  *
  *
-*/
+ */
 
 namespace pocketmine\tile;
 
@@ -35,7 +35,8 @@ use pocketmine\nbt\tag\IntTag;
 use pocketmine\nbt\tag\StringTag;
 use pocketmine\Player;
 
-class Beacon extends Spawnable implements Nameable, InventoryHolder {
+class Beacon extends Spawnable implements Nameable, InventoryHolder
+{
 
 	private $inventory;
 	protected $currentTick = 0;
@@ -47,11 +48,12 @@ class Beacon extends Spawnable implements Nameable, InventoryHolder {
 	 * @param Level       $level
 	 * @param CompoundTag $nbt
 	 */
-	public function __construct(Level $level, CompoundTag $nbt){
-		if(!isset($nbt->primary)){
+	public function __construct(Level $level, CompoundTag $nbt)
+	{
+		if (!isset($nbt->primary)) {
 			$nbt->primary = new IntTag("primary", 0);
 		}
-		if(!isset($nbt->secondary)){
+		if (!isset($nbt->secondary)) {
 			$nbt->secondary = new IntTag("secondary", 0);
 		}
 		$this->inventory = new BeaconInventory($this);
@@ -59,14 +61,16 @@ class Beacon extends Spawnable implements Nameable, InventoryHolder {
 		$this->scheduleUpdate();
 	}
 
-	public function saveNBT(){
+	public function saveNBT(): void
+	{
 		parent::saveNBT();
 	}
 
 	/**
 	 * @return CompoundTag
 	 */
-	public function getSpawnCompound(){
+	public function getSpawnCompound(): CompoundTag
+	{
 		$c = new CompoundTag("", [
 			new StringTag("id", Tile::BEACON),
 			new ByteTag("isMovable", (bool) true),
@@ -76,7 +80,7 @@ class Beacon extends Spawnable implements Nameable, InventoryHolder {
 			new IntTag("primary", $this->namedtag["primary"]),
 			new IntTag("secondary", $this->namedtag["secondary"])
 		]);
-		if($this->hasName()){
+		if ($this->hasName()) {
 			$c->CustomName = $this->namedtag->CustomName;
 		}
 		return $c;
@@ -85,22 +89,25 @@ class Beacon extends Spawnable implements Nameable, InventoryHolder {
 	/**
 	 * @return string
 	 */
-	public function getName() : string{
+	public function getName(): string
+	{
 		return $this->hasName() ? $this->namedtag->CustomName->getValue() : "Beacon";
 	}
 
 	/**
 	 * @return bool
 	 */
-	public function hasName(){
+	public function hasName(): bool
+	{
 		return isset($this->namedtag->CustomName);
 	}
 
 	/**
 	 * @param void $str
 	 */
-	public function setName($str){
-		if($str === ""){
+	public function setName($str): void
+	{
+		if ($str === "") {
 			unset($this->namedtag->CustomName);
 			return;
 		}
@@ -110,7 +117,8 @@ class Beacon extends Spawnable implements Nameable, InventoryHolder {
 	/**
 	 * @return BeaconInventory
 	 */
-	public function getInventory(){
+	public function getInventory(): BeaconInventorys
+	{
 		return $this->inventory;
 	}
 
@@ -120,8 +128,9 @@ class Beacon extends Spawnable implements Nameable, InventoryHolder {
 	 *
 	 * @return bool
 	 */
-	public function updateCompoundTag(CompoundTag $nbt, Player $player) : bool{
-		if($nbt["id"] !== Tile::BEACON){
+	public function updateCompoundTag(CompoundTag $nbt, Player $player): bool
+	{
+		if ($nbt["id"] !== Tile::BEACON) {
 			return false;
 		}
 		$this->namedtag->primary = new IntTag("primary", $nbt["primary"]);
@@ -132,11 +141,12 @@ class Beacon extends Spawnable implements Nameable, InventoryHolder {
 	/**
 	 * @return bool
 	 */
-	public function onUpdate(){
-		if($this->closed === true){
+	public function onUpdate(): bool
+	{
+		if ($this->closed === true) {
 			return false;
 		}
-		if($this->currentTick++ % 100 != 0){
+		if ($this->currentTick++ % 100 != 0) {
 			return true;
 		}
 
@@ -146,19 +156,19 @@ class Beacon extends Spawnable implements Nameable, InventoryHolder {
 
 		$id = 0;
 
-		if($level > 0){
-			if(isset($this->namedtag->secondary) && $this->namedtag["primary"] != 0){
+		if ($level > 0) {
+			if (isset($this->namedtag->secondary) && $this->namedtag["primary"] != 0) {
 				$id = $this->namedtag["primary"];
-			}else if(isset($this->namedtag->secondary) && $this->namedtag["secondary"] != 0){
+			} else if (isset($this->namedtag->secondary) && $this->namedtag["secondary"] != 0) {
 				$id = $this->namedtag["secondary"];
 			}
-			if($id != 0){
+			if ($id != 0) {
 				$range = ($level + 1) * 10;
 				$effect = Effect::getEffect($id);
 				$effect->setDuration(10 * 30);
 				$effect->setAmplifier(0);
-				foreach($this->level->getPlayers() as $player){
-					if($this->distance($player) <= $range){
+				foreach ($this->level->getPlayers() as $player) {
+					if ($this->distance($player) <= $range) {
 						$player->addEffect($effect);
 					}
 				}
@@ -175,21 +185,22 @@ class Beacon extends Spawnable implements Nameable, InventoryHolder {
 	/**
 	 * @return int
 	 */
-	protected function calculatePowerLevel(){
+	protected function calculatePowerLevel(): int
+	{
 		$tileX = $this->getFloorX();
 		$tileY = $this->getFloorY();
 		$tileZ = $this->getFloorZ();
-		for($powerLevel = 1; $powerLevel <= self::POWER_LEVEL_MAX; $powerLevel++){
+		for ($powerLevel = 1; $powerLevel <= self::POWER_LEVEL_MAX; $powerLevel++) {
 			$queryY = $tileY - $powerLevel;
-			for($queryX = $tileX - $powerLevel; $queryX <= $tileX + $powerLevel; $queryX++){
-				for($queryZ = $tileZ - $powerLevel; $queryZ <= $tileZ + $powerLevel; $queryZ++){
+			for ($queryX = $tileX - $powerLevel; $queryX <= $tileX + $powerLevel; $queryX++) {
+				for ($queryZ = $tileZ - $powerLevel; $queryZ <= $tileZ + $powerLevel; $queryZ++) {
 					$testBlockId = $this->level->getBlockIdAt($queryX, $queryY, $queryZ);
-					if(
+					if (
 						$testBlockId != Block::IRON_BLOCK &&
 						$testBlockId != Block::GOLD_BLOCK &&
 						$testBlockId != Block::EMERALD_BLOCK &&
 						$testBlockId != Block::DIAMOND_BLOCK
-					){
+					) {
 						return $powerLevel - 1;
 					}
 				}

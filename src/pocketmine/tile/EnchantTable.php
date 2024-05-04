@@ -17,7 +17,7 @@
  * @link http://www.pocketmine.net/
  * 
  *
-*/
+ */
 
 namespace pocketmine\tile;
 
@@ -26,7 +26,8 @@ use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\nbt\tag\IntTag;
 use pocketmine\nbt\tag\StringTag;
 
-class EnchantTable extends Spawnable implements Nameable {
+class EnchantTable extends Spawnable implements Nameable
+{
 
 	/**
 	 * EnchantTable constructor.
@@ -34,29 +35,33 @@ class EnchantTable extends Spawnable implements Nameable {
 	 * @param Level       $level
 	 * @param CompoundTag $nbt
 	 */
-	public function __construct(Level $level, CompoundTag $nbt){
+	public function __construct(Level $level, CompoundTag $nbt)
+	{
 		parent::__construct($level, $nbt);
 	}
 
 	/**
 	 * @return string
 	 */
-	public function getName() : string{
+	public function getName(): string
+	{
 		return $this->hasName() ? $this->namedtag->CustomName->getValue() : "Enchanting Table";
 	}
 
 	/**
 	 * @return bool
 	 */
-	public function hasName(){
+	public function hasName(): bool
+	{
 		return isset($this->namedtag->CustomName);
 	}
 
 	/**
 	 * @param void $str
 	 */
-	public function setName($str){
-		if($str === ""){
+	public function setName($str): void
+	{
+		if ($str === "") {
 			unset($this->namedtag->CustomName);
 			return;
 		}
@@ -67,7 +72,8 @@ class EnchantTable extends Spawnable implements Nameable {
 	/**
 	 * @return CompoundTag
 	 */
-	public function getSpawnCompound(){
+	public function getSpawnCompound(): CompoundTag
+	{
 		$nbt = new CompoundTag("", [
 			new StringTag("id", Tile::ENCHANT_TABLE),
 			new IntTag("x", (int) $this->x),
@@ -75,7 +81,7 @@ class EnchantTable extends Spawnable implements Nameable {
 			new IntTag("z", (int) $this->z)
 		]);
 
-		if($this->hasName()){
+		if ($this->hasName()) {
 			$nbt->CustomName = $this->namedtag->CustomName;
 		}
 

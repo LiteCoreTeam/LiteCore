@@ -17,7 +17,7 @@
  * @link http://www.pocketmine.net/
  *
  *
-*/
+ */
 
 namespace pocketmine\tile;
 
@@ -27,13 +27,15 @@ use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\network\mcpe\protocol\BlockEntityDataPacket;
 use pocketmine\Player;
 
-abstract class Spawnable extends Tile{
+abstract class Spawnable extends Tile
+{
 	/** @var string|null */
 	private $spawnCompoundCache = null;
 	/** @var NBT|null */
 	private static $nbtWriter = null;
 
-	public function createSpawnPacket() : BlockEntityDataPacket{
+	public function createSpawnPacket(): BlockEntityDataPacket
+	{
 		$pk = new BlockEntityDataPacket();
 		$pk->x = $this->x;
 		$pk->y = $this->y;
@@ -43,8 +45,9 @@ abstract class Spawnable extends Tile{
 		return $pk;
 	}
 
-	public function spawnTo(Player $player){
-		if($this->closed){
+	public function spawnTo(Player $player): bool
+	{
+		if ($this->closed) {
 			return false;
 		}
 
@@ -56,16 +59,18 @@ abstract class Spawnable extends Tile{
 	/**
 	 * Spawnable constructor.
 	 *
-	 * @param Level       $level
+	 * @param Level $level
 	 * @param CompoundTag $nbt
 	 */
-	public function __construct(Level $level, CompoundTag $nbt){
+	public function __construct(Level $level, CompoundTag $nbt)
+	{
 		parent::__construct($level, $nbt);
 		$this->spawnToAll();
 	}
 
-	public function spawnToAll(){
-		if($this->closed){
+	public function spawnToAll(): void
+	{
+		if ($this->closed) {
 			return;
 		}
 
@@ -76,7 +81,8 @@ abstract class Spawnable extends Tile{
 	 * Performs actions needed when the tile is modified, such as clearing caches and respawning the tile to players.
 	 * WARNING: This MUST be called to clear spawn-compound and chunk caches when the tile's spawn compound has changed!
 	 */
-	protected function onChanged(){
+	protected function onChanged(): void
+	{
 		$this->spawnCompoundCache = null;
 		$this->spawnToAll();
 
@@ -89,9 +95,10 @@ abstract class Spawnable extends Tile{
 	 *
 	 * @return string encoded NBT
 	 */
-	final public function getSerializedSpawnCompound() : string{
-		if($this->spawnCompoundCache === null){
-			if(self::$nbtWriter === null){
+	final public function getSerializedSpawnCompound(): string
+	{
+		if ($this->spawnCompoundCache === null) {
+			if (self::$nbtWriter === null) {
 				self::$nbtWriter = new NBT(NBT::LITTLE_ENDIAN);
 			}
 
@@ -105,7 +112,7 @@ abstract class Spawnable extends Tile{
 	/**
 	 * @return CompoundTag
 	 */
-	public abstract function getSpawnCompound();
+	public abstract function getSpawnCompound(): CompoundTag;
 
 	/**
 	 * Called when a player updates a block entity's NBT data
@@ -116,7 +123,8 @@ abstract class Spawnable extends Tile{
 	 *
 	 * @return bool indication of success, will respawn the tile to the player if false.
 	 */
-	public function updateCompoundTag(CompoundTag $nbt, Player $player) : bool{
+	public function updateCompoundTag(CompoundTag $nbt, Player $player): bool
+	{
 		return false;
 	}
 }

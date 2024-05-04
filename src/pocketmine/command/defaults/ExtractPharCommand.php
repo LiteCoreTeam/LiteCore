@@ -1,5 +1,25 @@
 <?php
 
+/*
+ *
+ *  _        _                ______ 
+ * | |      (_) _            / _____) 
+ * | |       _ | |_    ____ | /        ___    ____   ____ 
+ * | |      | ||  _)  / _  )| |       / _ \  / ___) / _  ) 
+ * | |_____ | || |__ ( (/ / | \_____ | |_| || |    ( (/ / 
+ * |_______)|_| \___) \____) \______) \___/ |_|     \____) 
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * @author LiteTeam
+ * @link https://github.com/LiteCoreTeam/LiteCore
+ *
+ *
+ */
+
 namespace pocketmine\command\defaults;
 
 use pocketmine\command\CommandSender;
@@ -10,9 +30,9 @@ class ExtractPharCommand extends VanillaCommand {
 	/**
 	 * ExtractPharCommand constructor.
 	 *
-	 * @param $name
+	 * @param string $name
 	 */
-	public function __construct($name){
+	public function __construct(string $name){
 		parent::__construct(
 			$name,
 			"Extracts the source code from a Phar file",
@@ -28,7 +48,8 @@ class ExtractPharCommand extends VanillaCommand {
 	 *
 	 * @return bool
 	 */
-	public function execute(CommandSender $sender, $commandLabel, array $args){
+	public function execute(CommandSender $sender, string $currentAlias, array $args): bool
+	{
 		if(!$this->testPermission($sender)){
 			return false;
 		}

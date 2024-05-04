@@ -18,27 +18,28 @@
  * @link https://github.com/LiteCoreTeam/LiteCore
  *
  *
-*/
+ */
 
 namespace pocketmine\tile;
 
-use pocketmine\block\Block;
-use pocketmine\inventory\ChestInventory;
+//use pocketmine\block\Block;
+//use pocketmine\inventory\ChestInventory;
 use pocketmine\inventory\ShulkerBoxInventory;
 use pocketmine\inventory\InventoryHolder;
 use pocketmine\item\Item;
 use pocketmine\level\Level;
-use pocketmine\math\Vector3;
+//use pocketmine\math\Vector3;
 use pocketmine\nbt\NBT;
 use pocketmine\nbt\tag\ByteTag;
 use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\nbt\tag\IntTag;
 use pocketmine\nbt\tag\ListTag;
-use pocketmine\nbt\tag\ShortTag;
+//use pocketmine\nbt\tag\ShortTag;
 use pocketmine\nbt\tag\StringTag;
-use pocketmine\Player;
+//use pocketmine\Player;
 
-class ShulkerBox extends Spawnable implements InventoryHolder, Container, Nameable{
+class ShulkerBox extends Spawnable implements InventoryHolder, Container, Nameable
+{
 
     /** @var ShulkerBoxInventory */
     protected $inventory;
@@ -48,20 +49,21 @@ class ShulkerBox extends Spawnable implements InventoryHolder, Container, Nameab
      * @param Level $level
      * @param CompoundTag $nbt
      */
-    public function __construct(Level $level, CompoundTag $nbt){
+    public function __construct(Level $level, CompoundTag $nbt)
+    {
         parent::__construct($level, $nbt);
         $this->inventory = new ShulkerBoxInventory($this);
 
-        if(!isset($this->namedtag->Items) or !($this->namedtag->Items instanceof ListTag)){
+        if (!isset($this->namedtag->Items) or !($this->namedtag->Items instanceof ListTag)) {
             $this->namedtag->Items = new ListTag("Items", []);
             $this->namedtag->Items->setTagType(NBT::TAG_Compound);
         }
 
-        for($i = 0; $i < $this->getSize(); ++$i){
+        for ($i = 0; $i < $this->getSize(); ++$i) {
             $this->inventory->setItem($i, $this->getItem($i));
         }
 
-        if(!isset($this->namedtag->facing)){
+        if (!isset($this->namedtag->facing)) {
             $this->namedtag->facing = new ByteTag("facing", 1);
         }
     }
@@ -69,22 +71,25 @@ class ShulkerBox extends Spawnable implements InventoryHolder, Container, Nameab
     /**
      * @param CompoundTag $nbt
      */
-    public function addAdditionalSpawnData(CompoundTag $nbt){
-        if($this->hasName()){
+    public function addAdditionalSpawnData(CompoundTag $nbt): void
+    {
+        if ($this->hasName()) {
             $nbt->CustomName = $this->namedtag->CustomName;
         }
     }
 
-    public function close(){
-        if(!$this->closed){
+    public function close(): void
+    {
+        if (!$this->closed) {
             $this->inventory->removeAllViewers(true);
 
             parent::close();
         }
     }
 
-    public function saveNBT(){
-    	parent::saveNBT();
+    public function saveNBT(): void
+    {
+        parent::saveNBT();
         $this->namedtag->Items->setValue([]);
         $this->namedtag->Items->setTagType(NBT::TAG_Compound);
         for ($index = 0; $index < $this->getSize(); ++$index) {
@@ -95,43 +100,51 @@ class ShulkerBox extends Spawnable implements InventoryHolder, Container, Nameab
     /**
      * @return int
      */
-    public function getSize(){
+    public function getSize(): int
+    {
         return 27;
     }
 
-    /**
+    /*
+        
      * @return ShulkerBoxInventory
-     */
-    public function getRealInventory(){
+         
+    public function getRealInventory(): ShulkerBoxInventory
+    {
         return $this->inventory;
     }
+    */
 
     /**
      * @return ShulkerBoxInventory
      */
-    public function getInventory(){
+    public function getInventory(): ShulkerBoxInventory
+    {
         return $this->inventory;
     }
 
     /**
      * @return string
      */
-    public function getName() : string{
+    public function getName(): string
+    {
         return isset($this->namedtag->CustomName) ? $this->namedtag->CustomName->getValue() : "ShulkerBox";
     }
 
     /**
      * @return bool
      */
-    public function hasName() : bool{
+    public function hasName(): bool
+    {
         return isset($this->namedtag->CustomName);
     }
 
     /**
      * @param void $str
      */
-    public function setName($str){
-        if($str === ""){
+    public function setName($str): void
+    {
+        if ($str === "") {
             unset($this->namedtag->CustomName);
             return;
         }
@@ -141,11 +154,13 @@ class ShulkerBox extends Spawnable implements InventoryHolder, Container, Nameab
 
     /**
      * @param int $index
+     * 
      * @return int
      */
-    protected function getSlotIndex(int $index){
-        foreach($this->namedtag->Items as $i => $slot){
-            if($slot->Slot->getValue() === $index){
+    protected function getSlotIndex(int $index): int
+    {
+        foreach ($this->namedtag->Items as $i => $slot) {
+            if ($slot->Slot->getValue() === $index) {
                 return (int) $i;
             }
         }
@@ -155,13 +170,15 @@ class ShulkerBox extends Spawnable implements InventoryHolder, Container, Nameab
 
     /**
      * @param int $index
+     * 
      * @return Item
      */
-    public function getItem($index) : Item{
+    public function getItem(int $index): Item
+    {
         $i = $this->getSlotIndex($index);
-        if($i < 0){
+        if ($i < 0) {
             return Item::get(Item::AIR, 0, 0);
-        }else{
+        } else {
             return Item::nbtDeserialize($this->namedtag->Items[$i]);
         }
     }
@@ -170,28 +187,35 @@ class ShulkerBox extends Spawnable implements InventoryHolder, Container, Nameab
      * @param int $index
      * @param Item $item
      */
-    public function setItem($index, Item $item){
+    public function setItem(int $index, Item $item): bool
+    {
         $i = $this->getSlotIndex($index);
 
         $d = $item->nbtSerialize($index);
 
-        if($item->getId() === Item::AIR or $item->getCount() <= 0){
-            if($i >= 0){
+        if ($item->getId() === Item::AIR or $item->getCount() <= 0) {
+            if ($i >= 0) {
                 unset($this->namedtag->Items[$i]);
             }
-        }elseif($i < 0){
-            for($i = 0; $i <= $this->getSize(); ++$i){
-                if(!isset($this->namedtag->Items[$i])){
+        } elseif ($i < 0) {
+            for ($i = 0; $i <= $this->getSize(); ++$i) {
+                if (!isset($this->namedtag->Items[$i])) {
                     break;
                 }
             }
             $this->namedtag->Items[$i] = $d;
-        }else{
+        } else {
             $this->namedtag->Items[$i] = $d;
         }
+
+        return true;
     }
 
-    public function getSpawnCompound(){
+    /**
+     * @return CompoundTag
+     */
+    public function getSpawnCompound(): CompoundTag
+    {
         $nbt = new CompoundTag("", [
             new StringTag("id", Tile::SHULKER_BOX),
             $this->namedtag->facing,
@@ -205,7 +229,7 @@ class ShulkerBox extends Spawnable implements InventoryHolder, Container, Nameab
             $nbt->Items = $tile->namedtag->Items;
         }
 
-        if($this->hasName()){
+        if ($this->hasName()) {
             $nbt->CustomName = $this->namedtag->CustomName;
         }
         return $nbt;

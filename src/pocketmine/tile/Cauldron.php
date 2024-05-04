@@ -30,7 +30,8 @@ use pocketmine\nbt\tag\ShortTag;
 use pocketmine\nbt\tag\StringTag;
 use pocketmine\utils\Color;
 
-class Cauldron extends Spawnable {
+class Cauldron extends Spawnable
+{
 
 	/**
 	 * Cauldron constructor.
@@ -38,14 +39,15 @@ class Cauldron extends Spawnable {
 	 * @param Level       $level
 	 * @param CompoundTag $nbt
 	 */
-	public function __construct(Level $level, CompoundTag $nbt){
-		if(!isset($nbt->PotionId) or !($nbt->PotionId instanceof ShortTag)){
+	public function __construct(Level $level, CompoundTag $nbt)
+	{
+		if (!isset($nbt->PotionId) or !($nbt->PotionId instanceof ShortTag)) {
 			$nbt->PotionId = new ShortTag("PotionId", 0xffff);
 		}
-		if(!isset($nbt->SplashPotion) or !($nbt->SplashPotion instanceof ByteTag)){
+		if (!isset($nbt->SplashPotion) or !($nbt->SplashPotion instanceof ByteTag)) {
 			$nbt->SplashPotion = new ByteTag("SplashPotion", 0);
 		}
-		if(!isset($nbt->Items) or !($nbt->Items instanceof ListTag)){
+		if (!isset($nbt->Items) or !($nbt->Items instanceof ListTag)) {
 			$nbt->Items = new ListTag("Items", []);
 		}
 		parent::__construct($level, $nbt);
@@ -54,14 +56,16 @@ class Cauldron extends Spawnable {
 	/**
 	 * @return mixed|null
 	 */
-	public function getPotionId(){
+	public function getPotionId(): mixed
+	{
 		return $this->namedtag["PotionId"];
 	}
 
 	/**
 	 * @param $potionId
 	 */
-	public function setPotionId($potionId){
+	public function setPotionId($potionId)
+	{
 		$this->namedtag->PotionId = new ShortTag("PotionId", $potionId);
 		$this->onChanged();
 	}
@@ -69,21 +73,24 @@ class Cauldron extends Spawnable {
 	/**
 	 * @return bool
 	 */
-	public function hasPotion(){
+	public function hasPotion(): bool
+	{
 		return $this->namedtag["PotionId"] !== 0xffff;
 	}
 
 	/**
 	 * @return bool
 	 */
-	public function getSplashPotion(){
+	public function getSplashPotion(): bool
+	{
 		return ($this->namedtag["SplashPotion"] == true);
 	}
 
 	/**
 	 * @param $bool
 	 */
-	public function setSplashPotion($bool){
+	public function setSplashPotion(bool $bool)
+	{
 		$this->namedtag->SplashPotion = new ByteTag("SplashPotion", ($bool == true) ? 1 : 0);
 		$this->onChanged();
 	}
@@ -91,8 +98,9 @@ class Cauldron extends Spawnable {
 	/**
 	 * @return null|Color
 	 */
-	public function getCustomColor(){//
-		if($this->isCustomColor()){
+	public function getCustomColor(): ?Color
+	{//
+		if ($this->isCustomColor()) {
 			$color = $this->namedtag["CustomColor"];
 			$green = ($color >> 8) & 0xff;
 			$red = ($color >> 16) & 0xff;
@@ -105,28 +113,32 @@ class Cauldron extends Spawnable {
 	/**
 	 * @return int
 	 */
-	public function getCustomColorRed(){
+	public function getCustomColorRed(): int
+	{
 		return ($this->namedtag["CustomColor"] >> 16) & 0xff;
 	}
 
 	/**
 	 * @return int
 	 */
-	public function getCustomColorGreen(){
+	public function getCustomColorGreen(): int
+	{
 		return ($this->namedtag["CustomColor"] >> 8) & 0xff;
 	}
 
 	/**
 	 * @return int
 	 */
-	public function getCustomColorBlue(){
+	public function getCustomColorBlue(): int
+	{
 		return ($this->namedtag["CustomColor"]) & 0xff;
 	}
 
 	/**
 	 * @return bool
 	 */
-	public function isCustomColor(){
+	public function isCustomColor(): bool
+	{
 		return isset($this->namedtag->CustomColor);
 	}
 
@@ -135,18 +147,20 @@ class Cauldron extends Spawnable {
 	 * @param int $g
 	 * @param int $b
 	 */
-	public function setCustomColor($r, $g = 0xff, $b = 0xff){
-		if($r instanceof Color){
+	public function setCustomColor($r, $g = 0xff, $b = 0xff): void
+	{
+		if ($r instanceof Color) {
 			$color = ($r->getRed() << 16 | $r->getGreen() << 8 | $r->getBlue()) & 0xffffff;
-		}else{
+		} else {
 			$color = ($r << 16 | $g << 8 | $b) & 0xffffff;
 		}
 		$this->namedtag->CustomColor = new IntTag("CustomColor", $color);
 		$this->onChanged();
 	}
 
-	public function clearCustomColor(){
-		if(isset($this->namedtag->CustomColor)){
+	public function clearCustomColor(): void
+	{
+		if (isset($this->namedtag->CustomColor)) {
 			unset($this->namedtag->CustomColor);
 		}
 		$this->onChanged();
@@ -155,7 +169,8 @@ class Cauldron extends Spawnable {
 	/**
 	 * @return CompoundTag
 	 */
-	public function getSpawnCompound(){
+	public function getSpawnCompound(): CompoundTag
+	{
 		$nbt = new CompoundTag("", [
 			new StringTag("id", Tile::CAULDRON),
 			new IntTag("x", (Int) $this->x),
@@ -166,7 +181,7 @@ class Cauldron extends Spawnable {
 			new ListTag("Items", $this->namedtag["Items"])//unused?
 		]);
 
-		if($this->getPotionId() === 0xffff and $this->isCustomColor()){
+		if ($this->getPotionId() === 0xffff and $this->isCustomColor()) {
 			$nbt->CustomColor = $this->namedtag->CustomColor;
 		}
 		return $nbt;

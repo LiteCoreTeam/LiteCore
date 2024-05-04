@@ -34,7 +34,8 @@ use pocketmine\nbt\tag\StringTag;
 use pocketmine\network\mcpe\protocol\ContainerSetDataPacket;
 use pocketmine\Server;
 
-class BrewingStand extends Spawnable implements InventoryHolder, Container, Nameable {
+class BrewingStand extends Spawnable implements InventoryHolder, Container, Nameable
+{
 	const MAX_BREW_TIME = 400;
 	/** @var BrewingInventory */
 	protected $inventory;
@@ -52,7 +53,7 @@ class BrewingStand extends Spawnable implements InventoryHolder, Container, Name
 		Item::GHAST_TEAR => 0,
 		Item::BLAZE_POWDER => 0,
 		Item::GOLDEN_CARROT => 0,
-		//Item::RAW_FISH => Fish::FISH_PUFFERFISH,
+			//Item::RAW_FISH => Fish::FISH_PUFFERFISH,
 		Item::PUFFER_FISH,
 		Item::RABBIT_FOOT => 0,
 
@@ -62,46 +63,50 @@ class BrewingStand extends Spawnable implements InventoryHolder, Container, Name
 	/**
 	 * BrewingStand constructor.
 	 *
-	 * @param Level       $level
+	 * @param Level $level
 	 * @param CompoundTag $nbt
 	 */
-	public function __construct(Level $level, CompoundTag $nbt){
-		if(!isset($nbt->CookedTime) or !($nbt->CookedTime instanceof ShortTag)){
+	public function __construct(Level $level, CompoundTag $nbt)
+	{
+		if (!isset($nbt->CookedTime) or !($nbt->CookedTime instanceof ShortTag)) {
 			$nbt->CookedTime = new ShortTag("CookedTime", 0);
 		}
 		parent::__construct($level, $nbt);
 		$this->inventory = new BrewingInventory($this);
-		if(!isset($this->namedtag->Items) or !($this->namedtag->Items instanceof ListTag)){
+		if (!isset($this->namedtag->Items) or !($this->namedtag->Items instanceof ListTag)) {
 			$this->namedtag->Items = new ListTag("Items", []);
 			$this->namedtag->Items->setTagType(NBT::TAG_Compound);
 		}
-		for($i = 0; $i < $this->getSize(); ++$i){
+		for ($i = 0; $i < $this->getSize(); ++$i) {
 			$this->inventory->setItem($i, $this->getItem($i), false);
 		}
 		/*if($this->namedtag["CookTime"] < self::MAX_BREW_TIME){
-			$this->scheduleUpdate();
-		}*/
+				  $this->scheduleUpdate();
+			  }*/
 	}
 
 	/**
 	 * @return string
 	 */
-	public function getName() : string{
+	public function getName(): string
+	{
 		return $this->hasName() ? $this->namedtag->CustomName->getValue() : "Brewing Stand";
 	}
 
 	/**
 	 * @return bool
 	 */
-	public function hasName(){
+	public function hasName(): bool
+	{
 		return isset($this->namedtag->CustomName);
 	}
 
 	/**
 	 * @param void $str
 	 */
-	public function setName($str){
-		if($str === ""){
+	public function setName($str): void
+	{
+		if ($str === "") {
 			unset($this->namedtag->CustomName);
 			return;
 		}
@@ -109,22 +114,24 @@ class BrewingStand extends Spawnable implements InventoryHolder, Container, Name
 		$this->namedtag->CustomName = new StringTag("CustomName", $str);
 	}
 
-	public function close(){
-		if(!$this->closed){
-			foreach($this->getInventory()->getViewers() as $player){
+	public function close(): void
+	{
+		if (!$this->closed) {
+			foreach ($this->getInventory()->getViewers() as $player) {
 				$player->removeWindow($this->getInventory());
 			}
 
 			$this->inventory = null;
-			
+
 			parent::close();
 		}
 	}
 
-	public function saveNBT(){
+	public function saveNBT(): void
+	{
 		$this->namedtag->Items = new ListTag("Items", []);
 		$this->namedtag->Items->setTagType(NBT::TAG_Compound);
-		for($index = 0; $index < $this->getSize(); ++$index){
+		for ($index = 0; $index < $this->getSize(); ++$index) {
 			$this->setItem($index, $this->inventory->getItem($index));
 		}
 	}
@@ -132,7 +139,8 @@ class BrewingStand extends Spawnable implements InventoryHolder, Container, Name
 	/**
 	 * @return int
 	 */
-	public function getSize(){
+	public function getSize(): int
+	{
 		return 4;
 	}
 
@@ -141,9 +149,10 @@ class BrewingStand extends Spawnable implements InventoryHolder, Container, Name
 	 *
 	 * @return int
 	 */
-	protected function getSlotIndex($index){
-		foreach($this->namedtag->Items as $i => $slot){
-			if($slot["Slot"] === $index){
+	protected function getSlotIndex(int $index): int
+	{
+		foreach ($this->namedtag->Items as $i => $slot) {
+			if ($slot["Slot"] === $index) {
 				return $i;
 			}
 		}
@@ -158,11 +167,12 @@ class BrewingStand extends Spawnable implements InventoryHolder, Container, Name
 	 *
 	 * @return Item
 	 */
-	public function getItem($index){
+	public function getItem(int $index): Item
+	{
 		$i = $this->getSlotIndex($index);
-		if($i < 0){
+		if ($i < 0) {
 			return Item::get(Item::AIR, 0, 0);
-		}else{
+		} else {
 			return Item::nbtDeserialize($this->namedtag->Items[$i]);
 		}
 	}
@@ -175,21 +185,22 @@ class BrewingStand extends Spawnable implements InventoryHolder, Container, Name
 	 *
 	 * @return bool
 	 */
-	public function setItem($index, Item $item){
+	public function setItem(int $index, Item $item): bool
+	{
 		$i = $this->getSlotIndex($index);
 
-		if($item->getId() === Item::AIR or $item->getCount() <= 0){
-			if($i >= 0){
+		if ($item->getId() === Item::AIR or $item->getCount() <= 0) {
+			if ($i >= 0) {
 				unset($this->namedtag->Items[$i]);
 			}
-		}elseif($i < 0){
-			for($i = 0; $i <= $this->getSize(); ++$i){
-				if(!isset($this->namedtag->Items[$i])){
+		} elseif ($i < 0) {
+			for ($i = 0; $i <= $this->getSize(); ++$i) {
+				if (!isset($this->namedtag->Items[$i])) {
 					break;
 				}
 			}
 			$this->namedtag->Items[$i] = $item->nbtSerialize($index);
-		}else{
+		} else {
 			$this->namedtag->Items[$i] = $item->nbtSerialize($index);
 		}
 
@@ -199,7 +210,8 @@ class BrewingStand extends Spawnable implements InventoryHolder, Container, Name
 	/**
 	 * @return BrewingInventory
 	 */
-	public function getInventory(){
+	public function getInventory(): BrewingInventory
+	{
 		return $this->inventory;
 	}
 
@@ -208,16 +220,18 @@ class BrewingStand extends Spawnable implements InventoryHolder, Container, Name
 	 *
 	 * @return bool
 	 */
-	public function checkIngredient(Item $item){
-		if(isset(self::$ingredients[$item->getId()])){
-			if(self::$ingredients[$item->getId()] === $item->getDamage()){
+	public function checkIngredient(Item $item): bool
+	{
+		if (isset(self::$ingredients[$item->getId()])) {
+			if (self::$ingredients[$item->getId()] === $item->getDamage()) {
 				return true;
 			}
 		}
 		return false;
 	}
 
-	public function updateSurface(){
+	public function updateSurface(): void
+	{
 		$this->saveNBT();
 		$this->onChanged();
 	}
@@ -225,8 +239,9 @@ class BrewingStand extends Spawnable implements InventoryHolder, Container, Name
 	/**
 	 * @return bool
 	 */
-	public function onUpdate(){
-		if($this->closed === true){
+	public function onUpdate(): bool
+	{
+		if ($this->closed === true) {
 			return false;
 		}
 
@@ -237,42 +252,43 @@ class BrewingStand extends Spawnable implements InventoryHolder, Container, Name
 		$ingredient = $this->inventory->getIngredient();
 		$canBrew = false;
 
-		for($i = 1; $i <= 3; $i++){
-			if($this->inventory->getItem($i)->getId() === Item::POTION or
+		for ($i = 1; $i <= 3; $i++) {
+			if (
+				$this->inventory->getItem($i)->getId() === Item::POTION or
 				$this->inventory->getItem($i)->getId() === Item::SPLASH_POTION
-			){
+			) {
 				$canBrew = true;
 			}
 		}
 
-		if($ingredient->getId() !== Item::AIR and $ingredient->getCount() > 0){
-			if($canBrew){
-				if(!$this->checkIngredient($ingredient)){
+		if ($ingredient->getId() !== Item::AIR and $ingredient->getCount() > 0) {
+			if ($canBrew) {
+				if (!$this->checkIngredient($ingredient)) {
 					$canBrew = false;
 				}
 			}
 
-			if($canBrew){
-				for($i = 1; $i <= 3; $i++){
+			if ($canBrew) {
+				for ($i = 1; $i <= 3; $i++) {
 					$potion = $this->inventory->getItem($i);
 					$recipe = Server::getInstance()->getCraftingManager()->matchBrewingRecipe($ingredient, $potion);
-					if($recipe !== null){
+					if ($recipe !== null) {
 						$canBrew = true;
 						break;
 					}
 					$canBrew = false;
 				}
 			}
-		}else{
+		} else {
 			$canBrew = false;
 		}
 
-		if($canBrew){
+		if ($canBrew) {
 			$this->namedtag->CookTime = new ShortTag("CookTime", $this->namedtag["CookTime"] - 1);
 
-			foreach($this->getInventory()->getViewers() as $player){
+			foreach ($this->getInventory()->getViewers() as $player) {
 				$windowId = $player->getWindowId($this->getInventory());
-				if($windowId > 0){
+				if ($windowId > 0) {
 					$pk = new ContainerSetDataPacket();
 					$pk->windowid = $windowId;
 					$pk->property = 0; //Brew
@@ -281,27 +297,28 @@ class BrewingStand extends Spawnable implements InventoryHolder, Container, Name
 				}
 			}
 
-			if($this->namedtag["CookTime"] <= 0){
+			if ($this->namedtag["CookTime"] <= 0) {
 				$this->namedtag->CookTime = new ShortTag("CookTime", self::MAX_BREW_TIME);
-				for($i = 1; $i <= 3; $i++){
+				for ($i = 1; $i <= 3; $i++) {
 					$potion = $this->inventory->getItem($i);
 					$recipe = Server::getInstance()->getCraftingManager()->matchBrewingRecipe($ingredient, $potion);
-					if($recipe != null and $potion->getId() !== Item::AIR){
+					if ($recipe != null and $potion->getId() !== Item::AIR) {
 						$this->inventory->setItem($i, $recipe->getResult());
 					}
 				}
 
 				$ingredient->pop();
-				if($ingredient->getCount() <= 0) $ingredient = Item::get(Item::AIR);
+				if ($ingredient->getCount() <= 0)
+					$ingredient = Item::get(Item::AIR);
 				$this->inventory->setIngredient($ingredient);
 			}
 
 			$ret = true;
-		}else{
+		} else {
 			$this->namedtag->CookTime = new ShortTag("CookTime", self::MAX_BREW_TIME);
-			foreach($this->getInventory()->getViewers() as $player){
+			foreach ($this->getInventory()->getViewers() as $player) {
 				$windowId = $player->getWindowId($this->getInventory());
-				if($windowId > 0){
+				if ($windowId > 0) {
 					$pk = new ContainerSetDataPacket();
 					$pk->windowid = $windowId;
 					$pk->property = 0; //Brew
@@ -320,7 +337,8 @@ class BrewingStand extends Spawnable implements InventoryHolder, Container, Name
 	/**
 	 * @return CompoundTag
 	 */
-	public function getSpawnCompound(){
+	public function getSpawnCompound(): CompoundTag
+	{
 		$nbt = new CompoundTag("", [
 			new StringTag("id", Tile::BREWING_STAND),
 			new IntTag("x", (int) $this->x),
@@ -330,7 +348,7 @@ class BrewingStand extends Spawnable implements InventoryHolder, Container, Name
 			$this->namedtag->Items,
 		]);
 
-		if($this->hasName()){
+		if ($this->hasName()) {
 			$nbt->CustomName = $this->namedtag->CustomName;
 		}
 		return $nbt;

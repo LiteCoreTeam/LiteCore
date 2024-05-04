@@ -17,7 +17,7 @@
  * @link http://www.pocketmine.net/
  *
  *
-*/
+ */
 
 namespace pocketmine\tile;
 
@@ -29,22 +29,24 @@ use pocketmine\nbt\tag\FloatTag;
 use pocketmine\nbt\tag\IntTag;
 use pocketmine\nbt\tag\StringTag;
 
-class ItemFrame extends Spawnable {
+class ItemFrame extends Spawnable
+{
 
 	public $map_uuid = -1;
 
 	/**
 	 * ItemFrame constructor.
 	 *
-	 * @param Level       $level
+	 * @param Level $level
 	 * @param CompoundTag $nbt
 	 */
-	public function __construct(Level $level, CompoundTag $nbt){
-		if(!isset($nbt->ItemRotation)){
+	public function __construct(Level $level, CompoundTag $nbt)
+	{
+		if (!isset($nbt->ItemRotation)) {
 			$nbt->ItemRotation = new ByteTag("ItemRotation", 0);
 		}
 
-		if(!isset($nbt->ItemDropChance)){
+		if (!isset($nbt->ItemDropChance)) {
 			$nbt->ItemDropChance = new FloatTag("ItemDropChance", 1.0);
 		}
 
@@ -54,17 +56,19 @@ class ItemFrame extends Spawnable {
 	/**
 	 * @return bool
 	 */
-	public function hasItem() : bool{
+	public function hasItem(): bool
+	{
 		return $this->getItem()->getId() !== Item::AIR;
 	}
 
 	/**
 	 * @return Item
 	 */
-	public function getItem() : Item{
-		if(isset($this->namedtag->Item)){
+	public function getItem(): Item
+	{
+		if (isset($this->namedtag->Item)) {
 			return Item::nbtDeserialize($this->namedtag->Item);
-		}else{
+		} else {
 			return Item::get(Item::AIR, 0, 0);
 		}
 	}
@@ -72,10 +76,11 @@ class ItemFrame extends Spawnable {
 	/**
 	 * @param Item|null $item
 	 */
-	public function setItem(Item $item = null){
-		if($item !== null and $item->getId() !== Item::AIR){
+	public function setItem(Item $item = null): ?Item
+	{
+		if ($item !== null and $item->getId() !== Item::AIR) {
 			$this->namedtag->Item = $item->nbtSerialize(-1, "Item");
-		}else{
+		} else {
 			unset($this->namedtag->Item);
 		}
 		$this->onChanged();
@@ -84,14 +89,16 @@ class ItemFrame extends Spawnable {
 	/**
 	 * @return int
 	 */
-	public function getItemRotation() : int{
+	public function getItemRotation(): int
+	{
 		return $this->namedtag->ItemRotation->getValue();
 	}
 
 	/**
 	 * @param int $rotation
 	 */
-	public function setItemRotation(int $rotation){
+	public function setItemRotation(int $rotation): void
+	{
 		$this->namedtag->ItemRotation = new ByteTag("ItemRotation", $rotation);
 		$this->onChanged();
 	}
@@ -99,14 +106,16 @@ class ItemFrame extends Spawnable {
 	/**
 	 * @return float
 	 */
-	public function getItemDropChance() : float{
+	public function getItemDropChance(): float
+	{
 		return $this->namedtag->ItemDropChance->getValue();
 	}
 
 	/**
 	 * @param float $chance
 	 */
-	public function setItemDropChance(float $chance){
+	public function setItemDropChance(float $chance): void
+	{
 		$this->namedtag->ItemDropChance = new FloatTag("ItemDropChance", $chance);
 		$this->onChanged();
 	}
@@ -114,7 +123,8 @@ class ItemFrame extends Spawnable {
 	/**
 	 * @param string $mapid
 	 */
-	public function SetMapID(string $mapid){
+	public function SetMapID(string $mapid): void
+	{
 		$this->map_uuid = $mapid;
 		$this->namedtag->Map_UUID = new StringTag("map_uuid", $mapid);
 		$this->onChanged();
@@ -123,14 +133,16 @@ class ItemFrame extends Spawnable {
 	/**
 	 * @return string
 	 */
-	public function getMapID() : string{
+	public function getMapID(): string
+	{
 		return $this->map_uuid;
 	}
 
 	/**
 	 * @return CompoundTag
 	 */
-	public function getSpawnCompound(){
+	public function getSpawnCompound(): CompoundTag
+	{
 		$tag = new CompoundTag("", [
 			new StringTag("id", Tile::ITEM_FRAME),
 			new IntTag("x", (int) $this->x),
@@ -139,10 +151,10 @@ class ItemFrame extends Spawnable {
 			$this->namedtag->ItemDropChance,
 			$this->namedtag->ItemRotation,
 		]);
-		if($this->hasItem()){
+		if ($this->hasItem()) {
 			$tag->Item = $this->namedtag->Item;
-			if($this->getItem()->getId() === Item::FILLED_MAP){
-				if(isset($this->namedtag->Map_UUID)){
+			if ($this->getItem()->getId() === Item::FILLED_MAP) {
+				if (isset($this->namedtag->Map_UUID)) {
 					$tag->Map_UUID = $this->namedtag->Map_UUID;
 				}
 			}

@@ -2,20 +2,21 @@
 
 /*
  *
- *  _____   _____   __   _   _   _____  __    __  _____
- * /  ___| | ____| |  \ | | | | /  ___/ \ \  / / /  ___/
- * | |     | |__   |   \| | | | | |___   \ \/ /  | |___
- * | |  _  |  __|  | |\   | | | \___  \   \  /   \___  \
- * | |_| | | |___  | | \  | | |  ___| |   / /     ___| |
- * \_____/ |_____| |_|  \_| |_| /_____/  /_/     /_____/
+ *  _        _                ______ 
+ * | |      (_) _            / _____) 
+ * | |       _ | |_    ____ | /        ___    ____   ____ 
+ * | |      | ||  _)  / _  )| |       / _ \  / ___) / _  ) 
+ * | |_____ | || |__ ( (/ / | \_____ | |_| || |    ( (/ / 
+ * |_______)|_| \___) \____) \______) \___/ |_|     \____) 
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * @author iTX Technologies
- * @link https://itxtech.org
+ * @author LiteTeam
+ * @link https://github.com/LiteCoreTeam/LiteCore
+ *
  *
  */
 
@@ -33,7 +34,7 @@ class BiomeCommand extends VanillaCommand {
 	 *
 	 * @param string $name
 	 */
-	public function __construct($name){
+	public function __construct(string $name){
 		parent::__construct(
 			$name,
 			"%pocketmine.command.biome.description",
@@ -44,12 +45,13 @@ class BiomeCommand extends VanillaCommand {
 
 	/**
 	 * @param CommandSender $sender
-	 * @param string        $currentAlias
-	 * @param array         $args
+	 * @param string $currentAlias
+	 * @param array $args
 	 *
 	 * @return bool
 	 */
-	public function execute(CommandSender $sender, $currentAlias, array $args){
+	public function execute(CommandSender $sender, string $currentAlias, array $args): bool
+	{
 		if(!$this->testPermission($sender)){
 			return true;
 		}

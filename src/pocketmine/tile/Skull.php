@@ -2,20 +2,21 @@
 
 /*
  *
- *  _____   _____   __   _   _   _____  __    __  _____
- * /  ___| | ____| |  \ | | | | /  ___/ \ \  / / /  ___/
- * | |     | |__   |   \| | | | | |___   \ \/ /  | |___
- * | |  _  |  __|  | |\   | | | \___  \   \  /   \___  \
- * | |_| | | |___  | | \  | | |  ___| |   / /     ___| |
- * \_____/ |_____| |_|  \_| |_| /_____/  /_/     /_____/
+ *  _        _                ______ 
+ * | |      (_) _            / _____) 
+ * | |       _ | |_    ____ | /        ___    ____   ____ 
+ * | |      | ||  _)  / _  )| |       / _ \  / ___) / _  ) 
+ * | |_____ | || |__ ( (/ / | \_____ | |_| || |    ( (/ / 
+ * |_______)|_| \___) \____) \______) \___/ |_|     \____) 
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * @author iTX Technologies
- * @link https://itxtech.org
+ * @author LiteTeam
+ * @link https://github.com/LiteCoreTeam/LiteCore
+ *
  *
  */
 
@@ -27,7 +28,8 @@ use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\nbt\tag\IntTag;
 use pocketmine\nbt\tag\StringTag;
 
-class Skull extends Spawnable {
+class Skull extends Spawnable
+{
 
 	const TYPE_SKELETON = 0;
 	const TYPE_WITHER = 1;
@@ -39,14 +41,15 @@ class Skull extends Spawnable {
 	/**
 	 * Skull constructor.
 	 *
-	 * @param Level       $level
+	 * @param Level $level
 	 * @param CompoundTag $nbt
 	 */
-	public function __construct(Level $level, CompoundTag $nbt){
-		if(!isset($nbt->SkullType)){
+	public function __construct(Level $level, CompoundTag $nbt)
+	{
+		if (!isset($nbt->SkullType)) {
 			$nbt->SkullType = new ByteTag("SkullType", 0);
 		}
-		if(!isset($nbt->Rot) or !($nbt->Rot instanceof ByteTag)){
+		if (!isset($nbt->Rot) || !($nbt->Rot instanceof ByteTag)) {
 			$nbt->Rot = new ByteTag("Rot", 0);
 		}
 		parent::__construct($level, $nbt);
@@ -57,8 +60,9 @@ class Skull extends Spawnable {
 	 *
 	 * @return bool
 	 */
-	public function setType(int $type){
-		if($type >= 0 && $type <= 4){
+	public function setType(int $type): bool
+	{
+		if ($type >= 0 && $type <= 4) {
 			$this->namedtag->SkullType = new ByteTag("SkullType", $type);
 			$this->onChanged();
 			return true;
@@ -69,11 +73,16 @@ class Skull extends Spawnable {
 	/**
 	 * @return null
 	 */
-	public function getType(){
+	public function getType()
+	{
 		return $this->namedtag["SkullType"];
 	}
 
-	public function saveNBT(){
+	/**
+	 * @return void
+	 */
+	public function saveNBT(): void
+	{
 		parent::saveNBT();
 		unset($this->namedtag->Creator);
 	}
@@ -81,8 +90,9 @@ class Skull extends Spawnable {
 	/**
 	 * @return CompoundTag
 	 */
-	public function getSpawnCompound(){
-		return new CompoundTag("", [
+	public function getSpawnCompound(): CompoundTag
+	{
+		$tag = new CompoundTag("", [
 			new StringTag("id", Tile::SKULL),
 			$this->namedtag->SkullType,
 			$this->namedtag->Rot,
@@ -90,5 +100,6 @@ class Skull extends Spawnable {
 			new IntTag("y", (int) $this->y),
 			new IntTag("z", (int) $this->z),
 		]);
+		return $tag;
 	}
 }

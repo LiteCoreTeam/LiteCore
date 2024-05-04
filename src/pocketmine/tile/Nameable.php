@@ -28,15 +28,15 @@ interface Nameable {
 	/**
 	 * @return string
 	 */
-	public function getName();
+	public function getName(): string;
 
 	/**
 	 * @param void $str
 	 */
-	public function setName($str);
+	public function setName($str): void;
 
 	/**
 	 * @return bool
 	 */
-	public function hasName();
+	public function hasName(): bool;
 }

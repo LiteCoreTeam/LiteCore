@@ -2,22 +2,20 @@
 
 /*
  *
- *  _____            _               _____
- * / ____|          (_)             |  __ \
- *| |  __  ___ _ __  _ ___ _   _ ___| |__) | __ ___
- *| | |_ |/ _ \ '_ \| / __| | | / __|  ___/ '__/ _ \
- *| |__| |  __/ | | | \__ \ |_| \__ \ |   | | | (_) |
- * \_____|\___|_| |_|_|___/\__, |___/_|   |_|  \___/
- *                         __/ |
- *                        |___/
+ *  _        _                ______ 
+ * | |      (_) _            / _____) 
+ * | |       _ | |_    ____ | /        ___    ____   ____ 
+ * | |      | ||  _)  / _  )| |       / _ \  / ___) / _  ) 
+ * | |_____ | || |__ ( (/ / | \_____ | |_| || |    ( (/ / 
+ * |_______)|_| \___) \____) \______) \___/ |_|     \____) 
  *
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
+ * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * @author GenisysPro
- * @link https://github.com/GenisysPro/GenisysPro
+ * @author LiteTeam
+ * @link https://github.com/LiteCoreTeam/LiteCore
  *
  *
  */
@@ -318,7 +316,7 @@ class Server
 	 */
 	public function getName(): string
 	{
-		return "LiteCore-public v1.0.9-release";
+		return \POCKETMINE\NAME;
 	}
 
 	/**
@@ -404,8 +402,22 @@ class Server
 	 */
 	public function getVersion()
 	{
-		$version = implode(",", ProtocolInfo::MINECRAFT_VERSION);
-		return $version;
+		$versions = ProtocolInfo::MINECRAFT_VERSION;
+		if(count($versions) === 1) {
+			return $versions[0];
+		}
+
+		$firstVersion = $versions[0];
+		$endVersion = $versions[(int) count($versions) - 1];
+		
+		return $firstVersion . " - " . $endVersion;
+	}
+
+	/**
+	 * @return string
+	 */
+	public function getCoreVersion(): string {
+		return \POCKETMINE\CORE_VERSION;
 	}
 
 	/**
@@ -1759,7 +1771,7 @@ class Server
 			return;
 		}
 
-		$currentVersion = \pocketmine\CORE_VERSION;
+		$currentVersion = $this->getCoreVersion();
 		$latestRelease = $this->getLatestReleaseFromGitHub('https://api.github.com/repos/LiteCoreTeam/LiteCore/releases/latest');
 
 		if ($latestRelease && isset($latestRelease['tag_name'])) {
@@ -1794,7 +1806,7 @@ class Server
 		$curl = curl_init();
 		curl_setopt($curl, CURLOPT_URL, $apiUrl);
 		curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-		curl_setopt($curl, CURLOPT_USERAGENT, 'LiteCore/' . CORE_VERSION . ' (https://github.com/LiteCoreTeam/LiteCore)');
+		curl_setopt($curl, CURLOPT_USERAGENT, 'LiteCore/' . $this->getCoreVersion() . ' (https://github.com/LiteCoreTeam/LiteCore)');
 		curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
 		//curl_setopt($curl, CURLOPT_VERBOSE, true);
 

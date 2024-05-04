@@ -5,13 +5,13 @@ plugins/*
 bin/*
 timings/*
 *.log
+*.lock
 server.properties
 /pocketmine.yml
 *.txt
 lite.yml
 crashdumps/*
 resource_packs/
-server.lock
 
 # Common IDEs
 .idea/*

@@ -2,60 +2,78 @@
 
 /*
  *
- *  ____            _        _   __  __ _                  __  __ ____
- * |  _ \ ___   ___| | _____| |_|  \/  (_)_ __   ___      |  \/  |  _ \
- * | |_) / _ \ / __| |/ / _ \ __| |\/| | | '_ \ / _ \_____| |\/| | |_) |
- * |  __/ (_) | (__|   <  __/ |_| |  | | | | | |  __/_____| |  | |  __/
- * |_|   \___/ \___|_|\_\___|\__|_|  |_|_|_| |_|\___|     |_|  |_|_|
+ *  _        _                ______ 
+ * | |      (_) _            / _____) 
+ * | |       _ | |_    ____ | /        ___    ____   ____ 
+ * | |      | ||  _)  / _  )| |       / _ \  / ___) / _  ) 
+ * | |_____ | || |__ ( (/ / | \_____ | |_| || |    ( (/ / 
+ * |_______)|_| \___) \____) \______) \___/ |_|     \____) 
  *
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
+ * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * @author PocketMine Team
- * @link http://www.pocketmine.net/
+ * @author LiteTeam
+ * @link https://github.com/LiteCoreTeam/LiteCore
  *
  *
-*/
+ */
 
 declare(strict_types=1);
 
 namespace pocketmine\snooze;
 
-use function assert;
+use Threaded;
 
-/**
- * Notifiers are Threaded objects which can be attached to threaded sleepers in order to wake them up.
- */
-class SleeperNotifier extends \Threaded{
-	/** @var \Threaded */
-	private $sharedObject;
+class SleeperNotifier extends Threaded
+{
+	/**
+	 * @var Threaded|null Shared object for synchronization.
+	 */
+	private ?Threaded $sharedObject = null;
 
-	/** @var int */
-	private $sleeperId;
+	/**
+	 * @var int|null Sleeper ID associated with this notifier.
+	 */
+	private ?int $sleeperId = null;
 
-	final public function attachSleeper(\Threaded $sharedObject, int $id) : void{
+	/**
+	 * Attaches the sleeper to a shared object with a given ID.
+	 *
+	 * @param Threaded $sharedObject Shared object for synchronization.
+	 * @param int $id Sleeper ID.
+	 */
+	final public function attachSleeper(Threaded $sharedObject, int $id): void
+	{
 		$this->sharedObject = $sharedObject;
 		$this->sleeperId = $id;
 	}
 
-	final public function getSleeperId() : int{
+	/**
+	 * Returns the sleeper ID associated with this notifier.
+	 *
+	 * @return int|null Sleeper ID, or null if not set.
+	 */
+	final public function getSleeperId(): ?int
+	{
 		return $this->sleeperId;
 	}
 
 	/**
-	 * Call this method from other threads to wake up the main server thread.
+	 * Wakes up the main server thread by setting the sleeper ID in the shared object and notifying it.
 	 */
-	final public function wakeupSleeper() : void{
+	final public function wakeupSleeper(): void
+	{
 		$shared = $this->sharedObject;
-		assert($shared !== null);
-		$sleeperId = $this->sleeperId;
-		$shared->synchronized(function() use ($shared, $sleeperId) : void{
-			if(!isset($shared[$sleeperId])){
-				$shared[$sleeperId] = $sleeperId;
-				$shared->notify();
-			}
-		});
+		if ($shared !== null && $this->sleeperId !== null) {
+			$shared->synchronized(function () use ($shared): void {
+				$sleeperId = $this->sleeperId;
+				if (!isset ($shared[$sleeperId])) {
+					$shared[$sleeperId] = $sleeperId;
+					$shared->notify();
+				}
+			});
+		}
 	}
 }

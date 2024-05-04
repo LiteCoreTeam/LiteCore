@@ -11,6 +11,7 @@ server.properties
 lite.yml
 crashdumps/*
 resource_packs/
+server.lock
 
 # Common IDEs
 .idea/*

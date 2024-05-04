@@ -24,9 +24,9 @@ namespace pocketmine\wizard;
 
 class InstallerLang {
 	public static $languages = [
-		"eng" => "English",
-		"rus" => "Русский",
-		"ukr" => "Україна"
+		"en" => "English",
+		"ru" => "Русский",
+		"ua" => "Український"
 	];
 	private $texts = [];
 	private $lang;
@@ -58,11 +58,11 @@ class InstallerLang {
 				$this->langfile = \pocketmine\PATH . "src/pocketmine/lang/Installer/" . $l . ".ini";
 			}else{
 				$this->lang = "en";
-				$this->langfile = \pocketmine\PATH . "src/pocketmine/lang/Installer/eng.ini";
+				$this->langfile = \pocketmine\PATH . "src/pocketmine/lang/Installer/en.ini";
 			}
 		}
 
-		$this->loadLang(\pocketmine\PATH . "src/pocketmine/lang/Installer/eng.ini", "eng");
+		$this->loadLang(\pocketmine\PATH . "src/pocketmine/lang/Installer/en.ini", "eng");
 		if($this->lang !== "en"){
 			$this->loadLang($this->langfile, $this->lang);
 		}

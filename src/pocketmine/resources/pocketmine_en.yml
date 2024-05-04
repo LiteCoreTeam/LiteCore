@@ -6,7 +6,7 @@
 settings:
  #Three-letter language code for server-side localization
  #Check your language code on https://en.wikipedia.org/wiki/List_of_ISO_639-2_codes
- language: "eng"
+ language: "en"
  #Whether to send all strings translated to server locale or let the device handle them
  force-language: false
  #When server shut down, the players will get kicked and this is what will show on there screen.

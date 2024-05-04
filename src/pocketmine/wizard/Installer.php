@@ -63,11 +63,11 @@ class Installer {
 		echo "[*] LiteCore set-up wizard\n";
 		echo "[*] Please select a language:\n";
 		foreach(InstallerLang::$languages as $short => $native){
-			echo " $native => $short\n";
+			echo "> $native: $short\n";
 		}
 		do{
-			echo "[?] Language (eng): ";
-			$lang = strtolower($this->getInput("eng"));
+			echo "[?] Language (english): ";
+			$lang = strtolower($this->getInput("en"));
 			if(!isset(InstallerLang::$languages[$lang])){
 				echo "[!] Couldn't find the language\n";
 				$lang = false;

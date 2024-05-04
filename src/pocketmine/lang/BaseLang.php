@@ -26,7 +26,7 @@ use pocketmine\event\TranslationContainer;
 
 class BaseLang {
 
-	const FALLBACK_LANGUAGE = "rus";
+	const FALLBACK_LANGUAGE = "ru";
 
 	protected $langName;
 

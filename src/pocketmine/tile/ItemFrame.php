@@ -75,15 +75,24 @@ class ItemFrame extends Spawnable
 
 	/**
 	 * @param Item|null $item
+	 * 
+	 * @return bool
 	 */
-	public function setItem(Item $item = null): ?Item
+	public function setItem(?Item $item = null): bool
 	{
-		if ($item !== null and $item->getId() !== Item::AIR) {
-			$this->namedtag->Item = $item->nbtSerialize(-1, "Item");
-		} else {
-			unset($this->namedtag->Item);
+		$itemNBT = null;
+		if ($item !== null && $item->getId() !== Item::AIR) {
+			$itemNBT = $item->nbtSerialize(-1, "Item");
 		}
+
+		if ($itemNBT === null) {
+			unset($this->namedtag->Item);
+		} else {
+			$this->namedtag->Item = $itemNBT;
+		}
+
 		$this->onChanged();
+		return true;
 	}
 
 	/**

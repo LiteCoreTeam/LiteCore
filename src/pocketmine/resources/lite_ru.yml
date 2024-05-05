@@ -70,8 +70,8 @@ server:
   #Выберите, как напомнить игрокам, когда кто-то присоединяется к игре
   #0 = Message, 1 = Tip, 2 = Popup
   player-msg-type: 0
-  login-msg: "§3@player joined the game"
-  logout-msg: "§3@player left the game"
+  login-msg: "§3{NAME} joined the game"
+  logout-msg: "§3{NAME} left the game"
   #Ограниченный творческий режим
   limited-creative: false
   #Отображает частицы блока при разрушении

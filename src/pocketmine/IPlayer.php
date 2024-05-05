@@ -29,37 +29,37 @@ interface IPlayer extends ServerOperator {
 	/**
 	 * @return bool
 	 */
-	public function isOnline();
+	public function isOnline(): bool;
 
 	/**
 	 * @return string
 	 */
-	public function getName();
+	public function getName(): string;
 
 	/**
 	 * @return bool
 	 */
-	public function isBanned();
+	public function isBanned(): bool;
 
 	/**
 	 * @param bool $banned
 	 */
-	public function setBanned($banned);
+	public function setBanned(bool $banned): void;
 
 	/**
 	 * @return bool
 	 */
-	public function isWhitelisted();
+	public function isWhitelisted(): bool;
 
 	/**
 	 * @param bool $value
 	 */
-	public function setWhitelisted($value);
+	public function setWhitelisted(bool $value): void;
 
 	/**
 	 * @return Player|null
 	 */
-	public function getPlayer();
+	public function getPlayer(): ?Player;
 
 	/**
 	 * @return int|double

@@ -19,22 +19,29 @@
  *
 */
 
-declare(strict_types=1);
-
 namespace pocketmine\level\format\io\region;
 
-
-use pocketmine\level\format\Chunk;
-use pocketmine\level\format\io\ChunkException;
-use pocketmine\level\format\io\ChunkUtils;
-use pocketmine\level\format\io\exception\CorruptedChunkException;
-use pocketmine\level\format\SubChunk;
-use pocketmine\nbt\NBT;
-use pocketmine\nbt\tag\{
-	ByteArrayTag, ByteTag, CompoundTag, IntArrayTag, IntTag, ListTag, LongTag
-};
-use pocketmine\Player;
 use pocketmine\utils\MainLogger;
+use pocketmine\level\format\{
+	Chunk,
+	SubChunk
+};
+use pocketmine\level\format\io\{
+	ChunkUtils,
+	ChunkException,
+	exception\CorruptedChunkException
+};
+use pocketmine\nbt\{
+	NBT,
+	tag\ByteArrayTag,
+	tag\ByteTag,
+	tag\CompoundTag,
+	tag\IntArrayTag,
+	tag\IntTag,
+	tag\ListTag,
+	tag\LongTag
+};
+//use pocketmine\Player;
 use function zlib_decode;
 
 

@@ -409,13 +409,29 @@ class Player extends Human implements CommandSender, InventoryHolder, ChunkLoade
 	}
 
 	/**
-	 * @return TranslationContainer
+	 * @return string
 	 */
-	public function getLeaveMessage(): TranslationContainer
+	public function getLeaveMessage(): string
 	{
-		return new TranslationContainer(TextFormat::YELLOW . "%multiplayer.player.left", [
-			$this->getName()
-		]);
+		$leaveMessage = trim($this->getServer()->playerLogoutMsg);
+
+		$replacedLeaveMessage = str_replace("{NAME}", $this->getName(), $leaveMessage);
+		$replacedLeaveMessage = str_replace("{DISPLAY_NAME}", $this->getDisplayName(), $replacedLeaveMessage);
+
+		return $replacedLeaveMessage;
+	}
+
+	/**
+	 * @return string
+	 */
+	public function getJoinMessage(): string
+	{
+		$joinMessage = trim($this->getServer()->playerLoginMsg);
+
+		$replacedJoinMessage = str_replace("{NAME}", $this->getName(), $joinMessage);
+		$replacedJoinMessage = str_replace("{DISPLAY_NAME}", $this->getDisplayName(), $replacedJoinMessage);
+
+		return $replacedJoinMessage;
 	}
 
 	/**
@@ -1138,6 +1154,8 @@ class Player extends Human implements CommandSender, InventoryHolder, ChunkLoade
 		Timings::$playerChunkSendTimer->stopTiming();
 	}
 
+
+
 	protected function doFirstSpawn()
 	{
 		if ($this->spawned) {
@@ -1177,29 +1195,27 @@ class Player extends Human implements CommandSender, InventoryHolder, ChunkLoade
 			}
 		}
 
-		$this->allowFlight = (($this->gamemode == 3) or ($this->gamemode == 1));
+		$this->allowFlight = (($this->gamemode == 3) || ($this->gamemode == 1));
 		$this->setHealth($this->getHealth());
 
-		$this->server->getPluginManager()->callEvent($ev = new PlayerJoinEvent($this, new TranslationContainer(TextFormat::YELLOW . "%multiplayer.player.joined", [
-			$this->getName()
-		])));
+		// Вызов ивента Входа игрока
+		$joinMessage = $this->getJoinMessage();
+		$joinEvent = new PlayerJoinEvent($this, $joinMessage);
 
+		$this->server->getPluginManager()->callEvent($joinEvent);
 		$this->sendSettings();
 
-		$joinMessage = trim((string) $ev->getJoinMessage());
-		if (!empty($joinMessage)) {
-			$playerName = $this->getName();
-			$broadcastMessage = str_replace("{NAME}", $playerName, $this->server->playerLoginMsg);
-
+		if (!empty($joinMessage) && $this->getServer()->playerMsgEnabled) {
+			$msg = $joinEvent->getJoinMessage();
 			switch ($this->server->playerMsgType) {
 				case Server::PLAYER_MSG_TYPE_MESSAGE:
-					$this->server->broadcastMessage($joinMessage);
+					$this->server->broadcastMessage($msg);
 					break;
 				case Server::PLAYER_MSG_TYPE_TIP:
-					$this->server->broadcastTip($broadcastMessage);
+					$this->server->broadcastTip($msg);
 					break;
 				case Server::PLAYER_MSG_TYPE_POPUP:
-					$this->server->broadcastPopup($broadcastMessage);
+					$this->server->broadcastPopup($msg);
 					break;
 			}
 		}
@@ -1214,8 +1230,8 @@ class Player extends Human implements CommandSender, InventoryHolder, ChunkLoade
 		}
 
 		/*if($this->server->getUpdater()->hasUpdate() and $this->hasPermission(Server::BROADCAST_CHANNEL_ADMINISTRATIVE)){
-				  $this->server->getUpdater()->showPlayerUpdate($this);
-			  }*/
+									$this->server->getUpdater()->showPlayerUpdate($this);
+								}*/
 
 		if ($this->getHealth() <= 0) {
 			$this->respawn();
@@ -2671,9 +2687,9 @@ class Player extends Human implements CommandSender, InventoryHolder, ChunkLoade
 						foreach ($packet->packIds as $uuid) {
 							//dirty hack for mojang's dirty hack for versions
 							/*$splitPos = strpos($uuid, "_");
-										   if($splitPos !== false){
-											   $uuid = substr($uuid, 0, $splitPos);
-										   }*/
+																										  if($splitPos !== false){
+																											  $uuid = substr($uuid, 0, $splitPos);
+																										  }*/
 
 							$pack = $manager->getPackById($uuid);
 							if (!($pack instanceof ResourcePack)) {
@@ -2743,10 +2759,10 @@ class Player extends Human implements CommandSender, InventoryHolder, ChunkLoade
 						$entity->setPosition($this->temporalVector->setComponents($rawPos->x, $rawPos->y - 0.3, $rawPos->z));
 					}
 					/*if($entity instanceof Minecart){
-									   $entity->isFreeMoving = true;
-									   $entity->motionX = -sin($packet->yaw / 180 * M_PI);
-									   $entity->motionZ = cos($packet->yaw / 180 * M_PI);
-								   }*/
+																					$entity->isFreeMoving = true;
+																					$entity->motionX = -sin($packet->yaw / 180 * M_PI);
+																					$entity->motionZ = cos($packet->yaw / 180 * M_PI);
+																				}*/
 				}
 
 				$newPos = $rawPos->round(4)->subtract(0, $this->baseOffset, 0);
@@ -3513,9 +3529,9 @@ class Player extends Human implements CommandSender, InventoryHolder, ChunkLoade
 				$this->craftingType = self::CRAFTING_SMALL;
 				if ($packet->type === TextPacket::TYPE_CHAT) {
 					/*if ($packet->source !== $this->username) {
-									   $this->server->getNetwork()->blockAddress($this->getAddress(), 1200);//TODO: нуждается в тестах
-									   break;
-								   }*/
+																					$this->server->getNetwork()->blockAddress($this->getAddress(), 1200);//TODO: нуждается в тестах
+																					break;
+																				}*/
 					if (strlen($packet->message) > 350) {
 						$this->server->getNetwork()->blockAddress($this->getAddress(), 1202); //TODO: давать шанс игрокам которые набрали 350 символов..
 						break;
@@ -3586,12 +3602,12 @@ class Player extends Human implements CommandSender, InventoryHolder, ChunkLoade
 				 * container set slot packets send the correct window ID, but... eh
 				 */
 				/*elseif(!isset($this->windowIndex[$packet->windowId])){
-								$this->inventory->sendContents($this);
-								$pk = new ContainerClosePacket();
-								$pk->windowid = $packet->windowId;
-								$this->dataPacket($pk);
-								break;
-							}*/
+																	$this->inventory->sendContents($this);
+																	$pk = new ContainerClosePacket();
+																	$pk->windowid = $packet->windowId;
+																	$this->dataPacket($pk);
+																	break;
+																}*/
 
 				$recipe = $this->server->getCraftingManager()->getRecipe($packet->id);
 
@@ -4202,11 +4218,11 @@ class Player extends Human implements CommandSender, InventoryHolder, ChunkLoade
 		//TODO: Remove this workaround (broken client MCPE 1.0.0)
 		$this->messageQueue[] = $this->server->getLanguage()->translateString($message);
 		/*
-			  $pk = new TextPacket();
-			  $pk->type = TextPacket::TYPE_RAW;
-			  $pk->message = $this->server->getLanguage()->translateString($message);
-			  $this->dataPacket($pk);
-			  */
+								$pk = new TextPacket();
+								$pk->type = TextPacket::TYPE_RAW;
+								$pk->message = $this->server->getLanguage()->translateString($message);
+								$this->dataPacket($pk);
+								*/
 	}
 
 	/**
@@ -4330,14 +4346,22 @@ class Player extends Human implements CommandSender, InventoryHolder, ChunkLoade
 			$this->stopSleep();
 
 			if ($this->spawned) {
-				$this->server->getPluginManager()->callEvent($ev = new PlayerQuitEvent($this, $message, true));
-				if (isset($ev) and $this->username != "" and $ev->getQuitMessage() != "") {
-					if ($this->server->playerMsgType === Server::PLAYER_MSG_TYPE_MESSAGE)
-						$this->server->broadcastMessage($ev->getQuitMessage());
-					elseif ($this->server->playerMsgType === Server::PLAYER_MSG_TYPE_TIP)
-						$this->server->broadcastTip(str_replace("@player", $this->getName(), $this->server->playerLogoutMsg));
-					elseif ($this->server->playerMsgType === Server::PLAYER_MSG_TYPE_POPUP)
-						$this->server->broadcastPopup(str_replace("@player", $this->getName(), $this->server->playerLogoutMsg));
+				$leaveMessage = $this->getLeaveMessage();
+				$quitEvent = new PlayerQuitEvent($this, $leaveMessage, true);
+				
+				$this->server->getPluginManager()->callEvent($quitEvent);
+				if (!empty($this->username) && !empty($quitEvent->getQuitMessage())) {
+					switch ($this->server->playerMsgType) {
+						case Server::PLAYER_MSG_TYPE_MESSAGE:
+							$this->getServer()->broadcastMessage($leaveMessage);
+							break;
+						case Server::PLAYER_MSG_TYPE_TIP:
+							$this->getServer()->broadcastTip($leaveMessage);
+							break;
+						case Server::PLAYER_MSG_TYPE_POPUP:
+							$this->getServer()->broadcastPopup($leaveMessage);
+							break;
+					}
 				}
 
 				if ($this->getFloatingInventory() instanceof FloatingInventory) {
@@ -4347,7 +4371,7 @@ class Player extends Human implements CommandSender, InventoryHolder, ChunkLoade
 					$this->getFloatingInventory()->clearAll();
 				}
 
-				if ($ev->getAutoSave()) {
+				if ($quitEvent->getAutoSave()) {
 					$this->save();
 				}
 			}

@@ -1,20 +1,21 @@
 <?php
 
-/**
+/*
  *
- *  ____       _                          _
- * |  _ \ _ __(_)___ _ __ ___   __ _ _ __(_)_ __   ___
- * | |_) | '__| / __| '_ ` _ \ / _` | '__| | '_ \ / _ \
- * |  __/| |  | \__ \ | | | | | (_| | |  | | | | |  __/
- * |_|   |_|  |_|___/_| |_| |_|\__,_|_|  |_|_| |_|\___|
+ *  _        _                ______ 
+ * | |      (_) _            / _____) 
+ * | |       _ | |_    ____ | /        ___    ____   ____ 
+ * | |      | ||  _)  / _  )| |       / _ \  / ___) / _  ) 
+ * | |_____ | || |__ ( (/ / | \_____ | |_| || |    ( (/ / 
+ * |_______)|_| \___) \____) \______) \___/ |_|     \____) 
  *
- * Prismarine is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * @author Prismarine Team
- * @link   https://github.com/PrismarineMC/Prismarine
+ * @author LiteTeam
+ * @link https://github.com/LiteCoreTeam/LiteCore
  *
  *
  */

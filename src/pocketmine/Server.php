@@ -406,20 +406,21 @@ class Server
 	public function getVersion()
 	{
 		$versions = ProtocolInfo::MINECRAFT_VERSION;
-		if(count($versions) === 1) {
+		if (count($versions) === 1) {
 			return $versions[0];
 		}
 
 		$firstVersion = $versions[0];
 		$endVersion = $versions[(int) count($versions) - 1];
-		
+
 		return $firstVersion . " - " . $endVersion;
 	}
 
 	/**
 	 * @return string
 	 */
-	public function getCoreVersion(): string {
+	public function getCoreVersion(): string
+	{
 		return \POCKETMINE\CORE_VERSION;
 	}
 
@@ -477,7 +478,8 @@ class Server
 	 * 
 	 * @return Config|null
 	 */
-	private function getAdvancedConfig(): ?Config {
+	private function getAdvancedConfig(): ?Config
+	{
 		return $this->advancedConfig;
 	}
 
@@ -1494,15 +1496,12 @@ class Server
 	/**
 	 * @param string $name
 	 *
-	 * @return command\Command
+	 * @return Command|null
 	 */
 	public function getPluginCommand($name)
 	{
-		if (($command = $this->commandMap->getCommand($name)) instanceof PluginIdentifiableCommand) {
-			return $command;
-		} else {
-			return null;
-		}
+		$command = $this->commandMap->getCommand(strtolower($name));
+		return ($command instanceof PluginIdentifiableCommand) ? $command : null;
 	}
 
 	/**
@@ -1770,7 +1769,7 @@ class Server
 	{
 		$advancedConf = $this->getAdvancedConfig();
 		$check_releases = $advancedConf->get('lite')['сheck_releases'] ?? false; //false - по умолчанию
-		if($check_releases === false) {
+		if ($check_releases === false) {
 			$this->getLogger()->warning("Проверка наличия обновлений была отключена!");
 			return;
 		}
@@ -1818,14 +1817,14 @@ class Server
 		$httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
 
 		/*if ($response === false) {
-				  $errorCode = curl_errno($curl);
-				  $errorMessage = curl_error($curl);
-				  echo "Ошибка cURL: ($errorCode) $errorMessage";
-			  } else {
-				  echo "Ответ: $response";
-			  }
+						$errorCode = curl_errno($curl);
+						$errorMessage = curl_error($curl);
+						echo "Ошибка cURL: ($errorCode) $errorMessage";
+					} else {
+						echo "Ответ: $response";
+					}
 
-			  curl_close($curl);*/
+					curl_close($curl);*/
 
 		curl_close($curl);
 		if ($httpCode === 200) {
@@ -2792,8 +2791,8 @@ class Server
 						$report = false;
 					}
 				}/*elseif(\Phar::running(true) === ""){
-															$report = false;
-															}*/
+																	   $report = false;
+																	   }*/
 
 				if ($dump->getData()["error"]["type"] === \ParseError::class) {
 					$report = false;

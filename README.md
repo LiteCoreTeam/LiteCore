@@ -1,4 +1,5 @@
-**LiteCore is a feature-rich server software for *Minecraft: Pocket Edition* and *Minecraft: Windows 10 Edition*.__
+# LiteCore
+__Is a feature-rich server software for *Minecraft: Pocket Edition* and *Minecraft: Windows 10 Edition*.__
 -------------
 
 Some features offered by LiteCore:

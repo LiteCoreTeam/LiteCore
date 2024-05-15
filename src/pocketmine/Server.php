@@ -1780,7 +1780,7 @@ class Server
 		if ($latestRelease && isset($latestRelease['tag_name'])) {
 			$latestVersion = ltrim($latestRelease['tag_name'], 'v');
 
-			if (version_compare($currentVersion, $latestVersion, '=') || version_compare($currentVersion, $latestVersion, '>')) {
+			if (version_compare($currentVersion, $latestVersion, '>=')) {
 				$this->getLogger()->warning('У Вас стоит актуальная версия ядра LiteCore');
 			} elseif (version_compare($currentVersion, $latestVersion, '<')) {
 				$this->getLogger()->warning('У Вас стоит устаревшая версия ядра LiteCore');

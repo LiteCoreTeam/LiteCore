@@ -85,7 +85,7 @@ namespace pocketmine {
 	const API_VERSION = "3.0.1";
 	const CODENAME = "vk.com/litecore_team";
 	const GENISYS_API_VERSION = '2.0.0';
-	const CORE_VERSION = '1.1.0.5-release';
+	const CORE_VERSION = '1.1.0.5';
 
 	const MIN_PHP_VERSION = "8.0.0";
 
@@ -258,7 +258,7 @@ namespace pocketmine {
 		$logger->warning("You are running " . \pocketmine\NAME . " with xdebug enabled. This has a major impact on performance.");
 	}
 
-	if (!extension_loaded("pocketmine_chunkutils")) {
+	if (!extension_loaded("chunkutils2")) {
 		$logger->warning("ChunkUtils extension is missing. Anvil-format worlds will experience degraded performance.");
 	}
 

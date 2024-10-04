@@ -52,7 +52,7 @@ class OfflinePlayer implements IPlayer, Metadatable {
 	/**
 	 * @return bool
 	 */
-	public function isOnline(){
+	public function isOnline(): bool{
 		return $this->getPlayer() !== null;
 	}
 
@@ -66,21 +66,21 @@ class OfflinePlayer implements IPlayer, Metadatable {
 	/**
 	 * @return Server
 	 */
-	public function getServer(){
+	public function getServer(): Server{
 		return $this->server;
 	}
 
 	/**
 	 * @return bool
 	 */
-	public function isOp(){
+	public function isOp(): bool{
 		return $this->server->isOp(strtolower($this->getName()));
 	}
 
 	/**
 	 * @param bool $value
 	 */
-	public function setOp($value){
+	public function setOp($value): void{
 		if($value === $this->isOp()){
 			return;
 		}
@@ -95,14 +95,14 @@ class OfflinePlayer implements IPlayer, Metadatable {
 	/**
 	 * @return bool
 	 */
-	public function isBanned(){
+	public function isBanned(): bool{
 		return $this->server->getNameBans()->isBanned(strtolower($this->getName()));
 	}
 
 	/**
 	 * @param bool $value
 	 */
-	public function setBanned($value){
+	public function setBanned($value): void{
 		if($value){
 			$this->server->getNameBans()->addBan($this->getName(), null, null, null);
 		}else{
@@ -113,14 +113,14 @@ class OfflinePlayer implements IPlayer, Metadatable {
 	/**
 	 * @return bool
 	 */
-	public function isWhitelisted(){
+	public function isWhitelisted(): bool{
 		return $this->server->isWhitelisted(strtolower($this->getName()));
 	}
 
 	/**
 	 * @param bool $value
 	 */
-	public function setWhitelisted($value){
+	public function setWhitelisted($value): void{
 		if($value){
 			$this->server->addWhitelist(strtolower($this->getName()));
 		}else{
@@ -131,7 +131,7 @@ class OfflinePlayer implements IPlayer, Metadatable {
 	/**
 	 * @return Player
 	 */
-	public function getPlayer(){
+	public function getPlayer(): Player{
 		return $this->server->getPlayerExact($this->getName());
 	}
 
@@ -152,7 +152,7 @@ class OfflinePlayer implements IPlayer, Metadatable {
 	/**
 	 * @return bool
 	 */
-	public function hasPlayedBefore(){
+	public function hasPlayedBefore(): bool{
 		return $this->namedtag instanceof CompoundTag;
 	}
 

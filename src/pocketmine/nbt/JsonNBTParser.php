@@ -40,7 +40,7 @@ class JsonNBTParser{
 	public static function parseJSON(string $data, int &$offset = 0){
 		$len = strlen($data);
 		for(; $offset < $len; ++$offset){
-			$c = $data{$offset};
+			$c = $data[$offset];
 			if($c === "{"){
 				++$offset;
 				$data = self::parseCompound($data, $offset);
@@ -69,9 +69,9 @@ class JsonNBTParser{
 		$data = [];
 
 		for(; $offset < $len; ++$offset){
-			if($str{$offset - 1} === "]"){
+			if($str[$offset - 1] === "]"){
 				break;
-			}elseif($str{$offset} === "]"){
+			}elseif($str[$offset] === "]"){
 				++$offset;
 				break;
 			}
@@ -102,9 +102,9 @@ class JsonNBTParser{
 		$data = [];
 
 		for(; $offset < $len; ++$offset){
-			if($str{$offset - 1} === "}"){
+			if($str[$offset - 1] === "}"){
 				break;
-			}elseif($str{$offset} === "}"){
+			}elseif($str[$offset] === "}"){
 				++$offset;
 				break;
 			}
@@ -138,7 +138,7 @@ class JsonNBTParser{
 
 		$len = strlen($data);
 		for(; $offset < $len; ++$offset){
-			$c = $data{$offset};
+			$c = $data[$offset];
 
 			if(!$inQuotes and ($c === " " or $c === "\r" or $c === "\n" or $c === "\t" or $c === "," or $c === "}" or $c === "]")){
 				if($c === "," or $c === "}" or $c === "]"){
@@ -152,7 +152,7 @@ class JsonNBTParser{
 					throw new \Exception("Syntax error: invalid quote at offset $offset");
 				}
 			}elseif($c === "\\"){
-				$value .= $data{$offset + 1} ?? "";
+				$value .= $data[$offset + 1] ?? "";
 				++$offset;
 			}elseif($c === "{" and !$inQuotes){
 				if($value !== ""){
@@ -239,7 +239,7 @@ class JsonNBTParser{
 
 		$len = strlen($data);
 		for(; $offset < $len; ++$offset){
-			$c = $data{$offset};
+			$c = $data[$offset];
 
 			if($c === ":"){
 				++$offset;

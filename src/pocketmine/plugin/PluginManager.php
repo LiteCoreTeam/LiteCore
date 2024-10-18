@@ -150,7 +150,7 @@ class PluginManager {
 	 *
 	 * @return Plugin
 	 */
-	public function loadPlugin($path, $loaders = null){
+	public function loadPlugin($path, $loaders = null): ?Plugin{
 		foreach(($loaders === null ? $this->fileAssociations : $loaders) as $loader){
 			if(preg_match($loader->getPluginFilters(), basename($path)) > 0){
 				$description = $loader->getPluginDescription($path);
